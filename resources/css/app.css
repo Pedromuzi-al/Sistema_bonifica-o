@@ -1,3 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --apple-bg: #f5f5f7;
+        --apple-surface: rgba(255, 255, 255, 0.7);
+        --apple-panel: rgba(255, 255, 255, 0.92);
+        --apple-border: rgba(15, 23, 42, 0.08);
+        --apple-text: #1d1d1f;
+        --apple-muted: #6e6e73;
+        --apple-primary: #0071e3;
+        --apple-primary-strong: #0057c9;
+        --apple-dark: #101114;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-[#f5f5f7] text-slate-900 antialiased;
+        font-family: 'SF Pro Display', 'Segoe UI', sans-serif;
+        background-image: radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), rgba(245, 245, 247, 0.8) 35%, rgba(226, 232, 240, 0.7) 100%);
+    }
+
+    a {
+        @apply transition-all duration-200;
+    }
+}
+
+@layer components {
+    .apple-shell {
+        background:
+            radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 32%),
+            radial-gradient(circle at bottom right, rgba(148,163,184,0.18), transparent 28%),
+            linear-gradient(135deg, #f4f4f5 0%, #efeff1 42%, #e9edf5 100%);
+    }
+
+    .apple-card {
+        @apply rounded-[30px] border border-white/60 bg-white/80 shadow-[0_30px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl;
+        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+
+    .apple-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 32px 80px rgba(15, 23, 42, 0.14);
+        border-color: rgba(148, 163, 184, 0.45);
+    }
+
+    .apple-button {
+        @apply inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition duration-300 ease-out hover:-translate-y-0.5 hover:bg-slate-800;
+    }
+
+    .apple-button--light {
+        @apply inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition duration-300 ease-out hover:-translate-y-0.5 hover:bg-slate-50;
+    }
+
+    .apple-button--primary {
+        @apply inline-flex items-center justify-center rounded-full bg-[#0071e3] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_35px_rgba(0,113,227,0.35)] transition duration-300 ease-out hover:-translate-y-0.5 hover:bg-[#0067d3];
+    }
+
+    .apple-pill {
+        @apply inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500;
+    }
+
+    .apple-input {
+        @apply mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-inner shadow-slate-200/40 transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100;
+    }
+
+    .apple-grid {
+        @apply grid gap-5 md:grid-cols-3;
+    }
+
+    @keyframes fadeUp {
+        0% {
+            opacity: 0;
+            transform: translateY(22px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes floatDevice {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-12px);
+        }
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% {
+            opacity: 0.8;
+            box-shadow: 0 0 22px rgba(56, 189, 248, 0.18);
+        }
+        50% {
+            opacity: 1;
+            box-shadow: 0 0 38px rgba(14, 165, 233, 0.28);
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-120%);
+        }
+        100% {
+            transform: translateX(120%);
+        }
+    }
+
+    .hero-device {
+        position: relative;
+        width: min(100%, 560px);
+        height: 420px;
+        margin-inline: auto;
+        border-radius: 40px 40px 20px 20px;
+        background: linear-gradient(135deg, #ce5f1d 0%, #d8692c 18%, #b4521a 50%, #cb641d 100%);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), 0 30px 70px rgba(117, 55, 13, 0.28);
+        overflow: hidden;
+        animation: floatDevice 6s ease-in-out infinite;
+    }
+
+    .hero-device::before,
+    .hero-device::after {
+        content: '';
+        position: absolute;
+        border-radius: 9999px;
+        background: rgba(13, 18, 28, 0.92);
+    }
+
+    .hero-device::before {
+        width: 220px;
+        height: 220px;
+        left: 18%;
+        top: 38%;
+        box-shadow: 180px -2px 0 0 rgba(13, 18, 28, 0.92), 86px 0 0 0 rgba(13, 18, 28, 0.92);
+        animation: pulseGlow 4s ease-in-out infinite;
+    }
+
+    .hero-device::after {
+        width: 160px;
+        height: 160px;
+        right: 10%;
+        top: 18%;
+        border: 18px solid rgba(13, 18, 28, 0.94);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 10px rgba(255,255,255,0.08);
+        animation: pulseGlow 5s ease-in-out infinite reverse;
+    }
+
+    .apple-ambient {
+        position: absolute;
+        inset: auto 10% 8% 10%;
+        height: 30px;
+        border-radius: 9999px;
+        background: rgba(89, 44, 16, 0.28);
+        filter: blur(25px);
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .hero-animate {
+        animation: fadeUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .hero-animate-delay-1 {
+        animation-delay: 120ms;
+    }
+
+    .hero-animate-delay-2 {
+        animation-delay: 220ms;
+    }
+
+    .hero-animate-delay-3 {
+        animation-delay: 320ms;
+    }
+
+    .shimmer {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .shimmer::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 45%, transparent 100%);
+        transform: translateX(-120%);
+        animation: shimmer 2.8s ease-in-out infinite;
+    }
+}

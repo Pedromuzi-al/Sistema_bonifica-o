@@ -8,9 +8,13 @@ use Illuminate\View\View;
 
 class EvaluationController extends Controller
 {
-    public function index(): View
+    public function index(): View|\Illuminate\Http\RedirectResponse
     {
-        Gate::authorize('evaluate', new Idea);
+        $result = $this->authorizeOrRedirect('evaluate', new Idea, 'Você não tem permissão para acessar a avaliação.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         $ideas = Idea::with('author', 'originSector', 'beneficiarySectors')
             ->whereIn('status', [

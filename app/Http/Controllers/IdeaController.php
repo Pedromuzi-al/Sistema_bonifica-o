@@ -37,9 +37,13 @@ class IdeaController extends Controller
         return view('ideas.index', compact('ideas'));
     }
 
-    public function create(): View
+    public function create(): View|\Illuminate\Http\RedirectResponse
     {
-        $this->authorize('create', Idea::class);
+        $result = $this->authorizeOrRedirect('create', Idea::class, 'Você não tem permissão para criar ideias.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         return view('ideas.create', [
             'sectors' => Sector::all(),
@@ -48,7 +52,11 @@ class IdeaController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('create', Idea::class);
+        $result = $this->authorizeOrRedirect('create', Idea::class, 'Você não tem permissão para criar ideias.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -101,14 +109,22 @@ class IdeaController extends Controller
 
     public function show(Idea $idea)
     {
-        $this->authorize('view', $idea);
+        $result = $this->authorizeOrRedirect('view', $idea, 'Você não tem permissão para visualizar esta ideia.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         return view('ideas.show', compact('idea'));
     }
 
     public function vote(Request $request, Idea $idea)
     {
-        $this->authorize('vote', $idea);
+        $result = $this->authorizeOrRedirect('vote', $idea, 'Você não tem permissão para votar nesta ideia.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         $cycle = VotingCycle::where('status', 'open')
             ->where('starts_at', '<=', now())
@@ -152,7 +168,11 @@ class IdeaController extends Controller
 
     public function approve(Request $request, Idea $idea)
     {
-        $this->authorize('approve', $idea);
+        $result = $this->authorizeOrRedirect('approve', $idea, 'Você não tem permissão para alterar o status desta ideia.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         $request->validate([
             'status' => ['required', 'in:approved,rejected,implementation,implemented,completed'],

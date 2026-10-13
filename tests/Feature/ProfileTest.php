@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -59,6 +61,35 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_admin_can_update_another_users_permissions(): void
+    {
+        Permission::firstOrCreate(['name' => 'manage_admin']);
+        Role::firstOrCreate(['name' => 'admin']);
+        Role::firstOrCreate(['name' => 'employee']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $targetUser = User::factory()->create();
+        $targetUser->assignRole('employee');
+
+        $response = $this
+            ->actingAs($admin)
+            ->post('/profile/permissions/' . $targetUser->id, [
+                'role' => 'admin',
+                'permissions' => ['manage_admin'],
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile/' . $targetUser->id);
+
+        $targetUser->refresh();
+
+        $this->assertTrue($targetUser->hasRole('admin'));
+        $this->assertTrue($targetUser->hasPermissionTo('manage_admin'));
     }
 
     public function test_user_can_delete_their_account(): void

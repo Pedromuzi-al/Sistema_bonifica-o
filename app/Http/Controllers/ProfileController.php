@@ -3,38 +3,91 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request, ?User $user = null): View
     {
+        $targetUser = $user ?? $request->user();
+        $canManageRoles = $request->user()->can('manage-admin');
+
+        if ($user && $user->id !== $request->user()->id && ! $canManageRoles) {
+            abort(403, 'Você não tem permissão para acessar esse perfil.');
+        }
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $targetUser,
+            'roles' => Role::all(),
+            'permissions' => Permission::all(),
+            'canManageRoles' => $canManageRoles,
+            'isAdminViewingAnotherUser' => $canManageRoles && $targetUser->id !== $request->user()->id,
         ]);
     }
 
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, ?User $user = null): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $targetUser = $user ?? $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user && $user->id !== $request->user()->id && ! $request->user()->can('manage-admin')) {
+            abort(403, 'Você não tem permissão para alterar este perfil.');
         }
 
-        $request->user()->save();
+        $targetUser->fill($request->validated());
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        if ($targetUser->isDirty('email')) {
+            $targetUser->email_verified_at = null;
+        }
+
+        $targetUser->save();
+
+        $redirect = $targetUser->id === $request->user()->id
+            ? Redirect::route('profile.edit')
+            : Redirect::route('profile.edit', ['user' => $targetUser->id]);
+
+        return $redirect->with('status', 'profile-updated');
+    }
+
+    public function updatePermissions(Request $request, ?User $user = null): RedirectResponse
+    {
+        $request->validate([
+            'role' => ['nullable', 'string', 'exists:roles,name'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', 'exists:permissions,name'],
+        ]);
+
+        $targetUser = $user ?? $request->user();
+
+        if (! Gate::check('manage-admin') && $targetUser->id !== $request->user()->id) {
+            return Redirect::route('profile.edit', ['user' => $targetUser->id])->with('error', 'Você não tem permissão para alterar permissões.');
+        }
+
+        if (! Gate::check('manage-admin') && $targetUser->id === $request->user()->id) {
+            return Redirect::route('profile.edit')->with('error', 'Você não tem permissão para alterar permissões.');
+        }
+
+        $targetUser->syncRoles($request->input('role') ? [$request->input('role')] : []);
+        $targetUser->syncPermissions($request->input('permissions', []));
+
+        $redirect = $targetUser->id === $request->user()->id
+            ? Redirect::route('profile.edit')
+            : Redirect::route('profile.edit', ['user' => $targetUser->id]);
+
+        return $redirect->with('status', 'permissions-updated');
     }
 
     /**

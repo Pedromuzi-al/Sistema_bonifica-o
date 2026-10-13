@@ -2,7 +2,11 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Ideias e propostas</h2>
-            <a href="{{ route('ideas.create') }}" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Nova ideia</a>
+            @if (auth()->user()->can('create', App\Models\Idea::class))
+                <a href="{{ route('ideas.create') }}" data-permission="true" data-permission-message="Você não tem permissão para criar ideias." class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Nova ideia</a>
+            @else
+                <button type="button" data-permission="false" data-permission-message="Você não tem permissão para criar ideias." class="rounded-md bg-slate-300 px-4 py-2 text-sm font-semibold text-slate-600">Nova ideia</button>
+            @endif
         </div>
     </x-slot>
 

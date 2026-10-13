@@ -125,7 +125,7 @@ class IdeaFlowTest extends TestCase
 
         $this->actingAs($viewer)
             ->get(route('ideas.show', $idea))
-            ->assertForbidden();
+            ->assertRedirect();
 
         $this->actingAs($viewer)
             ->get(route('ideas.index'))
@@ -142,7 +142,7 @@ class IdeaFlowTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('ideas.create'))
-            ->assertForbidden();
+            ->assertRedirect();
     }
 
     public function test_employee_cannot_access_evaluation_or_admin_dashboards(): void
@@ -151,10 +151,31 @@ class IdeaFlowTest extends TestCase
 
         $this->actingAs($employee)
             ->get(route('evaluation.index'))
-            ->assertForbidden();
+            ->assertRedirect();
 
         $this->actingAs($employee)
             ->get(route('admin.index'))
-            ->assertForbidden();
+            ->assertRedirect();
+    }
+
+    public function test_unauthorized_action_redirects_back_with_permission_message(): void
+    {
+        $employee = User::where('email', 'funcionario@corp.local')->first();
+        $idea = Idea::create([
+            'author_id' => $employee->id,
+            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'title' => 'Ideia restrita',
+            'problem_description' => 'Descrição',
+            'solution_description' => 'Solução',
+            'expected_results' => 'Resultado',
+            'resources_needed' => 'Recurso',
+            'status' => Idea::STATUS_SUBMITTED,
+        ]);
+
+        $this->actingAs($employee)
+            ->from(route('ideas.index'))
+            ->post(route('ideas.approve', $idea), ['status' => 'approved'])
+            ->assertRedirect(route('ideas.index'))
+            ->assertSessionHas('permission_error');
     }
 }

@@ -45,6 +45,34 @@
                     @endforeach
                 </div>
             </div>
+
+            <div class="bg-white rounded-xl shadow p-6">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <h3 class="text-lg font-semibold text-slate-800">Usuários e permissões</h3>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">{{ $users->count() }} usuários</span>
+                </div>
+
+                <div class="space-y-3">
+                    @foreach ($users as $user)
+                        <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <a href="{{ route('profile.edit', ['user' => $user->id]) }}" class="text-base font-semibold text-slate-900 hover:text-sky-600">
+                                    {{ $user->name }}
+                                </a>
+                                <p class="text-sm text-slate-500">{{ $user->email }}</p>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2">
+                                @forelse ($user->roles as $role)
+                                    <span class="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">{{ $role->name }}</span>
+                                @empty
+                                    <span class="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">Sem perfil</span>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

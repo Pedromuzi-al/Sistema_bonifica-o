@@ -24,8 +24,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/evaluation', [EvaluationController::class, 'index'])->name('evaluation.index');
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/{user?}', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile/{user?}', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/permissions/{user?}', [ProfileController::class, 'updatePermissions'])->name('profile.permissions');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

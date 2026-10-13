@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Idea;
 use App\Models\Sector;
+use App\Models\User;
 use Illuminate\View\View;
 
 class AdminController extends Controller
 {
-    public function index(): View
+    public function index(): View|\Illuminate\Http\RedirectResponse
     {
-        $this->authorize('manage-admin');
+        $result = $this->authorizeOrRedirect('manage-admin', null, 'Você não tem permissão para acessar o painel administrativo.');
+
+        if ($result !== true) {
+            return $result;
+        }
 
         $stats = [
             'total' => Idea::count(),
@@ -21,7 +26,8 @@ class AdminController extends Controller
 
         $ideas = Idea::with('author', 'originSector', 'beneficiarySectors')->latest()->limit(10)->get();
         $sectors = Sector::withCount('ideasAsOrigin')->get();
+        $users = User::with('roles', 'permissions')->latest()->get();
 
-        return view('admin.index', compact('stats', 'ideas', 'sectors'));
+        return view('admin.index', compact('stats', 'ideas', 'sectors', 'users'));
     }
 }
