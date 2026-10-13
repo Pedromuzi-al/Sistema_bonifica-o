@@ -1,0 +1,103 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Idea;
+use App\Models\Sector;
+use App\Models\User;
+use App\Models\VotingCycle;
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class IdeaFlowTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(DatabaseSeeder::class);
+    }
+
+    public function test_employee_can_create_idea(): void
+    {
+        $user = User::where('email', 'funcionario@corp.local')->first();
+
+        $this->actingAs($user)
+            ->post(route('ideas.store'), [
+                'title' => 'Melhoria do atendimento interno',
+                'problem_description' => 'O atendimento interno demora muito por causa de filas.',
+                'solution_description' => 'Automatizar o encaminhamento com classificação por urgência.',
+                'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+                'beneficiary_sectors' => [Sector::where('name', 'Operações')->value('id')],
+                'expected_results' => 'Redução de tempo e maior rastreabilidade.',
+                'resources_needed' => 'Um desenvolvedor e uma semana de configuração.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('ideas', ['title' => 'Melhoria do atendimento interno']);
+    }
+
+    public function test_duplicate_vote_is_blocked(): void
+    {
+        $author = User::where('email', 'funcionario@corp.local')->first();
+        $voter = User::factory()->create(['email' => 'voter@corp.local', 'name' => 'Votante']);
+        $voter->assignRole('employee');
+
+        $sector = Sector::where('name', 'Operações')->value('id');
+        $idea = Idea::create([
+            'author_id' => $author->id,
+            'origin_sector_id' => $sector,
+            'title' => 'Idea para teste de voto',
+            'problem_description' => 'Problema de teste',
+            'solution_description' => 'Solução de teste',
+            'expected_results' => 'Resultado de teste',
+            'resources_needed' => 'Recurso de teste',
+            'status' => Idea::STATUS_SUBMITTED,
+        ]);
+
+        $cycle = VotingCycle::create([
+            'name' => 'Ciclo de teste',
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+            'status' => 'open',
+        ]);
+
+        $cycle->criteria()->create([
+            'name' => 'Impacto',
+            'weight' => 1,
+        ]);
+
+        $this->actingAs($voter)
+            ->post(route('ideas.vote', $idea), ['criteria_' . $cycle->criteria()->first()->id => 4])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($voter)
+            ->post(route('ideas.vote', $idea), ['criteria_' . $cycle->criteria()->first()->id => 5])
+            ->assertSessionHasErrors('vote');
+    }
+
+    public function test_author_name_is_hidden_from_other_employees(): void
+    {
+        $author = User::where('email', 'funcionario@corp.local')->first();
+        $viewer = User::factory()->create(['email' => 'viewer@corp.local', 'name' => 'Leitor']);
+        $viewer->assignRole('employee');
+
+        $idea = Idea::create([
+            'author_id' => $author->id,
+            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'title' => 'Ideia anonima',
+            'problem_description' => 'Descrição',
+            'solution_description' => 'Solução',
+            'expected_results' => 'Resultado',
+            'resources_needed' => 'Recurso',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('ideas.show', $idea))
+            ->assertDontSeeText($author->name)
+            ->assertSeeText('Autor confidencial');
+    }
+}
