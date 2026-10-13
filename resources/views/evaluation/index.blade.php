@@ -25,7 +25,7 @@
                                 <td class="px-4 py-3 text-sm text-gray-700">{{ ucfirst($idea->status) }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-700">{{ $idea->visibleAuthorName(auth()->user()) }}</td>
                                 <td class="px-4 py-3">
-                                    <a href="{{ route('ideas.show', $idea) }}" class="text-indigo-600 font-medium">Detalhes</a>
+                                    <a href="{{ route('ideas.show', $idea) }}" class="font-medium text-sky-600 hover:text-sky-800">Detalhes</a>
                                 </td>
                             </tr>
                         @endforeach

@@ -16,6 +16,9 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $profileUser = $this->route('user');
+        $profileUser = $profileUser instanceof User ? $profileUser : $this->user();
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -24,7 +27,7 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique(User::class)->ignore($profileUser->id),
             ],
         ];
     }

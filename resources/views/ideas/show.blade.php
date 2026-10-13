@@ -11,7 +11,7 @@
                         <p class="text-sm text-gray-500">{{ $idea->idea_code }}</p>
                         <h3 class="text-2xl font-bold text-slate-900">{{ $idea->title }}</h3>
                     </div>
-                    <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{{ ucfirst($idea->status) }}</span>
+                    <x-idea-status-badge :status="$idea->status" />
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
@@ -61,7 +61,7 @@
                             @endif
                         </form>
                     @else
-                        <button type="button" data-permission="false" data-permission-message="Você não tem permissão para votar nesta ideia." class="w-full rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Registrar voto</button>
+                        <button type="button" data-permission="false" data-permission-message="Você não tem permissão para votar nesta ideia." class="w-full rounded-md bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-sky-900">Registrar voto</button>
                     @endif
 
                     @if (auth()->user()->can('approve', $idea))
@@ -76,10 +76,10 @@
                                 <option value="completed">Concluída</option>
                             </select>
                             <textarea name="notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Justificativa"></textarea>
-                            <button type="submit" class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500" data-permission="true" data-permission-message="Você não tem permissão para alterar o status desta ideia.">Atualizar status</button>
+                            <button type="submit" class="w-full rounded-full bg-[#0faddf] px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-[#0b96c2]" data-permission="true" data-permission-message="Você não tem permissão para alterar o status desta ideia.">Atualizar status</button>
                         </form>
                     @else
-                        <button type="button" data-permission="false" data-permission-message="Você não tem permissão para alterar o status desta ideia." class="mt-6 w-full rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">Atualizar status</button>
+                        <button type="button" data-permission="false" data-permission-message="Você não tem permissão para alterar o status desta ideia." class="mt-6 w-full rounded-md bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-sky-900">Atualizar status</button>
                     @endif
                 </div>
             </div>

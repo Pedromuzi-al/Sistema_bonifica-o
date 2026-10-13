@@ -1,13 +1,9 @@
-<nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-slate-200/80 bg-white/55 backdrop-blur-2xl">
+<nav x-data="{ open: false }" class="site-header sticky top-0 z-50 border-b border-slate-200/80 bg-white/55 backdrop-blur-2xl">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-20 items-center justify-between">
             <div class="flex items-center gap-3">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-lg font-bold text-white"></div>
-                    <div>
-                        <div class="text-xs uppercase tracking-[0.18em] text-slate-500">Ideias Corp</div>
-                        <div class="text-sm font-semibold text-slate-800">Workspace</div>
-                    </div>
+                    <img src="{{ asset('images/conted-tech-logo-visible.png') }}" alt="Conted Tech — tecnologia educacional" class="brand-logo h-auto w-56 rounded-xl border border-slate-200/80 bg-white px-3 py-2 object-contain shadow-sm shadow-slate-900/5 sm:w-64">
                 </a>
             </div>
 
@@ -29,8 +25,13 @@
             </div>
 
             <div class="flex items-center gap-3">
+                <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100">
+                    <svg data-theme-icon="moon" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z" /></svg>
+                    <svg data-theme-icon="sun" class="hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
+                    <span data-theme-label class="hidden lg:inline">Modo escuro</span>
+                </button>
                 <a href="{{ route('profile.edit') }}" class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-2 py-1.5 sm:flex hover:bg-slate-50 transition-colors">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 text-sm font-bold text-white">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0faddf] text-sm font-bold text-slate-950">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
                     <div class="pr-2 text-sm font-medium text-slate-700">{{ Auth::user()->name }}</div>
                 </a>
 

@@ -92,6 +92,30 @@ class ProfileTest extends TestCase
         $this->assertTrue($targetUser->hasPermissionTo('manage_admin'));
     }
 
+    public function test_admin_can_manage_another_users_profile_without_personal_security_forms(): void
+    {
+        Permission::firstOrCreate(['name' => 'manage_admin']);
+        Role::firstOrCreate(['name' => 'admin']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $targetUser = User::factory()->create(['name' => 'Colaborador Teste']);
+
+        $this->actingAs($admin)
+            ->get('/profile/' . $targetUser->id)
+            ->assertOk()
+            ->assertSee('Acesso de Colaborador Teste')
+            ->assertDontSee('Senha da conta')
+            ->assertDontSee('Excluir conta');
+
+        $this->patch('/profile/' . $targetUser->id, [
+            'name' => $targetUser->name,
+            'email' => $targetUser->email,
+        ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile/' . $targetUser->id);
+    }
+
     public function test_user_can_delete_their_account(): void
     {
         $user = User::factory()->create();
