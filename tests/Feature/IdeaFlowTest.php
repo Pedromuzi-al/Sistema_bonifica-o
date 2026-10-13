@@ -71,11 +71,11 @@ class IdeaFlowTest extends TestCase
         ]);
 
         $this->actingAs($voter)
-            ->post(route('ideas.vote', $idea), ['criteria_' . $cycle->criteria()->first()->id => 4])
+            ->post(route('ideas.vote', $idea), ['criteria_'.$cycle->criteria()->first()->id => 4])
             ->assertSessionHasNoErrors();
 
         $this->actingAs($voter)
-            ->post(route('ideas.vote', $idea), ['criteria_' . $cycle->criteria()->first()->id => 5])
+            ->post(route('ideas.vote', $idea), ['criteria_'.$cycle->criteria()->first()->id => 5])
             ->assertSessionHasErrors('vote');
     }
 
@@ -93,11 +93,68 @@ class IdeaFlowTest extends TestCase
             'solution_description' => 'Solução',
             'expected_results' => 'Resultado',
             'resources_needed' => 'Recurso',
+            'is_public' => true,
         ]);
 
         $this->actingAs($viewer)
             ->get(route('ideas.show', $idea))
             ->assertDontSeeText($author->name)
             ->assertSeeText('Autor confidencial');
+
+        $this->actingAs($viewer)
+            ->get(route('ideas.index'))
+            ->assertDontSeeText($author->name)
+            ->assertSeeText('Autor confidencial');
+    }
+
+    public function test_employee_cannot_view_another_employees_private_idea(): void
+    {
+        $author = User::where('email', 'funcionario@corp.local')->first();
+        $viewer = User::factory()->create(['email' => 'private-viewer@corp.local']);
+        $viewer->assignRole('employee');
+
+        $idea = Idea::create([
+            'author_id' => $author->id,
+            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'title' => 'Proposta privada',
+            'problem_description' => 'Descrição',
+            'solution_description' => 'Solução',
+            'expected_results' => 'Resultado',
+            'resources_needed' => 'Recurso',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('ideas.show', $idea))
+            ->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->get(route('ideas.index'))
+            ->assertDontSeeText('Proposta privada');
+
+        $this->actingAs($viewer)
+            ->get(route('dashboard'))
+            ->assertDontSeeText('Proposta privada');
+    }
+
+    public function test_unassigned_user_cannot_create_an_idea(): void
+    {
+        $user = User::factory()->create(['email' => 'unassigned@corp.local']);
+
+        $this->actingAs($user)
+            ->get(route('ideas.create'))
+            ->assertForbidden();
+    }
+
+    public function test_employee_cannot_access_evaluation_or_admin_dashboards(): void
+    {
+        $employee = User::where('email', 'funcionario@corp.local')->first();
+
+        $this->actingAs($employee)
+            ->get(route('evaluation.index'))
+            ->assertForbidden();
+
+        $this->actingAs($employee)
+            ->get(route('admin.index'))
+            ->assertForbidden();
     }
 }

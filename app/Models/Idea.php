@@ -15,12 +15,19 @@ class Idea extends Model
     use HasFactory;
 
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_TRIAGE = 'triage';
+
     public const STATUS_EVALUATION = 'evaluation';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
+
     public const STATUS_IMPLEMENTATION = 'implementation';
+
     public const STATUS_IMPLEMENTED = 'implemented';
+
     public const STATUS_COMPLETED = 'completed';
 
     protected $fillable = [
@@ -44,7 +51,7 @@ class Idea extends Model
     protected static function booted(): void
     {
         static::creating(function (self $idea) {
-            $idea->idea_code ??= 'IDE-' . strtoupper(Str::random(8));
+            $idea->idea_code ??= 'IDE-'.strtoupper(Str::random(8));
         });
     }
 
@@ -97,7 +104,7 @@ class Idea extends Model
     {
         $user ??= auth()->user();
 
-        if ($user && ($user->id === $this->author_id || $user->hasRole(['admin', 'evaluator']))) {
+        if ($user && $user->can('viewAuthorIdentity', $this)) {
             return $this->author?->name ?? 'Autor oculto';
         }
 

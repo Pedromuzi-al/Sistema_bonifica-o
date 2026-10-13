@@ -1,58 +1,87 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Plataforma Corporativa de Ideias
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicação Laravel para registrar propostas de melhoria, acompanhar sua avaliação e reconhecer contribuições com impacto comprovado. A autoria é privada para os demais funcionários; usuários autorizados da equipe de avaliação e administração podem consultá-la.
 
-## About Laravel
+## Arquitetura
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Backend:** PHP 8.3 ou superior, Laravel 13 e Eloquent.
+- **Banco de dados:** MySQL em execução normal; SQLite em memória nos testes.
+- **Autorização:** Policies do Laravel e papéis/permissões de `spatie/laravel-permission`.
+- **Interface:** Blade, Tailwind CSS, Alpine.js e Vite.
+- **Testes:** PHPUnit por meio de `php artisan test`.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+O código está organizado pelas convenções do Laravel: models em `app/Models`, controllers e requests HTTP em `app/Http`, autorização em `app/Policies`, regras reutilizáveis em `app/Services`, migrations em `database/migrations` e telas Blade em `resources/views`.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Fluxo previsto
 
-## Learning Laravel
+1. O funcionário autenticado registra uma ideia; a autoria vem da sessão, não dos dados enviados pelo navegador.
+2. A equipe de avaliação faz a triagem, registra pareceres e decide se a proposta pode avançar.
+3. A equipe acompanha a implementação e registra resultados reais, evidências e limitações.
+4. Uma versão revisada e sem identificação do autor pode ser publicada para os funcionários.
+5. Um ciclo de votação coleta avaliações anônimas e únicas por funcionário, ideia e ciclo.
+6. Resultados comprovados, avaliação técnica e votação podem compor o reconhecimento, segundo regras definidas antes do ciclo.
+7. Usuários autorizados registram e aprovam bonificações; mudanças relevantes devem permanecer auditáveis.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Dados principais
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+As migrations e models já incluem usuários, setores, ideias e setores beneficiados, histórico de status, avaliações e critérios, planos de implementação, resultados, ciclos e critérios de votação, votos e notas, regras e concessões de bonificação, notificações, auditoria e tabelas de papéis/permissões.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Relacionamentos previstos: uma ideia pertence a um autor e a um setor de origem; pode beneficiar vários setores; mantém histórico e avaliações; possui registros de implementação e resultado; pode receber votos em ciclos diferentes; e pode estar associada a reconhecimentos.
 
-## Agentic Development
+## Privacidade e acesso
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- Funcionários podem abrir as próprias ideias e ideias públicas; ideias privadas de outros autores retornam acesso negado.
+- As listagens de funcionários incluem apenas ideias próprias ou públicas, sem carregar a relação de autoria.
+- A identidade do autor é exibida somente ao próprio autor e a usuários autorizados pela policy.
+- O painel de avaliação e o painel administrativo exigem autorização no servidor; esconder links na interface não substitui essa verificação.
+- Registros de votação não devem expor a relação entre votante e ideia para outros funcionários.
 
-```bash
-composer require laravel/boost --dev
+O anonimato é perante os demais colaboradores, não perante os avaliadores e administradores autorizados. Antes de produção, a empresa ainda deve definir finalidade, retenção, acesso e procedimentos de atendimento aos direitos previstos na LGPD.
 
-php artisan boost:install
+## Estado atual e próximos passos
+
+Já existem autenticação, papéis/permissões, estrutura de dados para o fluxo de ideias, telas iniciais de funcionário/avaliação/administração e um primeiro fluxo de votação. A autorização de leitura, a separação entre ideias públicas e privadas e a proteção dos painéis foram reforçadas e cobertas por testes.
+
+A estrutura ainda não equivale a uma implementação completa da especificação. Próximas etapas prioritárias:
+
+1. Completar o fluxo de status com transições permitidas, justificativas obrigatórias e histórico imutável.
+2. Extrair criação, avaliação e mudança de status para Requests/Actions transacionais.
+3. Implementar registro e validação dos resultados reais, com evidências e distinção entre estimativas e medições.
+4. Completar a votação com critérios e pesos versionados por ciclo, bloqueio de voto próprio/duplicado e cálculo centralizado.
+5. Implementar cálculo, aprovação, auditoria e divulgação de bonificações com regras versionadas.
+6. Completar dashboards, notificações privadas, relatórios/exportações e controles de anexos.
+7. Ampliar testes de autorização, concorrência, cálculo e privacidade de ponta a ponta.
+
+Até essas etapas serem concluídas, não trate telas ou dados de demonstração como processo de negócio pronto para produção.
+
+## Instalação local
+
+Requisitos: PHP 8.3+, Composer, Node.js/npm e MySQL.
+
+```sh
+composer install
+cp .env.example .env
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Configure no `.env` o acesso ao banco MySQL (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD`) e então execute:
 
-## Contributing
+```sh
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+npm ci
+npm run build
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+O seeder cria dados de demonstração e usuários locais para desenvolvimento/testes. **Não use esses dados ou credenciais de demonstração em produção.**
 
-## Code of Conduct
+Para desenvolver com atualização de assets, use `npm run dev` em outro terminal. Antes de iniciar, garanta que a chave da aplicação e as configurações locais estão definidas.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Testes
 
-## Security Vulnerabilities
+```sh
+php artisan test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Os testes usam SQLite em memória, independentemente do banco MySQL de desenvolvimento. Os casos de fluxo de ideias verificam cadastro, voto duplicado, ocultação da autoria e bloqueio de acesso a propostas privadas e painéis restritos.

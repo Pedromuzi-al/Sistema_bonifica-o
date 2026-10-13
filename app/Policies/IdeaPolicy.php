@@ -9,12 +9,14 @@ class IdeaPolicy
 {
     public function view(User $user, Idea $idea): bool
     {
-        return true;
+        return $user->id === $idea->author_id
+            || $idea->is_public
+            || $this->canReview($user);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('create_ideas') || $user->hasRole(['employee', 'admin', 'evaluator']);
+        return $user->hasSystemPermission('create_ideas') || $user->hasRole(['employee', 'admin', 'evaluator']);
     }
 
     public function update(User $user, Idea $idea): bool
@@ -29,21 +31,26 @@ class IdeaPolicy
 
     public function vote(User $user, Idea $idea): bool
     {
-        return $user->id !== (int) $idea->author_id && $user->hasPermissionTo('vote_ideas');
+        return $user->id !== (int) $idea->author_id && $user->hasSystemPermission('vote_ideas');
     }
 
     public function evaluate(User $user, Idea $idea): bool
     {
-        return $user->hasRole(['admin', 'evaluator']) || $user->hasPermissionTo('evaluate_ideas');
+        return $this->canReview($user);
     }
 
     public function viewAuthorIdentity(User $user, Idea $idea): bool
     {
-        return $user->id === $idea->author_id || $user->hasRole(['admin', 'evaluator']);
+        return $user->id === $idea->author_id || $this->canReview($user);
     }
 
     public function approve(User $user, Idea $idea): bool
     {
         return $this->evaluate($user, $idea);
+    }
+
+    private function canReview(User $user): bool
+    {
+        return $user->hasRole(['admin', 'evaluator']) || $user->hasSystemPermission('evaluate_ideas');
     }
 }

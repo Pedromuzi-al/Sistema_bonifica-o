@@ -7,7 +7,6 @@ use App\Models\Idea;
 use App\Models\IdeaStatusHistory;
 use App\Models\Notification;
 use App\Models\Sector;
-use App\Models\Vote;
 use App\Models\VotingCycle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,13 +21,26 @@ class IdeaController extends Controller
 
     public function index(): View
     {
-        $ideas = Idea::with('author', 'originSector', 'beneficiarySectors')->latest()->get();
+        $user = Auth::user();
+        $canReview = $user->hasRole(['admin', 'evaluator']) || $user->hasSystemPermission('evaluate_ideas');
+
+        $ideas = Idea::with('originSector', 'beneficiarySectors')
+            ->when(! $canReview, function ($query) use ($user) {
+                $query->where(function ($query) use ($user) {
+                    $query->where('is_public', true)
+                        ->orWhere('author_id', $user->id);
+                });
+            })
+            ->latest()
+            ->paginate(15);
 
         return view('ideas.index', compact('ideas'));
     }
 
     public function create(): View
     {
+        $this->authorize('create', Idea::class);
+
         return view('ideas.create', [
             'sectors' => Sector::all(),
         ]);
@@ -36,6 +48,8 @@ class IdeaController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Idea::class);
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'problem_description' => ['required', 'string'],
@@ -116,7 +130,7 @@ class IdeaController extends Controller
         ]);
 
         foreach ($cycle->criteria as $criterion) {
-            $score = $request->input('criteria_' . $criterion->id, null);
+            $score = $request->input('criteria_'.$criterion->id, null);
 
             if ($score !== null && is_numeric($score)) {
                 $vote->scores()->create([
