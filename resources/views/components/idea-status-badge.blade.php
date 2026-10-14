@@ -10,7 +10,7 @@
         'implementation' => ['Em implementação', 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-400/10 dark:text-cyan-300 dark:ring-cyan-400/20'],
         'implemented' => ['Implementada', 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-400/10 dark:text-teal-300 dark:ring-teal-400/20'],
         'completed' => ['Concluída', 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700/70 dark:text-slate-200 dark:ring-slate-600'],
-        default => [ucfirst(str_replace('_', ' ', $status)), 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700/70 dark:text-slate-200 dark:ring-slate-600'],
+        default => [\App\Models\Idea::LABELS[$status] ?? ucfirst(str_replace('_', ' ', $status)), 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-700/70 dark:text-slate-200 dark:ring-slate-600'],
     };
 @endphp
 

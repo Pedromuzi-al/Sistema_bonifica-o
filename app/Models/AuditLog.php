@@ -16,6 +16,12 @@ class AuditLog extends Model
         'details' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(fn () => throw new \LogicException('A auditoria é imutável.'));
+        static::deleting(fn () => throw new \LogicException('A auditoria é imutável.'));
+    }
+
     public function causer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'causer_id');

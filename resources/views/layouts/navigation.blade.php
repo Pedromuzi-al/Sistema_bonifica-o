@@ -8,6 +8,8 @@
             </div>
 
             <div class="hidden items-center gap-2 sm:flex">
+                <a href="{{ route('cycles.index') }}" class="rounded-full px-3 py-2 text-sm font-medium">Votações</a>
+
                 <a href="{{ route('dashboard') }}" class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('dashboard') ? 'bg-slate-900 text-white' : '' }}">Painel</a>
                 <a href="{{ route('ideas.index') }}" class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('ideas.*') ? 'bg-slate-900 text-white' : '' }}">Ideias</a>
                 @php($canEvaluate = auth()->user()->can('evaluate', new App\Models\Idea))
@@ -54,6 +56,11 @@
         <div class="mx-auto max-w-7xl space-y-2 px-4 py-4">
             <a href="{{ route('dashboard') }}" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('dashboard') ? 'bg-slate-900 text-white' : '' }}">Painel</a>
             <a href="{{ route('ideas.index') }}" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('ideas.*') ? 'bg-slate-900 text-white' : '' }}">Ideias</a>
+            @can('evaluate', new App\Models\Idea)<a href="{{ route('evaluation.index') }}" class="block px-3 py-3">Avaliação</a>@endcan
+            @can('manage-admin')<a href="{{ route('admin.index') }}" class="block px-3 py-3">Administração</a>@endcan
+            <a href="{{ route('profile.edit') }}" class="block px-3 py-3">Meu perfil</a>
+            <a href="{{ route('cycles.index') }}" class="block px-3 py-3">Votações e reconhecimentos</a>
+            @can('manage-admin')<a href="{{ route('reports.index') }}" class="block px-3 py-3">Relatórios</a>@endcan
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="block w-full rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">Sair</button>

@@ -11,20 +11,13 @@
     </x-slot>
 
     @php
-        $statusLabels = [
-            'submitted' => 'Enviada',
-            'triage' => 'Triagem',
-            'evaluation' => 'Em avaliação',
-            'approved' => 'Aprovada',
-            'rejected' => 'Não aprovada',
-            'implementation' => 'Em implementação',
-            'implemented' => 'Implementada',
-            'completed' => 'Concluída',
-        ];
+        $statusLabels = \App\Models\Idea::LABELS;
     @endphp
 
     <div class="py-8 sm:py-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <section class="apple-card flex flex-wrap gap-4 p-6"><a href="{{ route('cycles.index') }}" class="apple-button">Configurar ciclos e bonificações</a><a href="{{ route('reports.index') }}" class="apple-button--light">Indicadores e CSV</a>@if(auth()->user()->hasSystemPermission('view_audit_logs'))<a href="{{ route('audit.index') }}" class="apple-button--light">Auditoria restrita</a>@endif</section>
+            <form class="apple-card space-y-3 p-6" method="POST" action="{{ route('criteria.store') }}">@csrf<h3 class="text-xl font-bold">Novo critério técnico</h3><x-workflow-field name="name" label="Nome" /><x-workflow-field name="description" label="Descrição e orientação das notas" /><x-workflow-field name="weight" label="Peso relativo" type="number" min="0.01" max="100" step="0.01" /><button class="apple-button">Cadastrar critério</button></form>
             <section aria-label="Resumo das ideias" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ([
                     ['label' => 'Ideias recebidas', 'value' => $stats['total'], 'detail' => 'Total na plataforma', 'tone' => 'slate'],

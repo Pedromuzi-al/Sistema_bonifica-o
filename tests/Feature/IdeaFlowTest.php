@@ -88,7 +88,7 @@ class IdeaFlowTest extends TestCase
             'solution_description' => 'Solução de teste',
             'expected_results' => 'Resultado de teste',
             'resources_needed' => 'Recurso de teste',
-            'status' => Idea::STATUS_SUBMITTED,
+            'status' => Idea::STATUS_VOTING, 'is_public' => true, 'published_at' => now(),
         ]);
 
         $cycle = VotingCycle::create([
@@ -103,12 +103,15 @@ class IdeaFlowTest extends TestCase
             'weight' => 1,
         ]);
 
+        $cycle->ideas()->attach($idea->id, ['snapshot' => json_encode(['publication' => [], 'real_results' => 80, 'technical' => 80])]);
+        $cycle->update(['frozen_configuration' => ['criteria' => $cycle->criteria->toArray(), 'allow_abstention' => false]]);
+
         $this->actingAs($voter)
-            ->post(route('ideas.vote', $idea), ['criteria_'.$cycle->criteria()->first()->id => 4])
+            ->post(route('ideas.vote', $idea), ['voting_cycle_id' => $cycle->id, 'scores' => [$cycle->criteria()->first()->id => 4]])
             ->assertSessionHasNoErrors();
 
         $this->actingAs($voter)
-            ->post(route('ideas.vote', $idea), ['criteria_'.$cycle->criteria()->first()->id => 5])
+            ->post(route('ideas.vote', $idea), ['voting_cycle_id' => $cycle->id, 'scores' => [$cycle->criteria()->first()->id => 5]])
             ->assertSessionHasErrors('vote');
     }
 

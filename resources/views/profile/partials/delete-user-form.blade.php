@@ -1,18 +1,18 @@
 <section class="space-y-6">
     <header>
         <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Excluir conta') }}
+            {{ __('Desativar conta') }}
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __('Quando sua conta for excluída, todos os seus recursos e dados serão apagados permanentemente. Antes de excluir sua conta, faça download de qualquer dado ou informação que queira manter.') }}
+            {{ __('A desativação bloqueia seu acesso. Ideias, avaliações, votos e reconhecimentos serão preservados para manter o histórico corporativo. Solicitações de exclusão ou anonimização seguem o procedimento de retenção da empresa.') }}
         </p>
     </header>
 
     <x-danger-button
         x-data=""
         x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
-    >{{ __('Excluir conta') }}</x-danger-button>
+    >{{ __('Desativar conta') }}</x-danger-button>
 
     <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
         <form method="post" action="{{ route('profile.destroy') }}" class="p-6">
@@ -20,11 +20,11 @@
             @method('delete')
 
             <h2 class="text-lg font-medium text-gray-900">
-                {{ __('Tem certeza de que deseja excluir sua conta?') }}
+                {{ __('Tem certeza de que deseja desativar sua conta?') }}
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                {{ __('Quando sua conta for excluída, todos os seus recursos e dados serão apagados permanentemente. Digite sua senha para confirmar que você deseja excluir permanentemente sua conta.') }}
+                {{ __('Digite sua senha para confirmar a desativação. Os registros corporativos serão preservados.') }}
             </p>
 
             <div class="mt-6">
@@ -47,7 +47,7 @@
                 </x-secondary-button>
 
                 <x-danger-button class="ms-3">
-                    {{ __('Excluir conta') }}
+                    {{ __('Desativar conta') }}
                 </x-danger-button>
             </div>
         </form>

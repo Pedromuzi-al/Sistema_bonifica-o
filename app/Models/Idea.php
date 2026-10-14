@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Idea extends Model
@@ -30,7 +31,29 @@ class Idea extends Model
 
     public const STATUS_COMPLETED = 'completed';
 
+    public const STATUS_AWAITING_INFORMATION = 'awaiting_information';
+
+    public const STATUS_VALIDATION = 'validation';
+
+    public const STATUS_VOTING = 'voting';
+
+    public const STATUS_VOTING_CLOSED = 'voting_closed';
+
+    public const STATUS_FINALIZED = 'finalized';
+
+    public const LABELS = [
+        'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
+        'awaiting_information' => 'Aguardando informações', 'approved' => 'Aprovada',
+        'implementation' => 'Em implementação', 'implemented' => 'Implementada (legado)',
+        'validation' => 'Em validação de resultados', 'completed' => 'Concluída',
+        'voting' => 'Disponível para votação', 'voting_closed' => 'Votação encerrada',
+        'finalized' => 'Finalizada', 'rejected' => 'Rejeitada',
+    ];
+
+    protected $hidden = ['author_id', 'author', 'published_by_user_id'];
+
     protected $fillable = [
+        'publication', 'published_by_user_id', 'published_at',
         'idea_code',
         'author_id',
         'origin_sector_id',
@@ -46,18 +69,26 @@ class Idea extends Model
 
     protected $casts = [
         'is_public' => 'boolean',
+        'publication' => 'array', 'published_at' => 'datetime',
     ];
 
     protected static function booted(): void
     {
+        static::deleting(fn () => throw new \LogicException('Ideias devem ser preservadas pelo procedimento de retenção.'));
         static::creating(function (self $idea) {
             $idea->idea_code ??= 'IDE-'.strtoupper(Str::random(8));
         });
     }
 
+    public function hasConflict(User $user): bool
+    {
+        return (int) $this->author_id === (int) $user->id
+            || DB::table('idea_conflicts')->where('idea_id', $this->id)->where('user_id', $user->id)->exists();
+    }
+
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->belongsTo(User::class, 'author_id')->withTrashed();
     }
 
     public function originSector(): BelongsTo

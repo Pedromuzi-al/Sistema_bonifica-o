@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('idea_beneficiary_sectors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('idea_id')->constrained('ideas')->cascadeOnDelete();
+            $table->foreignId('idea_id');
             $table->foreignId('sector_id')->constrained('sectors')->cascadeOnDelete();
             $table->timestamps();
 
