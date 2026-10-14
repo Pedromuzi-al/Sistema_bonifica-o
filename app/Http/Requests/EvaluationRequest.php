@@ -20,6 +20,15 @@ class EvaluationRequest extends FormRequest
         throw new HttpResponseException(redirect()->back()->with('permission_error', 'Você não tem permissão para realizar esta ação.'));
     }
 
+    public function messages(): array
+    {
+        return [
+            'scores.required' => 'Informe as notas dos critérios técnicos. Se os campos de notas não aparecem, cadastre critérios ativos em Administração.',
+            'scores.*.required' => 'Preencha a nota de todos os critérios técnicos.',
+            'scores.*.between' => 'Cada nota técnica deve estar entre 1 e 5.',
+        ];
+    }
+
     public function rules(): array
     {
         return ['scores' => ['required', 'array', 'min:1'], 'scores.*' => ['required', 'integer', 'between:1,5'], 'notes' => ['required', 'string', 'max:10000'], 'recommendation' => ['required', 'in:approve,reject,clarify']];

@@ -20,9 +20,13 @@ class CycleController extends Controller
         $canManage = $request->user()->can('manage-admin');
         abort_unless($canManage || $request->user()->canViewPublicIdeas(), 403);
         $cycles = VotingCycle::when(! $canManage, fn ($query) => $query->whereIn('status', ['open', 'closed']))->latest()->paginate(10);
-        $ideas = $canManage ? Idea::whereNotNull('published_at')->whereIn('status', ['completed', 'voting_closed', 'finalized'])->get() : collect();
+        $ideas = $canManage ? Idea::with('result')->whereNotNull('published_at')->whereIn('status', ['completed', 'voting_closed', 'finalized'])->get() : collect();
 
-        return view('cycles.index', compact('cycles', 'ideas', 'canManage'));
+        $indicatorOptions = $ideas->flatMap(fn ($idea) => collect($idea->result?->measurements ?? [])
+            ->map(fn ($measurement) => ['indicator' => $measurement['indicator'], 'unit' => $measurement['unit']]))
+            ->unique(fn ($measurement) => $measurement['indicator'].'|'.$measurement['unit'])->values();
+
+        return view('cycles.index', compact('cycles', 'ideas', 'canManage', 'indicatorOptions'));
     }
 
     public function store(CycleRequest $request, CycleService $service): RedirectResponse

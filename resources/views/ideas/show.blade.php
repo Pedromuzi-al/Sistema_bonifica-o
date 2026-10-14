@@ -76,9 +76,9 @@
             </section>
             @if ($idea->status === 'evaluation')
                 <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.evaluate', $idea) }}">@csrf<h3 class="text-xl font-bold">Avaliação técnica</h3>
-                    @forelse ($criteria as $criterion)<x-workflow-field name="scores[{{ $criterion->id }}]" :label="$criterion->name.' — '.$criterion->description" type="number" min="1" max="5" step="1" />@empty<p>O administrador deve cadastrar critérios técnicos.</p>@endforelse
+                    @forelse ($criteria as $criterion)<x-workflow-field name="scores[{{ $criterion->id }}]" :label="$criterion->name.' — '.$criterion->description" type="number" min="1" max="5" step="1" />@empty<div class="rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><p class="font-semibold">Cadastre os critérios técnicos antes de avaliar.</p><p class="mt-1">Ainda não há campos de notas. Solicite ao administrador o cadastro em Administração → Novo critério técnico.</p>@can('manage-admin')<a href="{{ route('admin.index') }}" class="mt-2 inline-block underline">Configurar critérios técnicos</a>@endcan</div>@endforelse
                     <label>Recomendação<select name="recommendation" class="block w-full rounded-lg"><option value="approve">Aprovar</option><option value="reject">Rejeitar</option><option value="clarify">Solicitar esclarecimentos</option></select></label>
-                    <x-workflow-field name="notes" label="Parecer e justificativa" type="textarea" /><button class="apple-button">Registrar parecer</button>
+                    <x-workflow-field name="notes" label="Parecer e justificativa" type="textarea" /><button class="apple-button" @disabled($criteria->isEmpty())>Registrar parecer</button>
                 </form>
             @endif
             @foreach ($evaluations as $evaluation)<section class="apple-card p-6"><h3 class="font-bold">Parecer técnico — {{ number_format($evaluation->technical_score, 2, ',', '.') }}/100</h3><p>{{ $evaluation->notes }}</p><p>{{ $evaluation->recommendation }}</p>@foreach ($evaluation->scores as $score)<p>{{ $score->notes }}: {{ $score->score }}/5</p>@endforeach</section>@endforeach
