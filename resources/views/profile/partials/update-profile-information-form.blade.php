@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __('Atualize as informações do seu perfil e o endereço de e-mail da conta.') }}
+            {{ __('Atualize as informações do perfil e o endereço de e-mail da conta.') }}
         </p>
     </header>
 
@@ -33,7 +33,7 @@
                     <p class="text-sm mt-2 text-gray-800">
                         {{ __('Seu endereço de e-mail ainda não foi verificado.') }}
 
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
                             {{ __('Clique aqui para reenviar o e-mail de verificação.') }}
                         </button>
                     </p>

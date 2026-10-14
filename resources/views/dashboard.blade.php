@@ -34,7 +34,7 @@
                 </div>
                 <div class="apple-card p-5">
                     <p class="text-sm text-slate-500">Votações abertas</p>
-                    <p class="mt-3 text-3xl font-black tracking-[-0.05em] text-violet-600">{{ $stats['open_votes'] }}</p>
+                    <p class="mt-3 text-3xl font-black tracking-[-0.05em] text-sky-600">{{ $stats['open_votes'] }}</p>
                 </div>
             </div>
 
@@ -53,9 +53,7 @@
                                         <p class="text-lg font-semibold text-slate-900">{{ $idea->title }}</p>
                                         <p class="mt-1 text-sm text-slate-500">{{ $idea->originSector?->name }} · {{ $idea->visibleAuthorName(auth()->user()) }}</p>
                                     </div>
-                                    <span class="inline-flex items-center rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
-                                        {{ ucfirst($idea->status) }}
-                                    </span>
+                                    <x-idea-status-badge :status="$idea->status" />
                                 </div>
                                 <p class="mt-3 text-sm leading-6 text-slate-600">{{ Str::limit($idea->problem_description, 150) }}</p>
                             </div>

@@ -5,10 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
-
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <title>Conted Tech — Plataforma de Inovação</title>
+        <link rel="icon" type="image/png" href="{{ asset('images/conted-tech-mark.png') }}">
+        <script>
+            if (window.localStorage.getItem('conted-theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        </script>
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
@@ -58,7 +61,7 @@
                 const element = event.target.closest('[data-permission]');
                 if (!element) return;
 
-                const hasPermission = element.dataset.hasPermission === 'true';
+                const hasPermission = element.dataset.permission === 'true';
                 if (!hasPermission) {
                     event.preventDefault();
                     event.stopPropagation();

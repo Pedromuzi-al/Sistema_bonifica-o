@@ -40,6 +40,39 @@ class IdeaFlowTest extends TestCase
         $this->assertDatabaseHas('ideas', ['title' => 'Melhoria do atendimento interno']);
     }
 
+    public function test_employee_can_select_all_beneficiary_sectors_for_an_idea(): void
+    {
+        $user = User::where('email', 'funcionario@corp.local')->first();
+        $sectorIds = Sector::pluck('id')->all();
+
+        $this->actingAs($user)
+            ->get(route('ideas.create'))
+            ->assertOk()
+            ->assertSeeText('Todos');
+
+        $response = $this->actingAs($user)
+            ->post(route('ideas.store'), [
+                'title' => 'Melhoria para todos os setores',
+                'problem_description' => 'Os setores precisam de um fluxo compartilhado.',
+                'solution_description' => 'Disponibilizar uma solução comum para todos.',
+                'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+                'beneficiary_sectors' => $sectorIds,
+                'expected_results' => 'Mais integração entre áreas.',
+                'resources_needed' => 'Equipe multidisciplinar.',
+            ]);
+
+        $response->assertRedirect();
+
+        $idea = Idea::where('title', 'Melhoria para todos os setores')->firstOrFail();
+
+        foreach ($sectorIds as $sectorId) {
+            $this->assertDatabaseHas('idea_beneficiary_sectors', [
+                'idea_id' => $idea->id,
+                'sector_id' => $sectorId,
+            ]);
+        }
+    }
+
     public function test_duplicate_vote_is_blocked(): void
     {
         $author = User::where('email', 'funcionario@corp.local')->first();
