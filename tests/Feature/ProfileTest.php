@@ -77,14 +77,14 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($admin)
-            ->post('/profile/permissions/' . $targetUser->id, [
+            ->post('/profile/permissions/'.$targetUser->id, [
                 'role' => 'admin',
                 'permissions' => ['manage_admin'],
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile/' . $targetUser->id);
+            ->assertRedirect('/profile/'.$targetUser->id);
 
         $targetUser->refresh();
 
@@ -102,18 +102,18 @@ class ProfileTest extends TestCase
         $targetUser = User::factory()->create(['name' => 'Colaborador Teste']);
 
         $this->actingAs($admin)
-            ->get('/profile/' . $targetUser->id)
+            ->get('/profile/'.$targetUser->id)
             ->assertOk()
             ->assertSee('Acesso de Colaborador Teste')
             ->assertDontSee('Senha da conta')
             ->assertDontSee('Excluir conta');
 
-        $this->patch('/profile/' . $targetUser->id, [
+        $this->patch('/profile/'.$targetUser->id, [
             'name' => $targetUser->name,
             'email' => $targetUser->email,
         ])
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile/' . $targetUser->id);
+            ->assertRedirect('/profile/'.$targetUser->id);
     }
 
     public function test_user_can_delete_their_account(): void
@@ -131,7 +131,7 @@ class ProfileTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertSoftDeleted($user);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

@@ -10,9 +10,9 @@ class BonusAward extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['idea_id', 'rule_id', 'user_id', 'score', 'award_amount', 'category', 'justification', 'approved_by_user_id', 'approved_at'];
+    protected $fillable = ['idea_id', 'rule_id', 'user_id', 'score', 'award_amount', 'category', 'justification', 'approved_by_user_id', 'approved_at', 'voting_cycle_id', 'published_at'];
 
-    protected $casts = ['approved_at' => 'datetime'];
+    protected $casts = ['approved_at' => 'datetime', 'published_at' => 'datetime'];
 
     public function idea(): BelongsTo
     {

@@ -10,7 +10,7 @@ class IdeaPolicy
     public function view(User $user, Idea $idea): bool
     {
         return $user->id === $idea->author_id
-            || $idea->is_public
+            || ($idea->is_public && $user->canViewPublicIdeas())
             || $this->canReview($user);
     }
 
@@ -26,22 +26,23 @@ class IdeaPolicy
 
     public function delete(User $user, Idea $idea): bool
     {
-        return $user->hasRole('admin');
+        return false;
     }
 
     public function vote(User $user, Idea $idea): bool
     {
-        return $user->id !== (int) $idea->author_id && $user->hasSystemPermission('vote_ideas');
+        return $idea->is_public && $idea->published_at !== null && $idea->status === Idea::STATUS_VOTING
+            && ! $idea->hasConflict($user) && $user->hasSystemPermission('vote_ideas');
     }
 
     public function evaluate(User $user, Idea $idea): bool
     {
-        return $this->canReview($user);
+        return $this->canReview($user) && (! $idea->exists || ! $idea->hasConflict($user));
     }
 
     public function viewAuthorIdentity(User $user, Idea $idea): bool
     {
-        return $user->id === $idea->author_id || $this->canReview($user);
+        return (int) $user->id === (int) $idea->author_id || $user->hasSystemPermission('view_author_identity');
     }
 
     public function approve(User $user, Idea $idea): bool

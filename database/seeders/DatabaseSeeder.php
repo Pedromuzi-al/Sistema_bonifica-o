@@ -7,7 +7,6 @@ use App\Models\IdeaStatusHistory;
 use App\Models\Sector;
 use App\Models\User;
 use App\Models\VotingCycle;
-use App\Models\VotingCriterion;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -32,7 +31,7 @@ class DatabaseSeeder extends Seeder
             'create_ideas',
             'vote_ideas',
             'evaluate_ideas',
-            'manage_admin',
+            'manage_admin', 'view_author_identity', 'view_audit_logs',
         ];
 
         foreach ($permissions as $permission) {
@@ -45,7 +44,7 @@ class DatabaseSeeder extends Seeder
 
         $employee->givePermissionTo(['create_ideas', 'vote_ideas']);
         $evaluator->givePermissionTo(['create_ideas', 'vote_ideas', 'evaluate_ideas']);
-        $admin->givePermissionTo(['create_ideas', 'vote_ideas', 'evaluate_ideas', 'manage_admin']);
+        $admin->givePermissionTo(['create_ideas', 'vote_ideas', 'evaluate_ideas', 'manage_admin', 'view_author_identity', 'view_audit_logs']);
 
         $adminUser = User::factory()->create([
             'name' => 'Administrador Corp',
@@ -73,7 +72,7 @@ class DatabaseSeeder extends Seeder
             'description' => 'Processo de avaliação popular das ideias mais relevantes.',
             'starts_at' => now()->subDays(2),
             'ends_at' => now()->addDays(8),
-            'status' => 'open',
+            'status' => 'draft',
             'weight_configuration' => ['real_results' => 50, 'technical' => 30, 'votes' => 20],
         ]);
 
@@ -91,8 +90,8 @@ class DatabaseSeeder extends Seeder
             'solution_description' => 'Criar uma fila automatizada para priorizar tarefas e reduzir retrabalho.',
             'expected_results' => 'Economia de tempo e redução de falhas ao rastrear pendências.',
             'resources_needed' => 'Equipe de desenvolvimento e duas semanas para implantação.',
-            'status' => Idea::STATUS_APPROVED,
-            'is_public' => true,
+            'status' => Idea::STATUS_SUBMITTED,
+            'is_public' => false,
         ]);
 
         $idea->beneficiarySectors()->attach([
@@ -100,6 +99,6 @@ class DatabaseSeeder extends Seeder
             Sector::where('name', 'Tecnologia')->value('id'),
         ]);
 
-        IdeaStatusHistory::record($idea, Idea::STATUS_APPROVED, $adminUser, 'A ideia foi aprovada após análise inicial.');
+        IdeaStatusHistory::record($idea, Idea::STATUS_SUBMITTED, $employeeUser, 'Proposta de demonstração enviada.');
     }
 }

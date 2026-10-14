@@ -12,6 +12,12 @@ class IdeaStatusHistory extends Model
 
     protected $fillable = ['idea_id', 'from_status', 'to_status', 'changed_by_user_id', 'notes'];
 
+    protected static function booted(): void
+    {
+        static::updating(fn () => throw new \LogicException('O histórico é imutável.'));
+        static::deleting(fn () => throw new \LogicException('O histórico é imutável.'));
+    }
+
     public function idea(): BelongsTo
     {
         return $this->belongsTo(Idea::class);

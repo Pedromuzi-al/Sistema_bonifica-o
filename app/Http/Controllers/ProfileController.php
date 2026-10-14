@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
@@ -80,8 +82,11 @@ class ProfileController extends Controller
             return Redirect::route('profile.edit')->with('error', 'Você não tem permissão para alterar permissões.');
         }
 
-        $targetUser->syncRoles($request->input('role') ? [$request->input('role')] : []);
-        $targetUser->syncPermissions($request->input('permissions', []));
+        DB::transaction(function () use ($request, $targetUser) {
+            $targetUser->syncRoles($request->input('role') ? [$request->input('role')] : []);
+            $targetUser->syncPermissions($request->input('permissions', []));
+            AuditLog::create(['causer_id' => $request->user()->id, 'model_type' => User::class, 'model_id' => $targetUser->id, 'action' => 'permissions_updated', 'details' => $request->only('role', 'permissions')]);
+        });
 
         $redirect = $targetUser->id === $request->user()->id
             ? Redirect::route('profile.edit')
@@ -103,7 +108,10 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            AuditLog::create(['causer_id' => $user->id, 'model_type' => User::class, 'model_id' => $user->id, 'action' => 'account_deactivated', 'details' => ['reason' => 'Solicitação do titular; histórico preservado.']]);
+            $user->delete();
+        });
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
+use App\Http\Requests\CastVoteRequest;
+use App\Http\Requests\StoreIdeaRequest;
+use App\Http\Requests\TransitionIdeaRequest;
+use App\Models\EvaluationCriterion;
 use App\Models\Idea;
-use App\Models\IdeaStatusHistory;
-use App\Models\Notification;
 use App\Models\Sector;
+use App\Models\User;
 use App\Models\VotingCycle;
+use App\Services\IdeaWorkflowService;
+use App\Services\VotingService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class IdeaController extends Controller
@@ -19,25 +25,40 @@ class IdeaController extends Controller
         $this->middleware('auth');
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $request->validate(['search' => ['nullable', 'string', 'max:255'], 'status' => ['nullable', Rule::in(array_keys(Idea::LABELS))], 'mine' => ['nullable', 'boolean'], 'implemented' => ['nullable', 'boolean']]);
         $user = Auth::user();
         $canReview = $user->hasRole(['admin', 'evaluator']) || $user->hasSystemPermission('evaluate_ideas');
 
         $ideas = Idea::with('originSector', 'beneficiarySectors')
             ->when(! $canReview, function ($query) use ($user) {
                 $query->where(function ($query) use ($user) {
-                    $query->where('is_public', true)
-                        ->orWhere('author_id', $user->id);
+                    $query->where('author_id', $user->id);
+                    if ($user->canViewPublicIdeas()) {
+                        $query->orWhere('is_public', true);
+                    }
                 });
             })
+            ->when($request->filled('search'), fn ($query) => $query->where(function ($query) use ($request, $canReview, $user) {
+                $term = '%'.$request->string('search').'%';
+                $query->where('publication->title', 'like', $term)->orWhere(function ($query) use ($term, $canReview, $user) {
+                    if (! $canReview) {
+                        $query->where('author_id', $user->id);
+                    }
+                    $query->where('title', 'like', $term);
+                });
+            }))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->when($request->boolean('mine'), fn ($query) => $query->where('author_id', $user->id))
+            ->when($request->boolean('implemented'), fn ($query) => $query->whereNotNull('published_at')->where('is_public', true))
             ->latest()
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view('ideas.index', compact('ideas'));
     }
 
-    public function create(): View|\Illuminate\Http\RedirectResponse
+    public function create(): View|RedirectResponse
     {
         $result = $this->authorizeOrRedirect('create', Idea::class, 'Você não tem permissão para criar ideias.');
 
@@ -50,136 +71,40 @@ class IdeaController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreIdeaRequest $request, IdeaWorkflowService $workflow): RedirectResponse
     {
-        $result = $this->authorizeOrRedirect('create', Idea::class, 'Você não tem permissão para criar ideias.');
-
-        if ($result !== true) {
-            return $result;
-        }
-
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'problem_description' => ['required', 'string'],
-            'solution_description' => ['required', 'string'],
-            'origin_sector_id' => ['required', 'exists:sectors,id'],
-            'beneficiary_sectors' => ['nullable', 'array'],
-            'beneficiary_sectors.*' => ['exists:sectors,id'],
-            'expected_results' => ['required', 'string'],
-            'resources_needed' => ['required', 'string'],
-            'additional_information' => ['nullable', 'string'],
-        ]);
-
-        $idea = Idea::create([
-            'author_id' => Auth::id(),
-            'origin_sector_id' => $validated['origin_sector_id'],
-            'title' => $validated['title'],
-            'problem_description' => $validated['problem_description'],
-            'solution_description' => $validated['solution_description'],
-            'expected_results' => $validated['expected_results'],
-            'resources_needed' => $validated['resources_needed'],
-            'additional_information' => $validated['additional_information'] ?? null,
-            'status' => Idea::STATUS_SUBMITTED,
-            'is_public' => false,
-        ]);
-
-        foreach ($validated['beneficiary_sectors'] ?? [] as $sectorId) {
-            $idea->beneficiarySectors()->attach($sectorId);
-        }
-
-        IdeaStatusHistory::record($idea, Idea::STATUS_SUBMITTED, Auth::user(), 'Ideia registrada com sucesso.');
-
-        AuditLog::create([
-            'causer_id' => Auth::id(),
-            'model_type' => Idea::class,
-            'model_id' => $idea->id,
-            'action' => 'created',
-            'details' => ['title' => $idea->title],
-        ]);
-
-        Notification::create([
-            'user_id' => Auth::id(),
-            'title' => 'Ideia enviada',
-            'message' => 'Sua proposta foi cadastrada com sucesso e está em análise.',
-            'type' => 'idea_created',
-        ]);
+        $idea = $workflow->create($request->user(), $request->validated());
 
         return redirect()->route('ideas.show', $idea)->with('success', 'Ideia cadastrada com sucesso.');
     }
 
-    public function show(Idea $idea)
+    public function show(Idea $idea): View|RedirectResponse
     {
         $result = $this->authorizeOrRedirect('view', $idea, 'Você não tem permissão para visualizar esta ideia.');
-
         if ($result !== true) {
             return $result;
         }
+        $canReview = auth()->user()->can('evaluate', $idea);
+        $isOwner = (int) auth()->id() === (int) $idea->author_id;
+        $cycles = VotingCycle::where('status', 'open')->whereHas('ideas', fn ($query) => $query->where('ideas.id', $idea->id))->with('criteria')->get();
+        $criteria = $canReview ? EvaluationCriterion::where('active', true)->get() : collect();
+        $users = $canReview ? User::orderBy('name')->get(['id', 'name']) : collect();
+        $history = $canReview || $isOwner ? $idea->statusHistory()->orderBy('id')->get() : collect();
+        $evaluations = $canReview ? $idea->evaluations()->with('scores.criterion')->latest()->get() : collect();
 
-        return view('ideas.show', compact('idea'));
+        return view('ideas.show', compact('idea', 'cycles', 'criteria', 'users', 'history', 'evaluations', 'canReview', 'isOwner'));
     }
 
-    public function vote(Request $request, Idea $idea)
+    public function vote(CastVoteRequest $request, Idea $idea, VotingService $voting): RedirectResponse
     {
-        $result = $this->authorizeOrRedirect('vote', $idea, 'Você não tem permissão para votar nesta ideia.');
-
-        if ($result !== true) {
-            return $result;
-        }
-
-        $cycle = VotingCycle::where('status', 'open')
-            ->where('starts_at', '<=', now())
-            ->where('ends_at', '>=', now())
-            ->first();
-
-        if (! $cycle) {
-            return back()->withErrors(['vote' => 'Não há ciclo de votação aberto no momento.']);
-        }
-
-        if ($idea->votes()->where('user_id', Auth::id())->where('voting_cycle_id', $cycle->id)->exists()) {
-            return back()->withErrors(['vote' => 'Você já registrou um voto para esta ideia neste ciclo.']);
-        }
-
-        $vote = $idea->votes()->create([
-            'user_id' => Auth::id(),
-            'voting_cycle_id' => $cycle->id,
-            'status' => 'cast',
-        ]);
-
-        foreach ($cycle->criteria as $criterion) {
-            $score = $request->input('criteria_'.$criterion->id, null);
-
-            if ($score !== null && is_numeric($score)) {
-                $vote->scores()->create([
-                    'criterion_id' => $criterion->id,
-                    'score' => max(0, min((float) $score, 5)),
-                ]);
-            }
-        }
-
-        Notification::create([
-            'user_id' => Auth::id(),
-            'title' => 'Voto registrado',
-            'message' => 'Seu voto foi contabilizado com sucesso.',
-            'type' => 'vote_received',
-        ]);
+        $voting->cast($request->user(), $idea, $request->validated());
 
         return back()->with('success', 'Voto registrado com sucesso.');
     }
 
-    public function approve(Request $request, Idea $idea)
+    public function approve(TransitionIdeaRequest $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
     {
-        $result = $this->authorizeOrRedirect('approve', $idea, 'Você não tem permissão para alterar o status desta ideia.');
-
-        if ($result !== true) {
-            return $result;
-        }
-
-        $request->validate([
-            'status' => ['required', 'in:approved,rejected,implementation,implemented,completed'],
-            'notes' => ['nullable', 'string'],
-        ]);
-
-        IdeaStatusHistory::record($idea, $request->status, Auth::user(), $request->notes ?? 'Avaliação registrada.');
+        $workflow->transition($request->user(), $idea, $request->validated('status'), $request->validated('notes'));
 
         return back()->with('success', 'Status atualizado com sucesso.');
     }

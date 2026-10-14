@@ -3,13 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasRoles, Notifiable;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::forceDeleting(fn () => throw new \LogicException('Exclusão definitiva requer procedimento de retenção autorizado.'));
+    }
 
     protected $fillable = [
         'name',
@@ -49,6 +55,11 @@ class User extends Authenticatable
     public function votes()
     {
         return $this->hasMany(Vote::class);
+    }
+
+    public function canViewPublicIdeas(): bool
+    {
+        return $this->hasRole(['employee', 'evaluator', 'admin']) || $this->hasSystemPermission('view_public_ideas');
     }
 
     public function hasSystemPermission(string $permission): bool

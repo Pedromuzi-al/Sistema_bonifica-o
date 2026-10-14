@@ -10,10 +10,10 @@ class IdeaResult extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['idea_id', 'time_saved_hours', 'errors_reduced', 'cost_savings', 'impact_summary', 'validated_by_user_id', 'measured_at'];
+    protected $fillable = ['idea_id', 'time_saved_hours', 'errors_reduced', 'cost_savings', 'impact_summary', 'validated_by_user_id', 'measured_at', 'measurements', 'limitations', 'validated_at'];
 
     protected $casts = [
-        'measured_at' => 'datetime',
+        'measured_at' => 'datetime', 'measurements' => 'array', 'validated_at' => 'datetime',
     ];
 
     public function idea(): BelongsTo

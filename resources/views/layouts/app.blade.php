@@ -28,6 +28,10 @@
             @endisset
 
             <main>
+                <div class="mx-auto max-w-7xl px-4 pt-4" role="status">
+                    @if (session('success'))<p class="rounded-lg bg-emerald-50 p-4 text-emerald-800">{{ session('success') }}</p>@endif
+                    @if ($errors->any())<ul class="rounded-lg bg-rose-50 p-4 text-rose-800" role="alert">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@endif
+                </div>
                 {{ $slot }}
             </main>
         </div>

@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Idea;
-use Illuminate\Support\Facades\Gate;
+use App\Models\Sector;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class EvaluationController extends Controller
 {
-    public function index(): View|\Illuminate\Http\RedirectResponse
+    public function index(Request $request): View|RedirectResponse
     {
         $result = $this->authorizeOrRedirect('evaluate', new Idea, 'Você não tem permissão para acessar a avaliação.');
 
@@ -16,16 +20,19 @@ class EvaluationController extends Controller
             return $result;
         }
 
-        $ideas = Idea::with('author', 'originSector', 'beneficiarySectors')
-            ->whereIn('status', [
-                Idea::STATUS_SUBMITTED,
-                Idea::STATUS_TRIAGE,
-                Idea::STATUS_EVALUATION,
-                Idea::STATUS_APPROVED,
-            ])
-            ->latest()
-            ->get();
+        $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', ...($request->filled('from') ? ['after_or_equal:from'] : [])], 'sector' => ['nullable', 'integer', 'exists:sectors,id'], 'owner' => ['nullable', 'integer', 'exists:users,id'], 'status' => ['nullable', Rule::in(array_keys(Idea::LABELS))]]);
+        $summary = Idea::select('status')->selectRaw('COUNT(*) AS total')->groupBy('status')->pluck('total', 'status');
+        $deadlines = Idea::with('implementationPlan')->whereHas('implementationPlan', fn ($query) => $query->whereNull('completed_at')->where('due_date', '<=', now()->addWeek()))->get();
+        $ideas = Idea::with('originSector', 'beneficiarySectors', 'implementationPlan')
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+            ->when($request->filled('sector'), fn ($q) => $q->where('origin_sector_id', $request->integer('sector')))
+            ->when($request->filled('owner'), fn ($q) => $q->whereHas('implementationPlan', fn ($q) => $q->where('owner_user_id', $request->integer('owner'))))
+            ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('from')))
+            ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('to')))
+            ->latest()->paginate(20)->withQueryString();
+        $sectors = Sector::all();
+        $users = User::orderBy('name')->get(['id', 'name']);
 
-        return view('evaluation.index', compact('ideas'));
+        return view('evaluation.index', compact('ideas', 'sectors', 'users', 'summary', 'deadlines'));
     }
 }

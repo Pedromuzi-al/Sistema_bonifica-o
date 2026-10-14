@@ -12,18 +12,25 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <form method="GET" class="apple-card mb-6 flex flex-wrap items-end gap-3 p-4">
+                <x-workflow-field name="search" label="Pesquisar" :required="false" :value="request('search')" />
+                <label>Status<select name="status" class="block rounded-lg"><option value="">Todos</option>@foreach (\App\Models\Idea::LABELS as $status=>$label)<option value="{{ $status }}" @selected(request('status') == $status)>{{ $label }}</option>@endforeach</select></label>
+                <label><input type="checkbox" name="mine" value="1" @checked(request()->boolean('mine'))> Minhas propostas</label>
+                <label><input type="checkbox" name="implemented" value="1" @checked(request()->boolean('implemented'))> Ideias Implementadas</label>
+                <button class="apple-button">Filtrar</button>
+            </form>
             <div class="grid gap-6">
                 @foreach ($ideas as $idea)
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div>
-                                <p class="text-sm text-gray-500">{{ $idea->idea_code }} · {{ $idea->originSector?->name }}</p>
-                                <h3 class="text-xl font-bold text-slate-900">{{ $idea->title }}</h3>
+                                <p class="text-sm text-gray-500">{{ $idea->idea_code }} · {{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }}</p>
+                                <h3 class="text-xl font-bold text-slate-900">{{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</h3>
                             </div>
                             <x-idea-status-badge :status="$idea->status" />
                         </div>
 
-                        <p class="mt-4 text-gray-700">{{ Str::limit($idea->solution_description, 240) }}</p>
+                        <p class="mt-4 text-gray-700">{{ Str::limit((auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->solution_description : ($idea->publication['solution'] ?? ''), 240) }}</p>
 
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
                             <div>Autor: {{ $idea->visibleAuthorName(auth()->user()) }}</div>
@@ -36,6 +43,7 @@
                     </div>
                 @endforeach
             </div>
+            <div class="mt-6">{{ $ideas->links() }}</div>
         </div>
     </div>
 </x-app-layout>

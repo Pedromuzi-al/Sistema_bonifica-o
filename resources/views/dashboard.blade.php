@@ -50,12 +50,12 @@
                             <div class="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <p class="text-lg font-semibold text-slate-900">{{ $idea->title }}</p>
-                                        <p class="mt-1 text-sm text-slate-500">{{ $idea->originSector?->name }} · {{ $idea->visibleAuthorName(auth()->user()) }}</p>
+                                        <p class="text-lg font-semibold text-slate-900">{{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</p>
+                                        <p class="mt-1 text-sm text-slate-500">{{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }} · {{ $idea->visibleAuthorName(auth()->user()) }}</p>
                                     </div>
                                     <x-idea-status-badge :status="$idea->status" />
                                 </div>
-                                <p class="mt-3 text-sm leading-6 text-slate-600">{{ Str::limit($idea->problem_description, 150) }}</p>
+                                <p class="mt-3 text-sm leading-6 text-slate-600">{{ Str::limit((auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->problem_description : ($idea->publication['problem'] ?? ''), 150) }}</p>
                             </div>
                         @empty
                             <p class="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/60 p-5 text-sm text-slate-500">Nenhuma ideia recente.</p>
@@ -70,6 +70,7 @@
                             <div class="rounded-[18px] border border-slate-200 bg-slate-50/75 p-4">
                                 <p class="text-sm font-semibold text-slate-800">{{ $notification->title }}</p>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">{{ $notification->message }}</p>
+                                @if (!$notification->read_at)<form method="POST" action="{{ route('notifications.read', $notification) }}">@csrf<button class="mt-2 text-sm text-sky-700">Marcar como lida</button></form>@endif
                             </div>
                         @empty
                             <p class="text-sm text-slate-500">Nenhuma notificação recente.</p>
@@ -78,17 +79,22 @@
                 </div>
             </div>
 
+            <section class="apple-card space-y-3 p-6"><h3 class="text-xl font-bold">Minha participação e reconhecimentos</h3><p>Votos registrados: {{ $participation }} · Ideias concluídas: {{ $stats['completed'] }}</p>@forelse ($awards as $award)<p>{{ $award->idea->idea_code }} — {{ $award->category }}: R$ {{ number_format($award->award_amount,2,',','.') }}</p>@empty<p>Nenhum reconhecimento divulgado.</p>@endforelse</section>
             <div class="apple-card p-6">
                 <div class="flex items-center justify-between gap-3">
                     <h3 class="text-xl font-bold tracking-[-0.04em] text-slate-900">Atalhos</h3>
                 </div>
                 <div class="mt-5 flex flex-wrap gap-3">
+                    <a href="{{ route('ideas.index', ['implemented'=>1]) }}" class="apple-button--light">Ideias Implementadas</a>
+                    <a href="{{ route('cycles.index') }}" class="apple-button--light">Votações e resultados</a>
+                    @can('manage-admin')<a href="{{ route('reports.index') }}" class="apple-button--light">Relatórios</a>@endcan
+
                     @if (auth()->user()->can('create', App\Models\Idea::class))
                         <a href="{{ route('ideas.create') }}" data-permission="true" data-permission-message="Você não tem permissão para criar ideias." class="apple-button">Cadastrar ideia</a>
                     @else
                         <button type="button" data-permission="false" data-permission-message="Você não tem permissão para criar ideias." class="apple-button">Cadastrar ideia</button>
                     @endif
-                    <a href="{{ route('ideas.index') }}" class="apple-button--light">Minhas ideias</a>
+                    <a href="{{ route('ideas.index', ['mine'=>1]) }}" class="apple-button--light">Minhas ideias</a>
                     @php($canEvaluate = auth()->user()->can('evaluate', new App\Models\Idea))
                     @if ($canEvaluate)
                         <a href="{{ route('evaluation.index') }}" data-permission="true" data-permission-message="Você não tem permissão para acessar a avaliação." class="apple-button--primary">Acompanhar avaliação</a>
