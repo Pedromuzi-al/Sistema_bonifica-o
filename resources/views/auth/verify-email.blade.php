@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="mb-4 text-sm text-gray-600">
-        {{ __('Obrigado por se cadastrar! Antes de começar, você pode verificar seu endereço de e-mail clicando no link que acabamos de enviar para você? Se não recebeu o e-mail, podemos enviar outro com prazer.') }}
+        {{ __('Confirme seu e-mail para continuar. Abra a mensagem enviada para o seu endereço e clique em “Confirmar meu e-mail”. Se não encontrar, confira também a pasta de spam.') }}
     </div>
 
     @if (session('status') == 'verification-link-sent')
@@ -9,7 +9,8 @@
         </div>
     @endif
 
-    <div class="mt-4 flex items-center justify-between">
+    <p class="mb-4 text-sm text-gray-600">Endereço cadastrado: <strong>{{ auth()->user()->email }}</strong>. <a href="{{ route('profile.edit') }}" class="underline">Corrigir meu e-mail</a></p>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
         <form method="POST" action="{{ route('verification.send') }}">
             @csrf
 

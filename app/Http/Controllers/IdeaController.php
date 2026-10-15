@@ -68,7 +68,7 @@ class IdeaController extends Controller
         }
 
         return view('ideas.create', [
-            'sectors' => Sector::all(),
+            'sectors' => Sector::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 

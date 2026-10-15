@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'prohibited' => 'O campo :attribute não pode ser alterado nesta operação.',
     'accepted' => 'Confirme o campo :attribute.',
     'after' => 'O campo :attribute deve ser posterior a :date.',
     'after_or_equal' => 'O campo :attribute deve ser igual ou posterior a :date.',
@@ -31,6 +32,7 @@ return [
         'scores.*' => 'nota do critério', 'scores' => 'notas dos critérios', 'starts_at' => 'início', 'ends_at' => 'encerramento',
         'measurements.*.indicator' => 'indicador', 'measurements.*.unit' => 'unidade', 'measurements.*.evidence' => 'evidência',
         'measurements.*.period_start' => 'início da observação', 'measurements.*.period_end' => 'fim da observação',
-        'impact_summary' => 'resumo dos resultados', 'owner_user_id' => 'responsável', 'plan' => 'plano de implementação', 'due_date' => 'prazo',
+        'impact_summary' => 'resumo dos resultados', 'role' => 'perfil de acesso', 'permissions' => 'permissões', 'permissions.*' => 'permissão', 'teams' => 'equipes', 'teams.*' => 'equipe', 'members' => 'participantes', 'members.*' => 'participante', 'reason' => 'motivo', 'is_active' => 'situação do cadastro',
+        'owner_user_id' => 'responsável', 'plan' => 'plano de implementação', 'due_date' => 'prazo',
     ],
 ];

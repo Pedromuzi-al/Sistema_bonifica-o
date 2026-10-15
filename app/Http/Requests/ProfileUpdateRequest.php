@@ -9,6 +9,13 @@ use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        $target = $this->route('user');
+
+        return ! $target || $target->id === $this->user()->id || $this->user()->can('manage-admin');
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CycleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\IdeaController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WorkflowController;
@@ -49,8 +51,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/ideas/{idea}/approve', [IdeaController::class, 'approve'])->name('ideas.approve');
 
     Route::get('/evaluation', [EvaluationController::class, 'index'])->name('evaluation.index');
+    Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
+    Route::post('/admin/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+    Route::get('/admin/users/{user}/edit', [AdminUserController::class, 'edit'])->withTrashed()->name('admin.users.edit');
+    Route::patch('/admin/users/{user}', [AdminUserController::class, 'update'])->withTrashed()->name('admin.users.update');
+    Route::post('/admin/users/{user}/block', [AdminUserController::class, 'block'])->name('admin.users.block');
+    Route::post('/admin/users/{user}/reactivate', [AdminUserController::class, 'reactivate'])->withTrashed()->name('admin.users.reactivate');
+    Route::post('/admin/users/{user}/verification', [AdminUserController::class, 'resendVerification'])->middleware('throttle:6,1')->name('admin.users.verification');
+    Route::get('/admin/organization', [OrganizationController::class, 'index'])->name('admin.organization');
+    Route::get('/admin/sectors/create', [OrganizationController::class, 'sectorForm'])->name('admin.sectors.create');
+    Route::get('/admin/sectors/{sector}/edit', [OrganizationController::class, 'sectorForm'])->name('admin.sectors.edit');
+    Route::post('/admin/sectors', [OrganizationController::class, 'saveSector'])->name('admin.sectors.store');
+    Route::patch('/admin/sectors/{sector}', [OrganizationController::class, 'saveSector'])->name('admin.sectors.update');
+    Route::get('/admin/teams/create', [OrganizationController::class, 'teamForm'])->name('admin.teams.create');
+    Route::get('/admin/teams/{team}/edit', [OrganizationController::class, 'teamForm'])->name('admin.teams.edit');
+    Route::post('/admin/teams', [OrganizationController::class, 'saveTeam'])->name('admin.teams.store');
+    Route::patch('/admin/teams/{team}', [OrganizationController::class, 'saveTeam'])->name('admin.teams.update');
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
 
+});
+
+Route::middleware('auth')->group(function () {
     Route::get('/profile/{user?}', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile/{user?}', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/permissions/{user?}', [ProfileController::class, 'updatePermissions'])->name('profile.permissions');

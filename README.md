@@ -116,3 +116,15 @@ vendor/bin/phpunit --configuration phpunit.mysql.xml
 ```
 
 O bootstrap exige um nome terminado em `_test`, rejeita o banco da aplicação e bloqueia configuração em cache. A suíte recria as tabelas do banco de testes. O teste de concorrência usa dois processos e bloqueios de linha reais quando executado com esse perfil. O perfil padrão continua usando SQLite.
+
+## Administração de acesso (branch adm)
+
+Na Administração, use **Pessoas e acessos** para cadastrar e editar pessoas, definir setor, equipes, perfil e permissões adicionais. Há filtros por nome/e-mail, contas bloqueadas ou desativadas, e-mails pendentes e pessoas sem perfil. A senha inicial só é definida no cadastro; alterações de perfil não substituem a senha. E-mails já utilizados por contas desativadas continuam reservados para permitir reativação sem perder o histórico.
+
+O bloqueio exige justificativa, revoga sessões e acesso lembrado e preserva ideias, votos e avaliações. A reativação também exige justificativa e obriga novo login. Contas desativadas pelo titular podem ser reativadas pelo administrador, preservando associações. O último administrador ativo com e-mail confirmado não pode perder o acesso, inclusive por mudança de e-mail ou desativação do próprio perfil.
+
+Em **Setores e equipes**, cadastre, edite e desative os agrupamentos. Cadastros inativos permanecem no histórico e não podem receber novas associações; associações anteriores podem ser mantidas ou removidas explicitamente. Equipes são agrupamentos organizacionais e não concedem permissões. Os perfis e permissões continuam sendo a fonte de autorização.
+
+A confirmação de e-mail é obrigatória antes de acessar as áreas do sistema. Novos cadastros e alterações de e-mail enviam um link assinado; o titular pode corrigir o endereço e reenviar a mensagem sem já estar verificado. A confirmação do endereço não concede um perfil automaticamente: o acesso corporativo ainda precisa de liberação administrativa. Administradores não confirmam o e-mail em nome de outra pessoa.
+
+Após atualizar esta branch, execute `php artisan migrate` para adicionar equipes, associações, situação dos setores e controle de bloqueio/sessões. O banco existente é preservado. No ambiente local, `MAIL_MAILER=log` registra as mensagens em `storage/logs/laravel.log`; para entrega real, configure `MAIL_MAILER=smtp`, servidor, porta, usuário, senha e remetente no `.env`, e execute `php artisan config:clear`. Links de confirmação expiram conforme a configuração de autenticação e não devem ser compartilhados.

@@ -24,6 +24,7 @@
             'vote_ideas' => 'Votar em ideias',
             'evaluate_ideas' => 'Avaliar ideias',
             'manage_admin' => 'Gerenciar administração',
+            'view_author_identity' => 'Consultar autoria privada', 'view_audit_logs' => 'Consultar auditoria',
         ];
     @endphp
 
@@ -162,8 +163,8 @@
                 <section class="apple-card border-rose-100 p-5 sm:p-8">
                     <div class="mb-5">
                         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Zona de atenção</p>
-                        <h3 class="mt-1 text-xl font-bold tracking-[-0.04em] text-slate-900">Excluir conta</h3>
-                        <p class="mt-1 text-sm text-slate-500">Esta ação é permanente e remove seus dados da plataforma.</p>
+                        <h3 class="mt-1 text-xl font-bold tracking-[-0.04em] text-slate-900">Desativar conta</h3>
+                        <p class="mt-1 text-sm text-slate-500">Seu acesso será desativado. O histórico corporativo será preservado.</p>
                     </div>
                     <div class="max-w-2xl">
                         @include('profile.partials.delete-user-form')
