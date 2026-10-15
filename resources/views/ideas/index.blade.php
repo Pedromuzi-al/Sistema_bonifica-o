@@ -20,7 +20,7 @@
                 <button class="apple-button">Filtrar</button>
             </form>
             <div class="grid gap-6">
-                @foreach ($ideas as $idea)
+                @forelse ($ideas as $idea)
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div>
@@ -41,7 +41,9 @@
                             <a href="{{ route('ideas.show', $idea) }}" class="font-medium text-sky-600 hover:text-sky-800">Abrir detalhe</a>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <section class="apple-card space-y-3 p-6"><h3 class="font-bold">Nenhuma ideia por aqui ainda</h3><p>Se você usou filtros, tente mudar a busca. Para enviar uma sugestão, clique em “Nova ideia”.</p></section>
+                @endforelse
             </div>
             <div class="mt-6">{{ $ideas->links() }}</div>
         </div>

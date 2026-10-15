@@ -7,22 +7,19 @@
                 </a>
             </div>
 
-            <div class="hidden items-center gap-2 sm:flex">
+            <div class="hidden items-center gap-2 xl:flex">
                 <a href="{{ route('cycles.index') }}" class="rounded-full px-3 py-2 text-sm font-medium">Votações</a>
 
                 <a href="{{ route('dashboard') }}" class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('dashboard') ? 'bg-slate-900 text-white' : '' }}">Painel</a>
                 <a href="{{ route('ideas.index') }}" class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('ideas.*') ? 'bg-slate-900 text-white' : '' }}">Ideias</a>
+                <a href="{{ route('notifications.index') }}" class="rounded-full px-3 py-2 text-sm font-medium">Avisos</a>
                 @php($canEvaluate = auth()->user()->can('evaluate', new App\Models\Idea))
                 @if ($canEvaluate)
                     <a href="{{ route('evaluation.index') }}" data-permission="true" data-permission-message="Você não tem permissão para acessar a avaliação." class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('evaluation.*') ? 'bg-slate-900 text-white' : '' }}">Avaliação</a>
-                @else
-                    <button type="button" data-permission="false" data-permission-message="Você não tem permissão para acessar a avaliação." class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Avaliação</button>
                 @endif
                 @php($canAccessAdmin = auth()->user()->can('manage-admin'))
                 @if ($canAccessAdmin)
                     <a href="{{ route('admin.index') }}" data-permission="true" data-permission-message="Você não tem permissão para acessar o painel administrativo." class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('admin.*') ? 'bg-slate-900 text-white' : '' }}">Administração</a>
-                @else
-                    <button type="button" data-permission="false" data-permission-message="Você não tem permissão para acessar o painel administrativo." class="rounded-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Administração</button>
                 @endif
             </div>
 
@@ -30,14 +27,14 @@
                 <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100">
                     <svg data-theme-icon="moon" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z" /></svg>
                     <svg data-theme-icon="sun" class="hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
-                    <span data-theme-label class="hidden lg:inline">Modo escuro</span>
+                    <span data-theme-label class="hidden 2xl:inline">Modo escuro</span>
                 </button>
-                <a href="{{ route('profile.edit') }}" class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-2 py-1.5 sm:flex hover:bg-slate-50 transition-colors">
+                <a href="{{ route('profile.edit') }}" class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-2 py-1.5 xl:flex hover:bg-slate-50 transition-colors">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0faddf] text-sm font-bold text-slate-950">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
-                    <div class="pr-2 text-sm font-medium text-slate-700">{{ Auth::user()->name }}</div>
+                    <div class="max-w-40 truncate pr-2 text-sm font-medium text-slate-700">{{ Auth::user()->name }}</div>
                 </a>
 
-                <button @click="open = ! open" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/80 p-2 text-slate-600 shadow-sm hover:bg-slate-50 sm:hidden">
+                <button aria-label="Abrir menu" :aria-expanded="open.toString()" aria-controls="mobile-navigation" @click="open = ! open" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/80 p-2 text-slate-600 shadow-sm hover:bg-slate-50 xl:hidden">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -46,18 +43,19 @@
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="hidden rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 sm:inline-flex">Sair</button>
+                    <button type="submit" class="hidden rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 xl:inline-flex">Sair</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden border-t border-slate-200/80 bg-white/80 sm:hidden">
+    <div id="mobile-navigation" :class="{'block': open, 'hidden': ! open}" class="hidden border-t border-slate-200/80 bg-white/80 xl:hidden">
         <div class="mx-auto max-w-7xl space-y-2 px-4 py-4">
             <a href="{{ route('dashboard') }}" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('dashboard') ? 'bg-slate-900 text-white' : '' }}">Painel</a>
             <a href="{{ route('ideas.index') }}" class="block rounded-2xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100 {{ request()->routeIs('ideas.*') ? 'bg-slate-900 text-white' : '' }}">Ideias</a>
             @can('evaluate', new App\Models\Idea)<a href="{{ route('evaluation.index') }}" class="block px-3 py-3">Avaliação</a>@endcan
             @can('manage-admin')<a href="{{ route('admin.index') }}" class="block px-3 py-3">Administração</a>@endcan
+            <a href="{{ route('notifications.index') }}" class="block px-3 py-3">Meus avisos</a>
             <a href="{{ route('profile.edit') }}" class="block px-3 py-3">Meu perfil</a>
             <a href="{{ route('cycles.index') }}" class="block px-3 py-3">Votações e reconhecimentos</a>
             @can('manage-admin')<a href="{{ route('reports.index') }}" class="block px-3 py-3">Relatórios</a>@endcan

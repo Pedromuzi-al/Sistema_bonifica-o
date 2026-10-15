@@ -40,7 +40,7 @@
                 <p class="font-bold">Pontuação final: {{ $entry['outcome']['final_score'] ?? 'Não apurada: votos insuficientes' }}</p>
                 @if ($canManage && $entry['outcome']['review_required'])<p class="text-amber-700">Alerta para revisão: há pelo menos cinco votos com notas idênticas. Verifique o contexto antes de aprovar. Isto não confirma fraude.</p>@endif
             @else
-                <a class="text-sky-700 underline" href="{{ route('ideas.show', $entry['idea']) }}">Abrir ideia e votar</a>
+                <a class="text-sky-700 underline" href="{{ route('ideas.vote-form', [$entry['idea'], $cycle]) }}">Conhecer os resultados e votar</a>
             @endif
         </section>
     @endforeach

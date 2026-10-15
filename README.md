@@ -65,11 +65,14 @@ O modelo atual reconhece uma autoria individual e uma categoria por ciclo. Anexo
 
 ## Uso
 
-1. Na Administração, cadastre critérios técnicos e atribua perfis e permissões. Novos cadastros sem perfil não podem consultar publicações corporativas.
-2. O funcionário registra a proposta. A equipe usa a tela de detalhes para avançar etapas, avaliar, planejar, medir e validar.
-3. Depois da conclusão, a equipe revisa os textos públicos e confirma a revisão de privacidade.
-4. Em Votações, o administrador configura o ciclo, revisa a metodologia e seleciona publicações antes do início. Ciclos legados sem regras completas devem ser substituídos por novos ciclos.
-5. Depois do encerramento, o administrador apura, revisa alertas, aprova e divulga reconhecimentos. Os funcionários consultam resultados agregados e seus próprios reconhecimentos no painel.
+1. Para enviar uma ideia, use “Tenho uma ideia”: responda três passos, confira o resumo e confirme o envio. “Quero corrigir” mantém os campos preenchidos. A revisão também funciona sem JavaScript.
+2. Para votar, abra “Votações”, escolha uma publicação e use “Conhecer os resultados e votar”. A tela mostra a versão revisada daquele ciclo, notas de 1 a 5 com descrições e uma conferência antes da confirmação. O recibo informa quando o voto já foi registrado.
+3. Em “Seus avisos”, consulte notificações privadas, filtre as não lidas e marque-as como lidas.
+4. Na Administração, cadastre critérios técnicos e atribua perfis e permissões. Novos cadastros sem perfil não podem consultar publicações corporativas.
+5. O funcionário registra a proposta. A equipe usa a tela de detalhes para avançar etapas, avaliar, planejar, medir e validar.
+6. Depois da conclusão, a equipe revisa os textos públicos e confirma a revisão de privacidade.
+7. Em Votações, o administrador configura o ciclo, revisa a metodologia e seleciona publicações antes do início. Ciclos legados sem regras completas devem ser substituídos por novos ciclos.
+8. Depois do encerramento, o administrador apura, revisa alertas, aprova e divulga reconhecimentos. Os funcionários consultam resultados agregados e seus próprios reconhecimentos no painel.
 
 ## Instalação local
 

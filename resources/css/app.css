@@ -305,3 +305,18 @@
         border-color: #64748b;
     }
 }
+
+.vote-choice:has(input:checked) {
+    border-color: #0284c7;
+    background-color: #e0f2fe;
+    color: #075985;
+    box-shadow: 0 0 0 1px #0284c7;
+}
+.vote-choice:focus-within {
+    outline: 3px solid #38bdf8;
+    outline-offset: 3px;
+}
+html.dark .vote-choice:has(input:checked) {
+    background-color: #0c4a6e;
+    color: #f0f9ff;
+}

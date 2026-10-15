@@ -8,6 +8,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreIdeaRequest extends FormRequest
 {
+    protected $redirectRoute = 'ideas.create';
+
     public function authorize(): bool
     {
         return $this->user()->can('create', Idea::class);

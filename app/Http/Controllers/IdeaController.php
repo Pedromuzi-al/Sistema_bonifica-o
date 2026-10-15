@@ -11,6 +11,7 @@ use App\Models\Sector;
 use App\Models\User;
 use App\Models\VotingCycle;
 use App\Services\IdeaWorkflowService;
+use App\Services\VoteAvailabilityService;
 use App\Services\VotingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,14 +72,26 @@ class IdeaController extends Controller
         ]);
     }
 
-    public function store(StoreIdeaRequest $request, IdeaWorkflowService $workflow): RedirectResponse
+    public function review(StoreIdeaRequest $request): View
     {
-        $idea = $workflow->create($request->user(), $request->validated());
+        $data = $request->validated();
+        $originSector = Sector::findOrFail($data['origin_sector_id']);
+        $beneficiarySectors = Sector::whereIn('id', $data['beneficiary_sectors'])->get();
 
-        return redirect()->route('ideas.show', $idea)->with('success', 'Ideia cadastrada com sucesso.');
+        return view('ideas.review', compact('data', 'originSector', 'beneficiarySectors'));
     }
 
-    public function show(Idea $idea): View|RedirectResponse
+    public function store(StoreIdeaRequest $request, IdeaWorkflowService $workflow): RedirectResponse
+    {
+        if ($request->input('_action') === 'edit') {
+            return redirect()->route('ideas.create')->withInput($request->validated());
+        }
+        $idea = $workflow->create($request->user(), $request->validated());
+
+        return redirect()->route('ideas.show', $idea)->with('success', 'Ideia enviada! Você pode acompanhar os próximos passos nesta página.');
+    }
+
+    public function show(Idea $idea, VoteAvailabilityService $availability): View|RedirectResponse
     {
         $result = $this->authorizeOrRedirect('view', $idea, 'Você não tem permissão para visualizar esta ideia.');
         if ($result !== true) {
@@ -92,14 +105,27 @@ class IdeaController extends Controller
         $history = $canReview || $isOwner ? $idea->statusHistory()->orderBy('id')->get() : collect();
         $evaluations = $canReview ? $idea->evaluations()->with('scores.criterion')->latest()->get() : collect();
 
-        return view('ideas.show', compact('idea', 'cycles', 'criteria', 'users', 'history', 'evaluations', 'canReview', 'isOwner'));
+        $voteStates = $cycles->mapWithKeys(fn ($cycle) => [$cycle->id => $availability->forCycle(auth()->user(), $idea, $cycle)]);
+
+        return view('ideas.show', compact('voteStates', 'idea', 'cycles', 'criteria', 'users', 'history', 'evaluations', 'canReview', 'isOwner'));
+    }
+
+    public function voteForm(Idea $idea, VotingCycle $cycle, VoteAvailabilityService $availability): View
+    {
+        $this->authorize('view', $idea);
+        abort_unless($cycle->frozen_configuration && in_array($cycle->status, ['open', 'closed'], true), 404);
+        $entry = $cycle->ideas()->where('ideas.id', $idea->id)->firstOrFail();
+        $snapshot = json_decode($entry->pivot->snapshot, true, flags: JSON_THROW_ON_ERROR);
+        $voteState = $availability->forCycle(auth()->user(), $idea, $cycle);
+
+        return view('ideas.vote', compact('idea', 'cycle', 'snapshot', 'voteState'));
     }
 
     public function vote(CastVoteRequest $request, Idea $idea, VotingService $voting): RedirectResponse
     {
         $voting->cast($request->user(), $idea, $request->validated());
 
-        return back()->with('success', 'Voto registrado com sucesso.');
+        return redirect()->route('ideas.vote-form', [$idea, $request->validated('voting_cycle_id')])->with('success', 'Voto registrado. Obrigado por ajudar a reconhecer boas ideias!');
     }
 
     public function approve(TransitionIdeaRequest $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse

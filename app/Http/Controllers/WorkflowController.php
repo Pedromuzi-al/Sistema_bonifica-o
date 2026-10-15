@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class WorkflowController extends Controller
 {
@@ -100,6 +101,22 @@ class WorkflowController extends Controller
         });
 
         return back()->with('success', 'Critério técnico criado.');
+    }
+
+    public function notifications(Request $request): View
+    {
+        $request->validate(['unread' => ['nullable', 'boolean']]);
+        $notifications = $request->user()->notifications()->when($request->boolean('unread'), fn ($query) => $query->whereNull('read_at'))->latest('id')->paginate(20)->withQueryString();
+        $unreadCount = $request->user()->notifications()->whereNull('read_at')->count();
+
+        return view('notifications.index', compact('notifications', 'unreadCount'));
+    }
+
+    public function readAllNotifications(Request $request): RedirectResponse
+    {
+        $request->user()->notifications()->whereNull('read_at')->update(['read_at' => now()]);
+
+        return back()->with('success', 'Todos os seus avisos foram marcados como lidos.');
     }
 
     public function readNotification(Request $request, Notification $notification): RedirectResponse
