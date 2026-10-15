@@ -27,6 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/audit', [ReportController::class, 'audit'])->name('audit.index');
     Route::post('/evaluation-criteria', [WorkflowController::class, 'criterion'])->name('criteria.store');
+    Route::get('/notifications', [WorkflowController::class, 'notifications'])->name('notifications.index');
+    Route::post('/notifications/read-all', [WorkflowController::class, 'readAllNotifications'])->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [WorkflowController::class, 'readNotification'])->name('notifications.read');
     Route::post('/ideas/{idea}/evaluation', [WorkflowController::class, 'evaluate'])->name('ideas.evaluate');
     Route::post('/ideas/{idea}/plan', [WorkflowController::class, 'plan'])->name('ideas.plan');
@@ -40,6 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/ideas', [IdeaController::class, 'index'])->name('ideas.index');
     Route::get('/ideas/create', [IdeaController::class, 'create'])->name('ideas.create');
     Route::post('/ideas', [IdeaController::class, 'store'])->name('ideas.store');
+    Route::post('/ideas/review', [IdeaController::class, 'review'])->name('ideas.review');
+    Route::get('/ideas/{idea}/voting/{cycle}', [IdeaController::class, 'voteForm'])->name('ideas.vote-form');
     Route::get('/ideas/{idea}', [IdeaController::class, 'show'])->name('ideas.show');
     Route::post('/ideas/{idea}/vote', [IdeaController::class, 'vote'])->middleware('throttle:30,1')->name('ideas.vote');
     Route::post('/ideas/{idea}/approve', [IdeaController::class, 'approve'])->name('ideas.approve');

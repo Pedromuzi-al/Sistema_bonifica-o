@@ -23,26 +23,10 @@
         @endif
         @foreach ($cycles as $cycle)
             <section class="apple-card space-y-4 p-6">
-                <h3 class="text-xl font-bold">{{ $cycle->name }}</h3>
-                <p>Período: {{ $cycle->starts_at->format('d/m/Y H:i') }} até {{ $cycle->ends_at->format('d/m/Y H:i') }} ({{ config('app.timezone') }})</p>
-                <a class="text-sky-700 underline" href="{{ route('cycles.show', $cycle) }}">Consultar metodologia e publicação congelada</a>
-                @if (auth()->user()->can('vote', $idea) && now()->gte($cycle->starts_at) && now()->lt($cycle->ends_at) && !$idea->votes()->where('user_id', auth()->id())->where('voting_cycle_id', $cycle->id)->exists())
-                    <form method="POST" action="{{ route('ideas.vote', $idea) }}" class="space-y-4">@csrf
-                        <input type="hidden" name="voting_cycle_id" value="{{ $cycle->id }}">
-                        @foreach ($cycle->frozen_configuration['criteria'] ?? [] as $criterion)
-                            <label class="block"><span class="font-semibold">{{ $criterion['name'] }} ({{ $criterion['weight'] }}%)</span><span class="block text-sm">{{ $criterion['description'] }}</span>
-                                <select name="scores[{{ $criterion['id'] }}]" class="w-full rounded-lg border-slate-300" @required(!($cycle->frozen_configuration['allow_abstention'] ?? false))>
-                                    <option value="">{{ ($cycle->frozen_configuration['allow_abstention'] ?? false) ? 'Abster-se por falta de informação' : 'Selecione uma nota' }}</option>
-                                    @for ($score=1; $score<=5; $score++)<option value="{{ $score }}">{{ $score }}</option>@endfor
-                                </select>
-                            </label>
-                        @endforeach
-                        <p class="text-sm">Notas de 1 (menor impacto) a 5 (maior impacto). O voto registrado não pode ser editado.</p>
-                        <button class="apple-button">Registrar voto</button>
-                    </form>
-                @else
-                    <p class="text-sm">Votação indisponível para você, fora do período ou já registrada.</p>
-                @endif
+                <h3 class="text-xl font-bold">Esta ideia participa de uma votação</h3>
+                <p>{{ $cycle->name }} · Até {{ $cycle->ends_at->format('d/m/Y H:i') }}</p>
+                <p>{{ $voteStates[$cycle->id]['message'] }}</p>
+                <a class="{{ $voteStates[$cycle->id]['canVote'] ? 'apple-button' : 'apple-button--light' }}" href="{{ route('ideas.vote-form', [$idea, $cycle]) }}">{{ $voteStates[$cycle->id]['canVote'] ? 'Conhecer os resultados e votar' : 'Acompanhar esta votação' }}</a>
             </section>
         @endforeach
         @if ($canReview || $isOwner)
@@ -56,7 +40,7 @@
                     @endforeach
                 </section>
             @endif
-            <section class="apple-card space-y-3 p-6"><h3 class="text-xl font-bold">Histórico privado</h3>
+            <section class="apple-card space-y-3 p-6"><h3 class="text-xl font-bold">O que aconteceu com sua ideia</h3>
                 @foreach ($history as $event)<p><strong>{{ $event->created_at->format('d/m/Y H:i') }}</strong> — {{ \App\Models\Idea::LABELS[$event->to_status] ?? $event->to_status }}: {{ $event->notes }}</p>@endforeach
             </section>
         @endif
@@ -76,9 +60,9 @@
             </section>
             @if ($idea->status === 'evaluation')
                 <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.evaluate', $idea) }}">@csrf<h3 class="text-xl font-bold">Avaliação técnica</h3>
-                    @forelse ($criteria as $criterion)<x-workflow-field name="scores[{{ $criterion->id }}]" :label="$criterion->name.' — '.$criterion->description" type="number" min="1" max="5" step="1" />@empty<p>O administrador deve cadastrar critérios técnicos.</p>@endforelse
+                    @forelse ($criteria as $criterion)<x-workflow-field name="scores[{{ $criterion->id }}]" :label="$criterion->name.' — '.$criterion->description" type="number" min="1" max="5" step="1" />@empty<div class="rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><p class="font-semibold">Cadastre os critérios técnicos antes de avaliar.</p><p class="mt-1">Ainda não há campos de notas. Solicite ao administrador o cadastro em Administração → Novo critério técnico.</p>@can('manage-admin')<a href="{{ route('admin.index') }}" class="mt-2 inline-block underline">Configurar critérios técnicos</a>@endcan</div>@endforelse
                     <label>Recomendação<select name="recommendation" class="block w-full rounded-lg"><option value="approve">Aprovar</option><option value="reject">Rejeitar</option><option value="clarify">Solicitar esclarecimentos</option></select></label>
-                    <x-workflow-field name="notes" label="Parecer e justificativa" type="textarea" /><button class="apple-button">Registrar parecer</button>
+                    <x-workflow-field name="notes" label="Parecer e justificativa" type="textarea" /><button class="apple-button" @disabled($criteria->isEmpty())>Registrar parecer</button>
                 </form>
             @endif
             @foreach ($evaluations as $evaluation)<section class="apple-card p-6"><h3 class="font-bold">Parecer técnico — {{ number_format($evaluation->technical_score, 2, ',', '.') }}/100</h3><p>{{ $evaluation->notes }}</p><p>{{ $evaluation->recommendation }}</p>@foreach ($evaluation->scores as $score)<p>{{ $score->notes }}: {{ $score->score }}/5</p>@endforeach</section>@endforeach
@@ -108,6 +92,6 @@
                 </form>
             @endif
         @endif
-        @if (!$isOwner && !$idea->hasConflict(auth()->user()))<form class="apple-card space-y-3 p-6" method="POST" action="{{ route('ideas.conflict', $idea) }}">@csrf<h3 class="font-bold">Declaração de conflito de interesse</h3><x-workflow-field name="reason" label="Motivo privado do impedimento" type="textarea" /><button class="apple-button--light">Declarar impedimento</button></form>@endif
+        @if (!$isOwner && !$idea->hasConflict(auth()->user()))<details class="apple-card p-6"><summary class="cursor-pointer font-semibold">Você tem algum conflito de interesse nesta ideia?</summary><form class="mt-4 space-y-3" method="POST" action="{{ route('ideas.conflict', $idea) }}">@csrf<h3 class="font-bold">Declaração de conflito de interesse</h3><x-workflow-field name="reason" label="Motivo privado do impedimento" type="textarea" /><button class="apple-button--light">Declarar impedimento</button></form></details>@endif
     </div>
 </x-app-layout>

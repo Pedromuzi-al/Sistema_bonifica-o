@@ -15,6 +15,8 @@
 
     <div class="py-8">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @unless(auth()->user()->canViewPublicIdeas())<section class="apple-card space-y-2 p-5"><h3 class="font-bold">Sua conta aguarda liberação</h3><p>Peça ao administrador para liberar seu acesso. Depois disso, você poderá enviar ideias e participar das votações.</p></section>@endunless
+            <section class="apple-card space-y-3 p-5"><h3 class="text-xl font-bold">Por onde começar?</h3><div class="flex flex-wrap gap-3">@can('create', App\Models\Idea::class)<a class="apple-button" href="{{ route('ideas.create') }}">Tenho uma ideia</a>@endcan<a class="apple-button--light" href="{{ route('ideas.index', ['mine'=>1]) }}">Acompanhar minhas ideias</a>@if(auth()->user()->canViewPublicIdeas())<a class="apple-button--light" href="{{ route('cycles.index') }}">Quero participar de uma votação</a>@endif</div></section>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                 <div class="apple-card p-5">
                     <p class="text-sm text-slate-500">Total de ideias</p>
@@ -64,7 +66,7 @@
                 </div>
 
                 <div class="apple-card p-6">
-                    <h3 class="text-xl font-bold tracking-[-0.04em] text-slate-900">Notificações</h3>
+                    <h3 class="text-xl font-bold tracking-[-0.04em] text-slate-900">Seus avisos</h3><a class="text-sm text-sky-700 underline" href="{{ route('notifications.index') }}">Ver todos os avisos</a>
                     <div class="mt-5 space-y-3">
                         @forelse ($notifications as $notification)
                             <div class="rounded-[18px] border border-slate-200 bg-slate-50/75 p-4">
@@ -98,8 +100,6 @@
                     @php($canEvaluate = auth()->user()->can('evaluate', new App\Models\Idea))
                     @if ($canEvaluate)
                         <a href="{{ route('evaluation.index') }}" data-permission="true" data-permission-message="Você não tem permissão para acessar a avaliação." class="apple-button--primary">Acompanhar avaliação</a>
-                    @else
-                        <button type="button" data-permission="false" data-permission-message="Você não tem permissão para acessar a avaliação." class="apple-button--primary">Acompanhar avaliação</button>
                     @endif
                 </div>
             </div>

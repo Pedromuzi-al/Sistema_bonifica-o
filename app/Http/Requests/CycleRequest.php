@@ -20,6 +20,23 @@ class CycleRequest extends FormRequest
         throw new HttpResponseException(redirect()->back()->with('permission_error', 'Você não tem permissão para realizar esta ação.'));
     }
 
+    public function messages(): array
+    {
+        return [
+            'starts_at.after_or_equal' => 'Escolha uma data e um horário de início futuros. Você precisa de tempo para selecionar as ideias e abrir o ciclo.',
+            'ends_at.after' => 'O fim da votação deve ser depois do início.',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'name' => 'nome do ciclo',
+            'starts_at' => 'início da votação',
+            'ends_at' => 'fim da votação',
+        ];
+    }
+
     public function rules(): array
     {
         return [

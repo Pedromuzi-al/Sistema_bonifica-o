@@ -1,138 +1,63 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Registrar nova ideia</h2>
+        <h2 class="text-2xl font-bold">Compartilhe sua ideia</h2>
+        <p class="mt-2 text-slate-600">Conte o que pode melhorar no seu dia a dia. Não precisa escrever um projeto técnico.</p>
     </x-slot>
-
-    <div class="py-8">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <form action="{{ route('ideas.store') }}" method="POST" class="bg-white shadow rounded-xl p-6 space-y-6">
-                @csrf
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Título</label>
-                        <input name="title" value="{{ old('title') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+    @php
+        $selectedSectors = array_map('strval', old('beneficiary_sectors', []));
+        $defaultStep = $errors->hasAny(['title', 'problem_description', 'solution_description']) ? 1 : ($errors->hasAny(['origin_sector_id', 'beneficiary_sectors', 'beneficiary_sectors.*']) ? 2 : ($errors->any() ? 3 : 1));
+    @endphp
+    <div class="mx-auto max-w-3xl space-y-5 px-4 py-8">
+        <p class="rounded-xl bg-sky-50 p-4 text-sm text-sky-900">Seu nome fica protegido dos demais funcionários. Somente pessoas com autorização podem consultar a autoria.</p>
+        <form method="POST" action="{{ route('ideas.review') }}" class="apple-card space-y-6 p-5 sm:p-8" x-data="ideaWizard({{ $defaultStep }})" :novalidate="true" @submit="submit($event)">
+            @csrf
+            <nav aria-label="Etapas do cadastro" class="grid grid-cols-3 gap-2 text-sm">
+                @foreach ([1 => 'Sua ideia', 2 => 'Quem ajuda', 3 => 'Benefícios'] as $step => $label)
+                    <div class="rounded-xl border p-3" :class="step === {{ $step }} ? 'border-sky-500 bg-sky-50 text-sky-900' : 'border-slate-200 text-slate-500'" :aria-current="step === {{ $step }} ? 'step' : null"><span class="block font-bold">{{ $step }}</span>{{ $label }}</div>
+                @endforeach
+            </nav>
+            <p x-cloak aria-live="polite" class="text-sm text-slate-500" x-text="'Passo ' + step + ' de 3. Você vai conferir tudo antes de enviar.'"></p>
+            <fieldset data-step="1" x-show="step === 1" class="space-y-5">
+                <legend class="mb-4 text-xl font-bold" tabindex="-1">1. O que você quer melhorar?</legend>
+                <x-workflow-field name="title" label="Dê um nome para a ideia" placeholder="Ex.: Organizar os pedidos em uma fila única" maxlength="255" />
+                <x-workflow-field name="problem_description" label="O que acontece hoje e atrapalha o trabalho?" type="textarea" placeholder="Ex.: Os pedidos chegam por vários canais e alguns acabam esquecidos." maxlength="20000" />
+                <x-workflow-field name="solution_description" label="Como você acha que isso poderia melhorar?" type="textarea" placeholder="Ex.: Reunir todos os pedidos em uma lista que a equipe consiga acompanhar." maxlength="20000" />
+                <p class="text-sm text-slate-500">Uma explicação simples, com suas palavras, já ajuda a equipe a entender.</p>
+            </fieldset>
+            <fieldset data-step="2" x-show="step === 2" class="space-y-5">
+                <legend class="mb-4 text-xl font-bold" tabindex="-1">2. Onde a ideia faz diferença?</legend>
+                <label for="origin-sector" class="block text-sm font-medium">Em qual setor você percebeu o problema?</label>
+                <select id="origin-sector" name="origin_sector_id" class="block w-full rounded-lg border-slate-300" required>
+                    <option value="">Escolha um setor</option>
+                    @foreach ($sectors as $sector)<option value="{{ $sector->id }}" @selected(old('origin_sector_id', auth()->user()->sector_id) == $sector->id)>{{ $sector->name }}</option>@endforeach
+                </select>
+                <fieldset class="space-y-3 rounded-xl border border-slate-200 p-4" x-data="{ selected: @js($selectedSectors), all: @js($sectors->pluck('id')->map(fn ($id) => (string) $id)->values()) }">
+                    <legend class="px-1 text-sm font-semibold">Quem pode se beneficiar? Marque um ou mais setores.</legend>
+                    <label class="flex items-center gap-3 rounded-lg bg-slate-50 p-3"><input type="checkbox" :checked="all.length > 0 && selected.length === all.length" @change="selected = $event.target.checked ? [...all] : []; $dispatch('change')"> Todos os setores</label>
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        @foreach ($sectors as $sector)<label class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3"><input type="checkbox" name="beneficiary_sectors[]" value="{{ $sector->id }}" x-model="selected" @checked(in_array((string) $sector->id, $selectedSectors, true)) @change="$el.setCustomValidity('')">{{ $sector->name }}</label>@endforeach
                     </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Problema identificado</label>
-                        <textarea name="problem_description" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>{{ old('problem_description') }}</textarea>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Solução proposta</label>
-                        <textarea name="solution_description" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>{{ old('solution_description') }}</textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Setor de origem</label>
-                        <select name="origin_sector_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                            <option value="">Selecione</option>
-                            @foreach ($sectors as $sector)
-                                <option value="{{ $sector->id }}">{{ $sector->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Setores beneficiados</label>
-                        <div
-                            class="relative mt-1"
-                            x-data="{
-                                open: false,
-                                selected: @js(collect(old('beneficiary_sectors', []))->map(fn ($id) => (string) $id)->values()),
-                                allSectorIds: @js($sectors->pluck('id')->map(fn ($id) => (string) $id)->values()),
-                                get allSelected() {
-                                    return this.allSectorIds.length > 0 && this.allSectorIds.every(id => this.selected.includes(id));
-                                },
-                                toggleAll(checked) {
-                                    this.selected = checked ? [...this.allSectorIds] : [];
-                                }
-                            }"
-                            @click.outside="open = false"
-                            @keydown.escape.window="open = false"
-                        >
-                            <button
-                                type="button"
-                                class="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                                x-bind:aria-expanded="open.toString()"
-                                aria-controls="beneficiary-sector-options"
-                                @click="open = !open"
-                            >
-                                <span
-                                    class="truncate"
-                                    x-text="selected.length === 0 ? 'Selecione os setores' : (allSelected ? 'Todos os setores' : (selected.length === 1 ? '1 setor selecionado' : selected.length + ' setores selecionados'))"
-                                ></span>
-                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" x-bind:class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-
-                            <div
-                                x-cloak
-                                x-show="open"
-                                x-transition.origin.top
-                                class="absolute left-0 right-0 z-20 mt-2 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10"
-                                id="beneficiary-sector-options"
-                                role="group"
-                                aria-label="Setores beneficiados"
-                            >
-                                <label class="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-sky-50">
-                                    <input
-                                        type="checkbox"
-                                        class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                                        x-bind:checked="allSelected"
-                                        @change="toggleAll($event.target.checked)"
-                                    >
-                                    Todos
-                                </label>
-
-                                <div class="my-1 border-t border-slate-100"></div>
-
-                                @foreach ($sectors as $sector)
-                                    <label class="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50">
-                                        <input
-                                            type="checkbox"
-                                            name="beneficiary_sectors[]"
-                                            value="{{ $sector->id }}"
-                                            class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                                            x-model="selected"
-                                            @checked(in_array((string) $sector->id, collect(old('beneficiary_sectors', []))->map(fn ($id) => (string) $id)->all(), true))
-                                        >
-                                        {{ $sector->name }}
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-                        @error('beneficiary_sectors')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                        @error('beneficiary_sectors.*')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Resultados esperados</label>
-                        <textarea name="expected_results" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>{{ old('expected_results') }}</textarea>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Recursos necessários</label>
-                        <textarea name="resources_needed" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>{{ old('resources_needed') }}</textarea>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Informações complementares</label>
-                        <textarea name="additional_information" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ old('additional_information') }}</textarea>
-                    </div>
+                    <p class="text-sm text-rose-700" x-show="sectorError" x-cloak role="alert">Marque pelo menos um setor que pode se beneficiar.</p>
+                </fieldset>
+            </fieldset>
+            <fieldset data-step="3" x-show="step === 3" class="space-y-5">
+                <legend class="mb-4 text-xl font-bold" tabindex="-1">3. O que pode melhorar com essa ideia?</legend>
+                <x-workflow-field name="expected_results" label="Que benefícios você espera?" type="textarea" placeholder="Ex.: Menos pedidos esquecidos e menos tempo procurando informações. Não precisa calcular valores agora." maxlength="20000" />
+                <x-workflow-field name="resources_needed" label="O que seria necessário para colocar em prática?" type="textarea" placeholder="Ex.: Uma planilha e uma conversa com a equipe. Se ainda não souber, escreva isso aqui." maxlength="20000" />
+                <details class="rounded-xl border border-slate-200 p-4" @if(old('additional_information')) open @endif>
+                    <summary class="cursor-pointer font-medium">Quer acrescentar alguma coisa? (opcional)</summary>
+                    <div class="mt-3"><x-workflow-field name="additional_information" label="Exemplos ou observações" type="textarea" :required="false" maxlength="20000" /></div>
+                </details>
+                <p class="text-sm text-slate-500">Esses benefícios ainda são uma expectativa. Os resultados reais serão medidos depois da implementação.</p>
+            </fieldset>
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+                <a href="{{ route('ideas.index', ['mine' => 1]) }}" class="text-sm text-slate-600 underline">Voltar para minhas ideias</a>
+                <div class="flex gap-3">
+                    <button type="button" x-cloak x-show="step > 1" @click="move(step - 1)" class="apple-button--light">Voltar</button>
+                    <button type="button" x-cloak x-show="step < 3" @click="next()" class="apple-button">Continuar</button>
+                    <button type="submit" x-show="step === 3" class="apple-button">Conferir minha ideia</button>
                 </div>
-
-                <div class="flex justify-end gap-3">
-                    <a href="{{ route('ideas.index') }}" class="rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Cancelar</a>
-                    <button type="submit" class="rounded-full bg-[#0faddf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-sm shadow-sky-500/20 hover:bg-[#0b96c2]">Salvar ideia</button>
-                </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </x-app-layout>
