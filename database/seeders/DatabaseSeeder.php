@@ -8,12 +8,18 @@ use App\Models\Sector;
 use App\Models\User;
 use App\Models\VotingCycle;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
+    {
+        DB::transaction(fn () => $this->seedDefaults());
+    }
+
+    private function seedDefaults(): void
     {
         $sectors = [
             ['name' => 'Operações', 'description' => 'Setor responsável pela operação da empresa.'],
@@ -46,28 +52,34 @@ class DatabaseSeeder extends Seeder
         $evaluator->givePermissionTo(['create_ideas', 'vote_ideas', 'evaluate_ideas']);
         $admin->givePermissionTo(['create_ideas', 'vote_ideas', 'evaluate_ideas', 'manage_admin', 'view_author_identity', 'view_audit_logs']);
 
-        $adminUser = User::factory()->create([
+        $adminUser = User::withTrashed()->firstOrCreate(['email' => 'admin@corp.local'], User::factory()->raw([
             'name' => 'Administrador Corp',
             'email' => 'admin@corp.local',
             'sector_id' => Sector::where('name', 'Tecnologia')->value('id'),
-        ]);
-        $adminUser->assignRole('admin');
+        ]));
+        if ($adminUser->wasRecentlyCreated) {
+            $adminUser->assignRole('admin');
+        }
 
-        $evaluatorUser = User::factory()->create([
+        $evaluatorUser = User::withTrashed()->firstOrCreate(['email' => 'avaliador@corp.local'], User::factory()->raw([
             'name' => 'Avaliadora Técnica',
             'email' => 'avaliador@corp.local',
             'sector_id' => Sector::where('name', 'Tecnologia')->value('id'),
-        ]);
-        $evaluatorUser->assignRole('evaluator');
+        ]));
+        if ($evaluatorUser->wasRecentlyCreated) {
+            $evaluatorUser->assignRole('evaluator');
+        }
 
-        $employeeUser = User::factory()->create([
+        $employeeUser = User::withTrashed()->firstOrCreate(['email' => 'funcionario@corp.local'], User::factory()->raw([
             'name' => 'Colaborador da Operação',
             'email' => 'funcionario@corp.local',
             'sector_id' => Sector::where('name', 'Operações')->value('id'),
-        ]);
-        $employeeUser->assignRole('employee');
+        ]));
+        if ($employeeUser->wasRecentlyCreated) {
+            $employeeUser->assignRole('employee');
+        }
 
-        $cycle = VotingCycle::create([
+        $cycle = VotingCycle::firstOrCreate(['name' => 'Ciclo de votação Q4'], [
             'name' => 'Ciclo de votação Q4',
             'description' => 'Processo de avaliação popular das ideias mais relevantes.',
             'starts_at' => now()->subDays(2),
@@ -76,13 +88,17 @@ class DatabaseSeeder extends Seeder
             'weight_configuration' => ['real_results' => 50, 'technical' => 30, 'votes' => 20],
         ]);
 
-        $cycle->criteria()->createMany([
-            ['name' => 'Impacto operacional', 'weight' => 0.4, 'description' => 'Impacto do ganho operacional.'],
-            ['name' => 'Benefício para clientes', 'weight' => 0.3, 'description' => 'Maturidade da proposta no cliente.'],
-            ['name' => 'Facilidade de execução', 'weight' => 0.3, 'description' => 'Complexidade para implementar.'],
-        ]);
+        if (! $cycle->frozen_configuration) {
+            foreach ([
+                ['name' => 'Impacto operacional', 'weight' => 0.4, 'description' => 'Impacto do ganho operacional.'],
+                ['name' => 'Benefício para clientes', 'weight' => 0.3, 'description' => 'Maturidade da proposta no cliente.'],
+                ['name' => 'Facilidade de execução', 'weight' => 0.3, 'description' => 'Complexidade para implementar.'],
+            ] as $criterion) {
+                $cycle->criteria()->firstOrCreate(['name' => $criterion['name']], $criterion);
+            }
+        }
 
-        $idea = Idea::create([
+        $idea = Idea::firstOrCreate(['author_id' => $employeeUser->id, 'title' => 'Automatização de triagem de pendências'], [
             'author_id' => $employeeUser->id,
             'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
             'title' => 'Automatização de triagem de pendências',
@@ -94,11 +110,12 @@ class DatabaseSeeder extends Seeder
             'is_public' => false,
         ]);
 
-        $idea->beneficiarySectors()->attach([
-            Sector::where('name', 'Operações')->value('id'),
-            Sector::where('name', 'Tecnologia')->value('id'),
-        ]);
-
-        IdeaStatusHistory::record($idea, Idea::STATUS_SUBMITTED, $employeeUser, 'Proposta de demonstração enviada.');
+        if ($idea->wasRecentlyCreated) {
+            $idea->beneficiarySectors()->sync([
+                Sector::where('name', 'Operações')->value('id'),
+                Sector::where('name', 'Tecnologia')->value('id'),
+            ]);
+            IdeaStatusHistory::create(['idea_id' => $idea->id, 'from_status' => null, 'to_status' => Idea::STATUS_SUBMITTED, 'changed_by_user_id' => $employeeUser->id, 'notes' => 'Proposta de demonstração enviada.']);
+        }
     }
 }
