@@ -7,11 +7,13 @@ use App\Models\Sector;
 use App\Models\Team;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
@@ -51,15 +53,15 @@ class AdministrationAccessTest extends TestCase
     public function test_admin_creates_user_with_sector_team_permissions_and_email_verification(): void
     {
         $team = Team::factory()->create();
-        $this->actingAs($this->admin)->post(route('admin.users.store'), ['name' => 'Nova Pessoa', 'email' => 'nova@corp.local', 'password' => 'senha-inicial-123', 'password_confirmation' => 'senha-inicial-123', 'sector_id' => Sector::first()->id, 'teams' => [$team->id], 'role' => 'employee', 'permissions' => ['view_author_identity'], 'email_verified_at' => now(), 'blocked_at' => now()])->assertSessionHasNoErrors()->assertRedirect();
+        $this->actingAs($this->admin)->post(route('admin.users.store'), ['name' => 'Nova Pessoa', 'email' => 'nova@corp.local', 'sector_id' => Sector::first()->id, 'teams' => [$team->id], 'role' => 'employee', 'permissions' => ['view_author_identity'], 'email_verified_at' => now(), 'blocked_at' => now()])->assertSessionHasNoErrors()->assertRedirect();
         $user = User::where('email', 'nova@corp.local')->firstOrFail();
-        $this->assertTrue(Hash::check('senha-inicial-123', $user->password));
+        $this->assertTrue($user->invitation_pending);
         $this->assertNull($user->email_verified_at);
         $this->assertNull($user->blocked_at);
         $this->assertTrue($user->hasRole('employee'));
         $this->assertTrue($user->hasPermissionTo('view_author_identity'));
         $this->assertDatabaseHas('team_user', ['team_id' => $team->id, 'user_id' => $user->id]);
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, ResetPassword::class);
         $log = AuditLog::where('action', 'user_created')->firstOrFail();
         $this->assertStringNotContainsString('senha-inicial-123', json_encode($log->details));
     }
@@ -80,7 +82,7 @@ class AdministrationAccessTest extends TestCase
         $this->assertSame($password, $user->password);
         $this->assertNull($user->email_verified_at);
         Notification::assertSentTo($user, VerifyEmail::class);
-        $this->actingAs($user)->get(route('ideas.create'))->assertRedirect(route('verification.notice'));
+        $this->actingAs($user)->withSession(['access_version' => $user->access_version])->get(route('ideas.create'))->assertRedirect(route('verification.notice'));
         $this->get(route('profile.edit'))->assertOk();
     }
 
@@ -174,7 +176,7 @@ class AdministrationAccessTest extends TestCase
         $this->employee->delete();
         $this->actingAs($this->admin)->get(route('admin.users.index', ['status' => 'deactivated']))->assertOk()->assertSeeText($this->employee->name);
         $this->get(route('admin.users.edit', $this->employee->id))->assertOk()->assertSeeText('Reativar acesso');
-        $this->get(route('admin.users.create'))->assertOk()->assertSeeText('Senha inicial');
+        $this->get(route('admin.users.create'))->assertOk()->assertSeeText('convite por e-mail');
         $this->get(route('admin.organization'))->assertOk();
         $this->get(route('admin.sectors.create'))->assertOk();
         $this->get(route('admin.teams.create'))->assertOk();
@@ -245,5 +247,94 @@ class AdministrationAccessTest extends TestCase
         Notification::assertSentTo($target, VerifyEmail::class);
         $this->assertNull($target->fresh()->email_verified_at);
         $this->assertDatabaseHas('audit_logs', ['action' => 'verification_requested', 'model_id' => $target->id]);
+    }
+
+    public function test_invitation_sets_password_verifies_email_and_cannot_be_reused(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.users.store'), ['name' => 'Convidada', 'email' => 'convite@corp.local', 'role' => 'employee'])->assertSessionHasNoErrors();
+        $user = User::where('email', 'convite@corp.local')->firstOrFail();
+        $notification = Notification::sent($user, ResetPassword::class)->first();
+        $this->assertNotNull($notification);
+        auth()->logout();
+        $data = ['email' => $user->email, 'token' => $notification->token, 'password' => 'minha-senha-123', 'password_confirmation' => 'minha-senha-123'];
+        $this->post(route('password.store'), $data)->assertSessionHasNoErrors()->assertRedirect(route('login'));
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+        $this->assertFalse($user->fresh()->invitation_pending);
+        $this->assertTrue(Hash::check($data['password'], $user->fresh()->password));
+        $this->post(route('password.store'), $data)->assertSessionHasErrors('email');
+        $this->post(route('login'), ['email' => $user->email, 'password' => $data['password']])->assertSessionHasNoErrors();
+        $this->get(route('dashboard'))->assertOk();
+    }
+
+    public function test_blocked_and_expired_invitations_cannot_set_password(): void
+    {
+        $user = User::factory()->unverified()->create(['invitation_pending' => true, 'blocked_at' => now()]);
+        $token = Password::createToken($user);
+        $data = ['email' => $user->email, 'token' => $token, 'password' => 'nova-senha-123', 'password_confirmation' => 'nova-senha-123'];
+        $this->post(route('password.store'), $data)->assertForbidden();
+        $this->assertTrue($user->fresh()->invitation_pending);
+        $user->forceFill(['blocked_at' => null])->save();
+        $this->travel(61)->minutes();
+        $this->post(route('password.store'), $data)->assertSessionHasErrors('email');
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_email_change_revokes_previous_sessions_and_remember_token(): void
+    {
+        $oldToken = $this->employee->remember_token;
+        DB::table('sessions')->insert(['id' => 'old-session', 'user_id' => $this->employee->id, 'payload' => '', 'last_activity' => time()]);
+        $this->actingAs($this->admin)->patch(route('admin.users.update', $this->employee), [...$this->userData($this->employee), 'email' => 'alterado@corp.local'])->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('sessions', ['id' => 'old-session']);
+        $this->assertNotSame($oldToken, $this->employee->fresh()->remember_token);
+        $this->employee->fresh()->forceFill(['email_verified_at' => now()])->save();
+        $this->actingAs($this->employee->fresh())->withSession(['access_version' => 0])->getJson(route('dashboard'))->assertUnauthorized();
+    }
+
+    public function test_deactivated_account_can_have_access_reviewed_before_reactivation(): void
+    {
+        $this->employee->delete();
+        $this->actingAs($this->admin)->get(route('admin.users.edit', $this->employee->id))->assertSeeText('Salvar dados e acesso');
+        $this->patch(route('admin.users.update', $this->employee->id), [...$this->userData($this->employee), 'role' => null, 'permissions' => []])->assertSessionHasNoErrors();
+        $this->assertSoftDeleted($this->employee);
+        $this->post(route('admin.users.reactivate', $this->employee->id), ['reason' => 'Acessos revisados'])->assertSessionHasNoErrors();
+        $this->assertFalse($this->employee->fresh()->hasRole('employee'));
+    }
+
+    public function test_empty_checkbox_selections_are_preserved_after_validation_failure(): void
+    {
+        $team = Team::factory()->create();
+        $this->employee->teams()->attach($team);
+        $this->employee->givePermissionTo('view_author_identity');
+        $this->actingAs($this->admin)->from(route('admin.users.edit', $this->employee))->patch(route('admin.users.update', $this->employee), ['name' => '', 'email' => $this->employee->email, 'role' => 'employee'])->assertSessionHasErrors('name');
+        $html = $this->get(route('admin.users.edit', $this->employee))->getContent();
+        $this->assertDoesNotMatchRegularExpression('/name="teams\[\]"[^>]*checked/', $html);
+        $this->assertDoesNotMatchRegularExpression('/name="permissions\[\]"[^>]*checked/', $html);
+        $this->from(route('admin.teams.edit', $team))->patch(route('admin.teams.update', $team), ['name' => '', 'is_active' => true])->assertSessionHasErrors('name');
+        $html = $this->get(route('admin.teams.edit', $team))->getContent();
+        $this->assertDoesNotMatchRegularExpression('/name="members\[\]"[^>]*checked/', $html);
+    }
+
+    public function test_pending_invitation_cannot_login_and_resending_invalidates_previous_link(): void
+    {
+        $user = User::factory()->unverified()->create(['invitation_pending' => true]);
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'password'])->assertSessionHasErrors('email');
+        $this->assertGuest();
+        $oldToken = Password::createToken($user);
+        $this->travel(61)->seconds();
+        $this->actingAs($this->admin)->post(route('admin.users.verification', $user))->assertSessionHasNoErrors();
+        Notification::assertSentTo($user, ResetPassword::class);
+        $this->assertFalse(Password::tokenExists($user, $oldToken));
+        $this->assertTrue($user->fresh()->invitation_pending);
+    }
+
+    public function test_password_recovery_also_revokes_existing_sessions_without_verifying_regular_users(): void
+    {
+        $user = User::factory()->unverified()->create();
+        DB::table('sessions')->insert(['id' => 'reset-session', 'user_id' => $user->id, 'payload' => '', 'last_activity' => time()]);
+        $token = Password::createToken($user);
+        $this->post(route('password.store'), ['email' => $user->email, 'token' => $token, 'password' => 'nova-senha-123', 'password_confirmation' => 'nova-senha-123'])->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('sessions', ['id' => 'reset-session']);
+        $this->assertSame(1, $user->fresh()->access_version);
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
 }

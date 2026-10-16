@@ -12,6 +12,13 @@ class AccessPermissionsRequest extends FormRequest
         return $this->user()->can('manage-admin');
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'permissions' => $this->input('permissions', []),
+        ]);
+    }
+
     public function rules(): array
     {
         return [

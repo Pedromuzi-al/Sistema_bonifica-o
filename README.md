@@ -128,3 +128,11 @@ Em **Setores e equipes**, cadastre, edite e desative os agrupamentos. Cadastros 
 A confirmação de e-mail é obrigatória antes de acessar as áreas do sistema. Novos cadastros e alterações de e-mail enviam um link assinado; o titular pode corrigir o endereço e reenviar a mensagem sem já estar verificado. A confirmação do endereço não concede um perfil automaticamente: o acesso corporativo ainda precisa de liberação administrativa. Administradores não confirmam o e-mail em nome de outra pessoa.
 
 Após atualizar esta branch, execute `php artisan migrate` para adicionar equipes, associações, situação dos setores e controle de bloqueio/sessões. O banco existente é preservado. No ambiente local, `MAIL_MAILER=log` registra as mensagens em `storage/logs/laravel.log`; para entrega real, configure `MAIL_MAILER=smtp`, servidor, porta, usuário, senha e remetente no `.env`, e execute `php artisan config:clear`. Links de confirmação expiram conforme a configuração de autenticação e não devem ser compartilhados.
+
+## Administração e primeiro acesso
+
+Na administração, cadastre a pessoa com e-mail, setor, equipes e perfil de acesso. O sistema gera uma senha aleatória desconhecida e envia um convite: o titular define a própria senha pelo link, confirmando também seu e-mail. O link usa o token de recuperação, expira conforme `auth.passwords.users.expire` (60 minutos por padrão) e só pode ser usado uma vez. Convites pendentes podem ser reenviados na gestão da pessoa ou por “Esqueci minha senha”; contas bloqueadas não concluem o convite. O cadastro público existente continua criando contas sem perfil, que dependem de liberação administrativa.
+
+Contas desativadas podem ter seus acessos revisados antes da reativação. Trocar o e-mail invalida as sessões e o acesso persistente anteriores; uma nova confirmação é necessária. A recuperação de senha também revoga sessões anteriores. Na edição do próprio perfil, a sessão atual é preservada para permitir a confirmação do novo endereço.
+
+Antes de usar os convites, execute as migrations, configure o transporte de e-mail e teste a entrega em uma caixa real. Os testes automatizados usam notificações simuladas.

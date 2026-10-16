@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\AdministrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -59,17 +61,22 @@ class AdminUserController extends Controller
     public function store(AdminUserRequest $request, AdministrationService $administration): RedirectResponse
     {
         $user = $administration->createUser($request->user(), $request->validated());
-        $user->sendEmailVerificationNotification();
+        $this->sendInvitation($user);
 
-        return redirect()->route('admin.users.edit', $user)->with('success', 'Pessoa cadastrada. A confirmação de e-mail é necessária antes de acessar o sistema.');
+        return redirect()->route('admin.users.edit', $user)->with('success', 'Pessoa cadastrada. Um convite foi enviado para definir a senha e confirmar o e-mail.');
     }
 
     public function update(AdminUserRequest $request, User $user, AdministrationService $administration): RedirectResponse
     {
         $oldEmail = $user->email;
         $updated = $administration->updateUser($request->user(), $user, $request->validated());
+        if ($updated->id === $request->user()->id) {
+            $request->session()->put('access_version', (int) $updated->access_version);
+        }
         if ($oldEmail !== $updated->email) {
-            $updated->sendEmailVerificationNotification();
+            if ($updated->isAvailable()) {
+                $updated->invitation_pending ? $this->sendInvitation($updated) : $updated->sendEmailVerificationNotification();
+            }
         }
 
         return redirect()->route('admin.users.edit', $updated)->with('success', 'Dados e acesso atualizados.');
@@ -98,10 +105,23 @@ class AdminUserController extends Controller
         $this->authorize('manage-admin');
         abort_unless($user->isAvailable(), 422, 'Reative a conta antes de reenviar a confirmação.');
         if (! $user->hasVerifiedEmail()) {
-            $user->sendEmailVerificationNotification();
+            $user->invitation_pending ? $this->sendInvitation($user) : $user->sendEmailVerificationNotification();
             AuditLog::create(['causer_id' => $request->user()->id, 'model_type' => User::class, 'model_id' => $user->id, 'action' => 'verification_requested']);
         }
 
         return back()->with('success', 'Se o e-mail estava pendente, uma nova confirmação foi enviada.');
+    }
+
+    private function sendInvitation(User $user): void
+    {
+        try {
+            $status = Password::sendResetLink(['email' => $user->email]);
+        } catch (\Throwable $exception) {
+            report($exception);
+            throw ValidationException::withMessages(['email' => 'Os dados foram salvos, mas o convite não pôde ser enviado. Abra a gestão desta pessoa e reenvie o convite após conferir a configuração de e-mail.']);
+        }
+        if ($status !== Password::RESET_LINK_SENT) {
+            throw ValidationException::withMessages(['email' => 'Os dados foram salvos. Não foi enviado outro convite: '.__($status)]);
+        }
     }
 }

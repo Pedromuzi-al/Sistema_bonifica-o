@@ -118,7 +118,7 @@
                             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                                 @foreach ($permissions as $permission)
                                     <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50/60">
-                                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" @checked($user->getDirectPermissions()->contains('id', $permission->id))>
+                                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" @checked(in_array($permission->name, old('permissions', session()->hasOldInput() ? [] : $user->getDirectPermissions()->pluck('name')->all())))>
                                         {{ $permissionLabels[$permission->name] ?? $permission->name }}
                                     </label>
                                 @endforeach

@@ -7,6 +7,7 @@ use App\Models\Idea;
 use App\Models\User;
 use App\Policies\IdeaPolicy;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Event;
@@ -22,6 +23,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        ResetPassword::toMailUsing(function ($user, string $token) {
+            $url = route('password.reset', ['token' => $token, 'email' => $user->email]);
+
+            return (new MailMessage)
+                ->subject($user->invitation_pending ? 'Seu convite para a plataforma de ideias' : 'Redefina sua senha')
+                ->greeting('Olá, '.$user->name.'!')
+                ->line($user->invitation_pending ? 'Defina sua senha para concluir seu primeiro acesso. Este link também confirma seu e-mail.' : 'Recebemos uma solicitação para redefinir sua senha.')
+                ->action($user->invitation_pending ? 'Definir minha senha' : 'Redefinir senha', $url)
+                ->line('O link expira em '.config('auth.passwords.users.expire').' minutos. Se necessário, solicite outro em Esqueci minha senha.');
+        });
         VerifyEmail::toMailUsing(fn ($notifiable, string $url) => (new MailMessage)
             ->subject('Confirme seu e-mail na plataforma de ideias')
             ->greeting('Olá, '.$notifiable->name.'!')

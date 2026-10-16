@@ -4,13 +4,20 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class AdminUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user()->can('manage-admin');
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'teams' => $this->input('teams', []),
+            'permissions' => $this->input('permissions', []),
+        ]);
     }
 
     public function rules(): array
@@ -20,7 +27,7 @@ class AdminUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'lowercase', 'max:255', Rule::unique('users', 'email')->ignore($target?->id)],
-            'password' => $target ? ['prohibited'] : ['required', 'confirmed', Password::defaults()],
+            'password' => ['prohibited'],
             'sector_id' => ['nullable', 'integer', 'exists:sectors,id'],
             'teams' => ['nullable', 'array'],
             'teams.*' => ['integer', 'distinct', 'exists:teams,id'],

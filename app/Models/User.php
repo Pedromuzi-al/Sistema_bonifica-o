@@ -35,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'access_version' => 'integer',
+            'invitation_pending' => 'boolean',
             'blocked_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',

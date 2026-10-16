@@ -20,7 +20,8 @@ class AdministrationService
             $this->lockAccounts($actor);
             $this->authorizeAdmin($actor);
             $this->validateAssignments($data);
-            $user = User::create(collect($data)->only(['name', 'email', 'password', 'sector_id'])->all());
+            $user = User::create([...collect($data)->only(['name', 'email', 'sector_id'])->all(), 'password' => Str::random(64)]);
+            $user->forceFill(['invitation_pending' => true])->save();
             $this->assignAccess($user, $data);
             $user->teams()->sync($data['teams'] ?? []);
             $this->audit($actor, $user, 'user_created', $this->userSnapshot($user));
@@ -37,9 +38,6 @@ class AdministrationService
                 $this->authorizeAdmin($actor);
             }
             $target = User::withTrashed()->findOrFail($target->id);
-            if ($target->trashed()) {
-                throw ValidationException::withMessages(['user' => 'Reative a conta antes de editar seus dados.']);
-            }
             $hadAdministrator = $this->hasAvailableAdministrator();
             $before = $this->userSnapshot($target);
             if (! $profileOnly) {
@@ -49,6 +47,9 @@ class AdministrationService
             $target->fill(collect($data)->only($profileOnly ? ['name', 'email'] : ['name', 'email', 'sector_id'])->all());
             if ($target->isDirty('email')) {
                 $target->email_verified_at = null;
+                $target->remember_token = Str::random(60);
+                $target->access_version = (int) $target->access_version + 1;
+                $this->revokeSessions($target);
                 DB::table('password_reset_tokens')->where('email', $oldEmail)->delete();
             }
             $target->save();
@@ -189,9 +190,9 @@ class AdministrationService
     private function lockAccounts(User $actor): void
     {
         if (DB::connection()->getDriverName() === 'sqlite') {
-            DB::table('users')->where('id', $actor->id)->update(['id' => DB::raw('id')]);
+            DB::table('administration_locks')->where('id', 1)->update(['id' => 1]);
         }
-        User::withTrashed()->orderBy('id')->lockForUpdate()->get(['id']);
+        DB::table('administration_locks')->where('id', 1)->lockForUpdate()->first();
         $current = User::find($actor->id);
         abort_unless($current && $current->isAvailable(), 403);
     }

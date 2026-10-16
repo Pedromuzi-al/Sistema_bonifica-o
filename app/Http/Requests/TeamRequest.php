@@ -12,6 +12,13 @@ class TeamRequest extends FormRequest
         return $this->user()->can('manage-admin');
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'members' => $this->input('members', []),
+        ]);
+    }
+
     public function rules(): array
     {
         return [

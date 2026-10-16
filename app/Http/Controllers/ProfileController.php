@@ -51,6 +51,9 @@ class ProfileController extends Controller
 
         $oldEmail = $targetUser->email;
         $targetUser = $administration->updateUser($request->user(), $targetUser, $request->validated(), true);
+        if ($targetUser->id === $request->user()->id) {
+            $request->session()->put('access_version', (int) $targetUser->access_version);
+        }
         if ($oldEmail !== $targetUser->email) {
             $targetUser->sendEmailVerificationNotification();
         }
