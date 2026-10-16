@@ -24,6 +24,7 @@
             'vote_ideas' => 'Votar em ideias',
             'evaluate_ideas' => 'Avaliar ideias',
             'manage_admin' => 'Gerenciar administração',
+            'view_author_identity' => 'Consultar autoria privada', 'view_audit_logs' => 'Consultar auditoria',
         ];
     @endphp
 
@@ -117,7 +118,7 @@
                             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                                 @foreach ($permissions as $permission)
                                     <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50/60">
-                                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" @checked($user->getDirectPermissions()->contains('id', $permission->id))>
+                                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" @checked(in_array($permission->name, old('permissions', session()->hasOldInput() ? [] : $user->getDirectPermissions()->pluck('name')->all())))>
                                         {{ $permissionLabels[$permission->name] ?? $permission->name }}
                                     </label>
                                 @endforeach
@@ -162,8 +163,8 @@
                 <section class="apple-card border-rose-100 p-5 sm:p-8">
                     <div class="mb-5">
                         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Zona de atenção</p>
-                        <h3 class="mt-1 text-xl font-bold tracking-[-0.04em] text-slate-900">Excluir conta</h3>
-                        <p class="mt-1 text-sm text-slate-500">Esta ação é permanente e remove seus dados da plataforma.</p>
+                        <h3 class="mt-1 text-xl font-bold tracking-[-0.04em] text-slate-900">Desativar conta</h3>
+                        <p class="mt-1 text-sm text-slate-500">Seu acesso será desativado. O histórico corporativo será preservado.</p>
                     </div>
                     <div class="max-w-2xl">
                         @include('profile.partials.delete-user-form')

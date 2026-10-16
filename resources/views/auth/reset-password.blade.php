@@ -1,4 +1,5 @@
 <x-guest-layout>
+    <p class="mb-4">Defina sua senha. Se este é seu primeiro acesso por convite, seu e-mail será confirmado ao concluir.</p>
     <form method="POST" action="{{ route('password.store') }}">
         @csrf
 
@@ -32,7 +33,7 @@
 
         <div class="flex items-center justify-end mt-4">
             <x-primary-button>
-                {{ __('Redefinir senha') }}
+                {{ __('Salvar minha senha') }}
             </x-primary-button>
         </div>
     </form>

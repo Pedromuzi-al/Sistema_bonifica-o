@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class StoreIdeaRequest extends FormRequest
 {
@@ -29,9 +30,9 @@ class StoreIdeaRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'problem_description' => ['required', 'string', 'max:20000'],
             'solution_description' => ['required', 'string', 'max:20000'],
-            'origin_sector_id' => ['required', 'integer', 'exists:sectors,id'],
+            'origin_sector_id' => ['required', 'integer', Rule::exists('sectors', 'id')->where('is_active', true)],
             'beneficiary_sectors' => ['required', 'array', 'min:1'],
-            'beneficiary_sectors.*' => ['integer', 'distinct', 'exists:sectors,id'],
+            'beneficiary_sectors.*' => ['integer', 'distinct', Rule::exists('sectors', 'id')->where('is_active', true)],
             'expected_results' => ['required', 'string', 'max:20000'],
             'resources_needed' => ['required', 'string', 'max:20000'],
             'additional_information' => ['nullable', 'string', 'max:20000'],
