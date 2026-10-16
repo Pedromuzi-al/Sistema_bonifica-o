@@ -50,7 +50,7 @@ class Idea extends Model
         'finalized' => 'Finalizada', 'rejected' => 'Rejeitada',
     ];
 
-    protected $hidden = ['author_id', 'author', 'published_by_user_id'];
+    protected $hidden = ['author_id', 'author', 'published_by_user_id', 'contributors'];
 
     protected $fillable = [
         'publication', 'published_by_user_id', 'published_at',
@@ -80,9 +80,26 @@ class Idea extends Model
         });
     }
 
+    public function isContributor(User $user): bool
+    {
+        return (int) $this->author_id === (int) $user->id || ($this->relationLoaded('contributors') ? $this->contributors->contains('id', $user->id) : DB::table('idea_contributors')->where('idea_id', $this->id)->where('user_id', $user->id)->exists());
+    }
+
+    public function contributors(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'idea_contributors')->withTrashed()->withPivot('share');
+    }
+
+    public function recognitionShares(): array
+    {
+        $shares = DB::table('idea_contributors')->where('idea_id', $this->id)->orderBy('user_id')->pluck('share', 'user_id')->all();
+
+        return $shares ?: [$this->author_id => 100];
+    }
+
     public function hasConflict(User $user): bool
     {
-        return (int) $this->author_id === (int) $user->id
+        return $this->isContributor($user)
             || DB::table('idea_conflicts')->where('idea_id', $this->id)->where('user_id', $user->id)->exists();
     }
 

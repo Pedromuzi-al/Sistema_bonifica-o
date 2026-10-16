@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CycleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\GovernanceController;
 use App\Http\Controllers\IdeaController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProfileController;
@@ -17,12 +18,26 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::patch('/evaluation-criteria/{criterion}', [GovernanceController::class, 'criterion'])->name('criteria.update');
+    Route::patch('/cycles/{cycle}/draft', [GovernanceController::class, 'draft'])->name('cycles.draft');
+    Route::post('/cycles/{cycle}/cancel', [GovernanceController::class, 'cancel'])->name('cycles.cancel');
+    Route::post('/cycles/{cycle}/ideas/{idea}/review', [GovernanceController::class, 'review'])->name('cycles.review');
+    Route::post('/cycles/{cycle}/ideas/{idea}/finalize', [GovernanceController::class, 'finalize'])->name('cycles.finalize');
+    Route::put('/ideas/{idea}/contributors', [GovernanceController::class, 'contributors'])->name('ideas.contributors');
+    Route::post('/ideas/{idea}/documents', [GovernanceController::class, 'upload'])->middleware('throttle:10,1')->name('ideas.documents.store');
+    Route::get('/ideas/{idea}/documents/{document}', [GovernanceController::class, 'download'])->whereNumber('document')->middleware('throttle:30,1')->name('ideas.documents.download');
+    Route::get('/privacy/export', [GovernanceController::class, 'export'])->middleware(['password.confirm', 'throttle:3,1'])->name('privacy.export');
+    Route::post('/privacy/requests', [GovernanceController::class, 'privacy'])->middleware(['password.confirm', 'throttle:3,1'])->name('privacy.request');
+    Route::get('/admin/privacy', [GovernanceController::class, 'privacyIndex'])->name('admin.privacy');
+    Route::post('/admin/privacy/{privacy}', [GovernanceController::class, 'privacyDecision'])->whereNumber('privacy')->name('admin.privacy.decision');
+
     Route::post('/votes/{vote}/invalidate', [CycleController::class, 'invalidateVote'])->name('votes.invalidate');
     Route::get('/cycles', [CycleController::class, 'index'])->name('cycles.index');
     Route::post('/cycles', [CycleController::class, 'store'])->name('cycles.store');
     Route::get('/cycles/{cycle}', [CycleController::class, 'show'])->name('cycles.show');
     Route::post('/cycles/{cycle}/open', [CycleController::class, 'open'])->name('cycles.open');
     Route::post('/cycles/{cycle}/close', [CycleController::class, 'close'])->name('cycles.close');
+    Route::post('/awards/{award}/reject', [GovernanceController::class, 'rejectAward'])->name('awards.reject');
     Route::post('/awards/{award}/approve', [CycleController::class, 'approve'])->name('awards.approve');
     Route::post('/awards/{award}/publish', [CycleController::class, 'publish'])->name('awards.publish');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

@@ -16,6 +16,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new \RuntimeException('Dados de demonstração bloqueados em produção. Use AccessControlSeeder e app:create-administrator.');
+        }
+
         DB::transaction(fn () => $this->seedDefaults());
     }
 
@@ -82,17 +86,19 @@ class DatabaseSeeder extends Seeder
         $cycle = VotingCycle::firstOrCreate(['name' => 'Ciclo de votação Q4'], [
             'name' => 'Ciclo de votação Q4',
             'description' => 'Processo de avaliação popular das ideias mais relevantes.',
-            'starts_at' => now()->subDays(2),
+            'starts_at' => now()->addDay(),
             'ends_at' => now()->addDays(8),
             'status' => 'draft',
-            'weight_configuration' => ['real_results' => 50, 'technical' => 30, 'votes' => 20],
+            'weight_configuration' => ['weights' => ['real_results' => 50, 'technical' => 30, 'votes' => 20], 'result_indicators' => [['indicator' => 'Tempo', 'unit' => 'horas', 'direction' => 'decrease', 'target' => 10]], 'minimum_votes' => 1, 'allow_abstention' => false, 'category' => 'Demonstração', 'minimum_score' => 70, 'reward_amount' => 0, 'max_awards' => 1, 'tie_breakers' => ['real_results', 'technical', 'votes', 'idea_code'], 'anomaly_threshold' => 5],
         ]);
 
-        if (! $cycle->frozen_configuration) {
+        if ($cycle->wasRecentlyCreated) {
             foreach ([
-                ['name' => 'Impacto operacional', 'weight' => 0.4, 'description' => 'Impacto do ganho operacional.'],
-                ['name' => 'Benefício para clientes', 'weight' => 0.3, 'description' => 'Maturidade da proposta no cliente.'],
-                ['name' => 'Facilidade de execução', 'weight' => 0.3, 'description' => 'Complexidade para implementar.'],
+                ['name' => 'Impacto operacional', 'weight' => 20, 'description' => 'Melhoria comprovada nos processos.'],
+                ['name' => 'Abrangência', 'weight' => 20, 'description' => 'Setores e pessoas beneficiados.'],
+                ['name' => 'Eficiência', 'weight' => 20, 'description' => 'Economia de tempo ou recursos.'],
+                ['name' => 'Qualidade', 'weight' => 20, 'description' => 'Redução de erros e melhoria de entregas.'],
+                ['name' => 'Inovação', 'weight' => 20, 'description' => 'Originalidade e relevância da solução.'],
             ] as $criterion) {
                 $cycle->criteria()->firstOrCreate(['name' => $criterion['name']], $criterion);
             }

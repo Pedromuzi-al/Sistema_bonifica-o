@@ -9,6 +9,7 @@ use App\Services\AdministrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
@@ -31,6 +32,7 @@ class ProfileController extends Controller
 
         return view('profile.edit', [
             'user' => $targetUser,
+            'privacyRequests' => $targetUser->id === $request->user()->id ? DB::table('privacy_requests')->where('user_id', $targetUser->id)->latest('id')->limit(10)->get(['id', 'status', 'decision']) : collect(),
             'roles' => $canManageRoles ? Role::all() : collect(),
             'permissions' => $canManageRoles ? Permission::all() : collect(),
             'canManageRoles' => $canManageRoles,

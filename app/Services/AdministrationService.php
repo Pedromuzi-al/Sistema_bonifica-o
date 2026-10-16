@@ -104,6 +104,9 @@ class AdministrationService
             $this->lockAccounts($actor);
             $this->authorizeAdmin($actor);
             $target = User::withTrashed()->findOrFail($target->id);
+            if ($target->anonymized_at) {
+                throw ValidationException::withMessages(['user' => 'Uma conta anonimizada não pode ser reativada. Cadastre uma nova conta se necessário.']);
+            }
             if (! $target->trashed() && ! $target->blocked_at) {
                 throw ValidationException::withMessages(['user' => 'Esta conta já está ativa.']);
             }

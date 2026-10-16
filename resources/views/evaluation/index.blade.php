@@ -11,7 +11,7 @@
                 <label>Status<select name="status" class="block w-full rounded-lg"><option value="">Todos</option>@foreach (\App\Models\Idea::LABELS as $status=>$label)<option value="{{ $status }}" @selected(request('status')==$status)>{{ $label }}</option>@endforeach</select></label>
                 <label>Setor<select name="sector" class="block w-full rounded-lg"><option value="">Todos</option>@foreach ($sectors as $sector)<option value="{{ $sector->id }}" @selected(request('sector')==$sector->id)>{{ $sector->name }}</option>@endforeach</select></label>
                 <label>Responsável<select name="owner" class="block w-full rounded-lg"><option value="">Todos</option>@foreach ($users as $user)<option value="{{ $user->id }}" @selected(request('owner')==$user->id)>{{ $user->name }}</option>@endforeach</select></label>
-                <x-workflow-field name="from" label="De" type="date" :required="false" :value="request('from')" /><x-workflow-field name="to" label="Até" type="date" :required="false" :value="request('to')" /><button class="apple-button">Filtrar</button>
+                <x-workflow-field name="category" label="Categoria publicada" :required="false" :value="request('category')" /><x-workflow-field name="from" label="De" type="date" :required="false" :value="request('from')" /><x-workflow-field name="to" label="Até" type="date" :required="false" :value="request('to')" /><button class="apple-button">Filtrar</button>
             </form>
             <div class="bg-white rounded-xl shadow overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -40,6 +40,8 @@
                     </tbody>
                 </table>
                 {{ $ideas->links() }}
+            </div>
+            <div class="apple-card mt-6 space-y-4 p-6"><h3 class="text-xl font-bold">Meus pareceres recentes</h3><p class="text-sm">Até vinte pareceres nas propostas que correspondem aos filtros.</p>@forelse($evaluationHistory as $opinion)<p><a class="text-sky-700 underline" href="{{ route('ideas.show',$opinion->idea) }}">{{ $opinion->idea->idea_code }}</a> · {{ number_format($opinion->technical_score,2,',','.') }}/100 · {{ ['approve'=>'Favorável','reject'=>'Contrário','clarify'=>'Solicitar esclarecimentos'][$opinion->recommendation] ?? $opinion->recommendation }} · {{ $opinion->created_at->format('d/m/Y H:i') }}</p>@empty<p>Nenhum parecer registrado neste filtro.</p>@endforelse
             </div>
         </div>
     </div>

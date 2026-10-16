@@ -37,6 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'access_version' => 'integer',
             'invitation_pending' => 'boolean',
             'blocked_at' => 'datetime',
+            'anonymized_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
@@ -58,7 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAvailable(): bool
     {
-        return ! $this->trashed() && $this->blocked_at === null;
+        return ! $this->trashed() && $this->anonymized_at === null && $this->blocked_at === null;
     }
 
     public function hasAdministrativeAccess(): bool

@@ -24,13 +24,13 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div>
-                                <p class="text-sm text-gray-500">{{ $idea->idea_code }} · {{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }}</p>
-                                <h3 class="text-xl font-bold text-slate-900">{{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</h3>
+                                <p class="text-sm text-gray-500">{{ $idea->idea_code }} · {{ (auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }}</p>
+                                <h3 class="text-xl font-bold text-slate-900">{{ (auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</h3>
                             </div>
                             <x-idea-status-badge :status="$idea->status" />
                         </div>
 
-                        <p class="mt-4 text-gray-700">{{ Str::limit((auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->solution_description : ($idea->publication['solution'] ?? ''), 240) }}</p>
+                        <p class="mt-4 text-gray-700">{{ Str::limit((auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->solution_description : ($idea->publication['solution'] ?? ''), 240) }}</p>
 
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
                             <div>Autor: {{ $idea->visibleAuthorName(auth()->user()) }}</div>

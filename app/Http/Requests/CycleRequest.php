@@ -63,6 +63,16 @@ class CycleRequest extends FormRequest
             'category' => ['required', 'string', 'max:255'],
             'minimum_score' => ['required', 'numeric', 'between:0,100'],
             'reward_amount' => ['required', 'numeric', 'min:0', 'max:9999999999'],
+            'anomaly_threshold' => ['sometimes', 'integer', 'min:2', 'max:100000'],
+            'tie_break_order' => ['sometimes', 'array', 'size:3'],
+            'tie_break_order.*' => ['required', 'distinct', 'in:real_results,technical,votes'],
+            'categories' => ['sometimes', 'array', 'max:20'],
+            'categories.*' => ['array:name,minimum_score,maximum_score,reward_amount,max_awards'],
+            'categories.*.name' => ['required', 'string', 'max:255', 'distinct'],
+            'categories.*.minimum_score' => ['required', 'numeric', 'between:0,100'],
+            'categories.*.maximum_score' => ['required', 'numeric', 'between:0,100', 'gte:categories.*.minimum_score'],
+            'categories.*.reward_amount' => ['required', 'numeric', 'min:0', 'max:9999999999'],
+            'categories.*.max_awards' => ['required', 'integer', 'min:1', 'max:1000'],
             'max_awards' => ['required', 'integer', 'min:1', 'max:1000'],
         ];
     }

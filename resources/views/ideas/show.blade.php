@@ -11,6 +11,23 @@
                 @endforeach
             @endif
         </section>
+        @if ($canReview || $isOwner)
+        <section class="apple-card space-y-4 p-6">
+            <h3 class="text-xl font-bold">Documentos privados</h3>
+            <p class="text-sm text-slate-600">Disponíveis somente aos participantes da proposta e à avaliação autorizada. Não aparecem na publicação ou votação. Remova dados pessoais desnecessários antes de enviar.</p>
+            @forelse ($documents as $document)<p><a class="text-sky-700 underline" href="{{ route('ideas.documents.download', [$idea, $document->id]) }}">Baixar documento {{ $loop->iteration }}</a> · {{ number_format($document->size / 1024, 0, ',', '.') }} KB</p>@empty<p class="text-sm">Nenhum documento enviado.</p>@endforelse
+            @if (config('innovation.attachments_enabled') && in_array($idea->status, ['submitted','triage','evaluation','awaiting_information','implementation','validation']))
+            <form method="POST" enctype="multipart/form-data" action="{{ route('ideas.documents.store', $idea) }}" class="space-y-3">@csrf<label class="block">Adicionar documento (PDF, PNG, JPG ou TXT; até 10 MB)<input class="mt-2 block w-full" type="file" name="document" accept=".pdf,.png,.jpg,.jpeg,.txt" required></label><button class="apple-button--light">Enviar documento privado</button></form>
+            @endif
+        </section>
+        @endif
+        @if ($contributorOptions->isNotEmpty() && in_array($idea->status, ['submitted','triage']))
+        <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.contributors', $idea) }}" x-data="{ rows: @js(old('contributors', $contributors ?: [['user_id'=>$idea->author_id, 'share'=>100]])) }">@csrf @method('PUT')
+            <h3 class="text-xl font-bold">Participantes e divisão do reconhecimento — privado</h3><p class="text-sm">Confirme com os participantes antes de salvar. Inclua o autor principal e distribua 100%. A divisão fica fixa após a triagem e impede votos e avaliações dos participantes.</p>
+            <template x-for="(row,index) in rows" :key="index"><div class="flex flex-wrap items-end gap-3"><label>Participante<select x-model="row.user_id" :name="`contributors[${index}][user_id]`" class="block rounded-lg" required>@foreach ($contributorOptions as $person)<option value="{{ $person->id }}">{{ $person->name }}</option>@endforeach</select></label><label>Participação (%)<input type="number" min="1" max="100" x-model="row.share" :name="`contributors[${index}][share]`" class="block w-28 rounded-lg" required></label><button type="button" class="text-rose-700" @click="rows.splice(index,1)" x-show="rows.length > 1">Remover</button></div></template>
+            <button type="button" class="apple-button--light" @click="rows.push({user_id:'',share:1})" :disabled="rows.length >= 20">Adicionar participante</button><button class="apple-button">Salvar divisão</button>
+        </form>
+        @endif
         @if ($idea->publication)
             <section class="apple-card space-y-4 p-6">
                 <h3 class="text-xl font-bold">Publicação revisada — Ideia implementada</h3>

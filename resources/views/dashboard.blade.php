@@ -52,12 +52,12 @@
                             <div class="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <p class="text-lg font-semibold text-slate-900">{{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</p>
-                                        <p class="mt-1 text-sm text-slate-500">{{ (auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }} · {{ $idea->visibleAuthorName(auth()->user()) }}</p>
+                                        <p class="text-lg font-semibold text-slate-900">{{ (auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</p>
+                                        <p class="mt-1 text-sm text-slate-500">{{ (auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }} · {{ $idea->visibleAuthorName(auth()->user()) }}</p>
                                     </div>
                                     <x-idea-status-badge :status="$idea->status" />
                                 </div>
-                                <p class="mt-3 text-sm leading-6 text-slate-600">{{ Str::limit((auth()->user()->can('evaluate', $idea) || auth()->id() == $idea->author_id) ? $idea->problem_description : ($idea->publication['problem'] ?? ''), 150) }}</p>
+                                <p class="mt-3 text-sm leading-6 text-slate-600">{{ Str::limit((auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->problem_description : ($idea->publication['problem'] ?? ''), 150) }}</p>
                             </div>
                         @empty
                             <p class="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/60 p-5 text-sm text-slate-500">Nenhuma ideia recente.</p>

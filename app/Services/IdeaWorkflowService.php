@@ -60,7 +60,7 @@ class IdeaWorkflowService
             if (! $cycleOperation && in_array($status, ['voting', 'voting_closed', 'finalized'], true)) {
                 throw ValidationException::withMessages(['status' => 'Esta etapa é controlada pelo ciclo de votação.']);
             }
-            if ($status === 'approved' && ! $idea->evaluations()->where('recommendation', 'approve')->exists()) {
+            if ($status === 'approved' && $idea->evaluations()->latest('id')->value('recommendation') !== 'approve') {
                 throw ValidationException::withMessages(['status' => 'Registre uma avaliação técnica favorável antes de aprovar.']);
             }
             if ($status === 'implementation' && ! $idea->implementationPlan()->exists()) {
@@ -74,7 +74,7 @@ class IdeaWorkflowService
                 $idea->implementationPlan()->update(['status' => 'completed', 'completed_at' => now()]);
             }
             $this->audit($user, $idea, 'status_changed', ['status' => $status, 'notes' => $notes]);
-            $this->notify($idea->author_id, 'Andamento da proposta', Idea::LABELS[$status].': '.$notes, 'status_changed');
+            $this->notifyContributors($idea, 'Andamento da proposta', Idea::LABELS[$status].': '.$notes, 'status_changed');
         });
     }
 
@@ -95,7 +95,7 @@ class IdeaWorkflowService
             $score = $criteria->sum(fn ($criterion) => (($data['scores'][$criterion->id] - 1) / 4 * 100) * $criterion->weight) / $totalWeight;
             $evaluation = $idea->evaluations()->create(['evaluator_id' => $user->id, 'technical_score' => round($score, 2), 'recommendation' => $data['recommendation'], 'notes' => $data['notes'], 'reviewed_at' => now()]);
             foreach ($criteria as $criterion) {
-                $evaluation->scores()->create(['criterion_id' => $criterion->id, 'score' => $data['scores'][$criterion->id], 'notes' => $criterion->name.'; peso '.$criterion->weight]);
+                $evaluation->scores()->create(['criterion_id' => $criterion->id, 'score' => $data['scores'][$criterion->id], 'notes' => $criterion->name.'; peso '.number_format((float) $criterion->weight, 2, '.', '').'; orientação '.$criterion->description]);
             }
             $this->audit($user, $idea, 'evaluated', ['evaluation_id' => $evaluation->id]);
         });
@@ -150,7 +150,7 @@ class IdeaWorkflowService
             }
             $result->update(['validated_by_user_id' => $user->id, 'validated_at' => now()]);
             $this->audit($user, $idea, 'results_validated', ['notes' => $notes]);
-            $this->notify($idea->author_id, 'Resultados validados', $notes, 'results_validated');
+            $this->notifyContributors($idea, 'Resultados validados', $notes, 'results_validated');
         });
     }
 
@@ -165,7 +165,7 @@ class IdeaWorkflowService
             }
             $idea->update(['publication' => [...$data, 'sectors' => $idea->beneficiarySectors->pluck('name')->all(), 'implementation_completed_at' => $idea->implementationPlan?->completed_at?->toIso8601String()], 'is_public' => true, 'published_by_user_id' => $user->id, 'published_at' => now()]);
             $this->audit($user, $idea, 'publication_reviewed');
-            $this->notify($idea->author_id, 'Ideia publicada', 'A versão revisada dos resultados está disponível.', 'published');
+            $this->notifyContributors($idea, 'Ideia publicada', 'A versão revisada dos resultados está disponível.', 'published');
         });
     }
 
@@ -213,6 +213,13 @@ class IdeaWorkflowService
     public function audit(User $user, Idea $idea, string $action, array $details = []): void
     {
         AuditLog::create(['causer_id' => $user->id, 'model_type' => Idea::class, 'model_id' => $idea->id, 'action' => $action, 'details' => $details]);
+    }
+
+    public function notifyContributors(Idea $idea, string $title, string $message, string $type): void
+    {
+        foreach (array_keys($idea->recognitionShares()) as $userId) {
+            $this->notify((int) $userId, $title, $message, $type);
+        }
     }
 
     public function notify(int $userId, string $title, string $message, string $type): void

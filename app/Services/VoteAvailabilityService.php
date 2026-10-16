@@ -14,7 +14,7 @@ class VoteAvailabilityService
         if ($vote) {
             return $this->unavailable($vote->status === 'cast' ? 'Seu voto já foi registrado. Obrigado por participar!' : 'Seu voto passou por uma revisão administrativa. Consulte suas notificações.', 'registered');
         }
-        if ((int) $idea->author_id === (int) $user->id) {
+        if ($idea->isContributor($user)) {
             return $this->unavailable('Esta ideia é sua. Você pode acompanhar a votação, mas não votar nela.', 'own');
         }
         if ($idea->hasConflict($user)) {

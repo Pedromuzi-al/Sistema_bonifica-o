@@ -10,9 +10,11 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+<<<<<<< HEAD
         ResetPassword::toMailUsing(function ($user, string $token) {
             $url = route('password.reset', ['token' => $token, 'email' => $user->email]);
 
@@ -33,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
                 ->action($user->invitation_pending ? 'Definir minha senha' : 'Redefinir senha', $url)
                 ->line('O link expira em '.config('auth.passwords.users.expire').' minutos. Se necessário, solicite outro em Esqueci minha senha.');
         });
+=======
+        DB::prohibitDestructiveCommands($this->app->isProduction());
+        Password::defaults(fn () => $this->app->isProduction()
+            ? Password::min(12)->mixedCase()->numbers()
+            : Password::min(8));
+>>>>>>> 787622d (admfinaliza)
         VerifyEmail::toMailUsing(fn ($notifiable, string $url) => (new MailMessage)
             ->subject('Confirme seu e-mail na plataforma de ideias')
             ->greeting('Olá, '.$notifiable->name.'!')

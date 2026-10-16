@@ -9,7 +9,7 @@ class IdeaPolicy
 {
     public function view(User $user, Idea $idea): bool
     {
-        return $user->id === $idea->author_id
+        return $idea->isContributor($user)
             || ($idea->is_public && $user->canViewPublicIdeas())
             || $this->canReview($user);
     }
@@ -21,7 +21,7 @@ class IdeaPolicy
 
     public function update(User $user, Idea $idea): bool
     {
-        return $user->id === $idea->author_id || $user->hasRole('admin');
+        return $idea->isContributor($user) || $user->hasRole('admin');
     }
 
     public function delete(User $user, Idea $idea): bool

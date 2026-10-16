@@ -9,6 +9,7 @@ use App\Models\EvaluationCriterion;
 use App\Models\Idea;
 use App\Models\IdeaStatusHistory;
 use App\Models\Notification;
+use App\Models\User;
 use App\Services\IdeaWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,12 +64,18 @@ class WorkflowController extends Controller
     public function reply(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
     {
         $this->authorize('view', $idea);
-        abort_unless((int) $idea->author_id === (int) $request->user()->id, 403);
+        abort_unless($idea->isContributor($request->user()), 403);
         $data = $request->validate(['notes' => ['required', 'string', 'max:10000']]);
         DB::transaction(function () use ($request, $idea, $workflow, $data) {
             $idea = $workflow->lockIdea($idea->id);
             $workflow->requireStatus($idea, ['awaiting_information']);
             $workflow->audit($request->user(), $idea, 'clarification_received', ['notes' => $data['notes']]);
+            $reviewers = User::permission('evaluate_ideas')->whereNull('blocked_at')->get();
+            foreach ($reviewers as $reviewer) {
+                if ($reviewer->can('evaluate', $idea)) {
+                    $workflow->notify($reviewer->id, 'Esclarecimento recebido', 'Há nova resposta privada em '.$idea->idea_code.'.', 'clarification_received');
+                }
+            }
             IdeaStatusHistory::create(['idea_id' => $idea->id, 'from_status' => $idea->status, 'to_status' => $idea->status, 'changed_by_user_id' => $request->user()->id, 'notes' => 'Resposta do autor: '.$data['notes']]);
         });
 

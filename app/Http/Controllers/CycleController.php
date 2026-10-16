@@ -11,6 +11,7 @@ use App\Services\CycleService;
 use App\Services\VotingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CycleController extends Controller
@@ -48,7 +49,9 @@ class CycleController extends Controller
         $reviewVotes = $canManage && $request->user()->hasSystemPermission('view_audit_logs') && $cycle->status === 'open'
             ? $cycle->votes()->where('status', 'cast')->get(['id', 'idea_id', 'created_at']) : collect();
 
-        return view('cycles.show', compact('cycle', 'entries', 'ideas', 'canManage', 'awards', 'reviewVotes'));
+        $reviews = $canManage ? DB::table('cycle_reviews')->where('voting_cycle_id', $cycle->id)->get(['idea_id', 'notes', 'decision'])->keyBy('idea_id') : collect();
+
+        return view('cycles.show', compact('reviews', 'cycle', 'entries', 'ideas', 'canManage', 'awards', 'reviewVotes'));
     }
 
     public function open(Request $request, VotingCycle $cycle, CycleService $service): RedirectResponse
