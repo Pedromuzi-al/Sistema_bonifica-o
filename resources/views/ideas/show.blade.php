@@ -1,6 +1,9 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">{{ $idea->idea_code }} — {{ ($canReview || $isOwner) ? $idea->title : ($idea->publication['title'] ?? 'Publicação em revisão') }}</h2></x-slot>
     <div class="mx-auto max-w-5xl space-y-6 px-4 py-8">
+        @if($canReview && in_array($idea->status, ['submitted','triage','evaluation','awaiting_information','ready_for_voting','idea_bank']))
+            @include('ideas.partials.simple-review')
+        @endif
         <section class="apple-card space-y-4 p-6">
             <x-idea-status-badge :status="$idea->status" />
             <p>Autor: {{ $idea->visibleAuthorName(auth()->user()) }}</p>
@@ -90,20 +93,23 @@
             </section>
         @endif
         @if ($isOwner && $idea->status === 'awaiting_information')
-            <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.reply', $idea) }}">@csrf<h3 class="text-xl font-bold">Responder solicitação de informações</h3><x-workflow-field name="notes" label="Esclarecimento privado" type="textarea" /><button class="apple-button">Enviar resposta</button></form>
+            <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.reply', $idea) }}">@csrf<h3 class="text-xl font-bold">Responder pedido de ajuste</h3><x-workflow-field name="notes" label="Explique o ajuste ou complemente sua proposta" type="textarea" /><button class="apple-button">Enviar ajuste para revisão</button></form>
         @endif
         @if ($canReview)
-            @if(in_array($idea->status,['triage','evaluation','idea_bank','approved','implementation']))
-                <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.publish-proposal', $idea) }}">@csrf
-                    <h3 class="text-xl font-bold">Revisar proposta para votação</h3>
-                    <p class="text-sm">Confira se a proposta é compreensível, se já existe uma semelhante e se pode ser divulgada. Ainda não precisa ter sido implementada. Os funcionários verão somente esta versão revisada.</p>
-                    @foreach(['title'=>'Título público','problem'=>'Problema','solution'=>'Solução proposta','results'=>'Benefícios esperados','category'=>'Categoria'] as $field=>$label)
-                        <x-workflow-field :name="$field" :label="$label" :type="in_array($field,['title','category']) ? 'text' : 'textarea'" :value="$idea->publication[$field] ?? match($field) { 'title'=>$idea->title, 'problem'=>$idea->problem_description, 'solution'=>$idea->solution_description, 'results'=>$idea->expected_results, default=>'' }" />
-                    @endforeach
-                    <label class="block"><input type="checkbox" name="privacy_reviewed" value="1" required> Conferi a proposta e removi dados pessoais e informações confidenciais.</label>
-                    <button class="apple-button">Publicar proposta revisada</button>
-                </form>
+            @if(in_array($idea->status, ['approved','implementation']))
+                <details class="apple-card p-6"><summary class="cursor-pointer font-semibold">Atualizar publicação da proposta</summary>
+                    <p>A proposta já avançou. A publicação pode ser revisada sem alterar a execução.</p>
+                    <form method="POST" action="{{ route('ideas.publish-proposal', $idea) }}" class="mt-4 space-y-4">@csrf
+                        @foreach(['title'=>'Título público','problem'=>'Problema','solution'=>'Solução proposta','results'=>'Benefícios esperados','category'=>'Categoria'] as $field=>$label)
+                            <x-workflow-field :name="$field" :label="$label" :type="in_array($field,['title','category']) ? 'text' : 'textarea'" :value="$idea->publication[$field] ?? ''" />
+                        @endforeach
+                        <label class="block"><input type="checkbox" name="privacy_reviewed" value="1" required> Conferi o texto e removi informações pessoais e confidenciais.</label>
+                        <button class="apple-button">Atualizar publicação</button>
+                    </form>
+                </details>
             @endif
+            <details class="apple-card p-6"><summary class="cursor-pointer font-semibold">Análise técnica e execução (opcional antes da seleção)</summary>
+            <p class="my-3 text-sm">Para votar, use a revisão simples acima. Estes controles atendem análises técnicas e o acompanhamento posterior.</p>
             @if(array_diff(\App\Services\IdeaWorkflowService::TRANSITIONS[$idea->status] ?? [], ['voting','voting_closed','finalized']))
             <section class="apple-card space-y-4 p-6"><h3 class="text-xl font-bold">Andamento</h3>
                 <form method="POST" action="{{ route('ideas.approve', $idea) }}" class="space-y-3">@csrf
@@ -124,6 +130,7 @@
                 </form>
             @endif
             @foreach ($evaluations as $evaluation)<section class="apple-card p-6"><h3 class="font-bold">Parecer técnico — {{ number_format($evaluation->technical_score, 2, ',', '.') }}/100</h3><p>{{ $evaluation->notes }}</p><p>{{ $evaluation->recommendation }}</p>@foreach ($evaluation->scores as $score)<p>{{ $score->notes }}: {{ $score->score }}/5</p>@endforeach</section>@endforeach
+            </details>
             @if (in_array($idea->status, ['approved', 'implementation']))
                 <form class="apple-card space-y-4 p-6" method="POST" action="{{ route('ideas.plan', $idea) }}">@csrf<h3 class="text-xl font-bold">Plano de implementação</h3><x-workflow-field name="title" label="Etapas da execução" :value="$idea->implementationPlan?->title ?? ''" /><x-workflow-field name="plan" label="Plano e etapas" type="textarea" :value="$idea->implementationPlan?->plan ?? ''" />
                     <label>Responsável<select name="owner_user_id" class="block w-full rounded-lg" required>@foreach ($users as $user)<option value="{{ $user->id }}">{{ $user->name }}</option>@endforeach</select></label>

@@ -217,3 +217,38 @@ A preparação desta etapa contém apenas documentação: banco, anexos, `.env` 
 
 
 O envio desta documentação para `origin/adm` foi tentado, mas não concluído: o Git HTTPS não conseguiu obter o usuário por falta de autenticação neste ambiente. O commit permanece local. Foi preparado também um ZIP de código/documentação a partir do commit, fora do repositório, sem arquivos ignorados. Para enviar pelo repositório, autentique o Git pelo gerenciador de credenciais do editor e execute `git push origin adm`; não informe tokens ou senhas no chat.
+
+
+## 19/10/2026 — alternativa 1: revisão simples entregue
+
+O usuário aprovou simplificar a preparação das ideias para a rodada desta semana. A seção Revisar ideia passou para o início da página, com título, problema e solução preenchidos a partir do cadastro; benefícios e categoria são opcionais. Há três decisões: Liberar para votação, Pedir ajuste e Arquivar, todas com justificativa. A confirmação de privacidade é exigida somente para liberar.
+
+Liberar passa diretamente de Enviada para Liberada para votação (`ready_for_voting`) e publica o texto revisado na mesma transação. Não exige triagem separada, avaliação técnica ou critérios com notas. Benefícios vazios são apresentados como ainda não estimados; categoria vazia usa Melhoria. A liberação não concede prêmio nem aprova a execução. A seleção posterior no ciclo continua sendo a decisão humana que pode aprovar a ideia e propor a bonificação configurada.
+
+Pedir ajuste envia aviso privado aos participantes e mostra Precisa de ajuste. O autor responde na página da ideia; a resposta fica no histórico e retorna para Enviada, para nova revisão. O responsável usa a resposta para revisar o texto público antes de liberar. Arquivar preserva dados/histórico/auditoria, retira a publicação e a elegibilidade do ciclo, sem excluir a proposta.
+
+O menu agora chama Revisão de ideias; a listagem resume Enviadas, Liberadas, Precisa de ajuste e Arquivadas, mantendo os filtros históricos. Andamento e avaliação técnica ficaram recolhidos numa seção opcional. O painel usa Aguardando revisão. Ideias antigas continuam com seus status e pareceres; não houve conversão em massa ou migration, pois o status já é texto.
+
+Segurança: autorização e impedimento de autor/coautores são reconferidos no serviço após bloquear a ideia. Ações de revisão não podem modificar a situação durante ciclo aberto/programado ou enquanto a decisão anterior estiver pendente. Um parecer desfavorável anterior precisa ser resolvido antes da liberação. Histórico e notificações são gravados junto à decisão.
+
+Validação: **215 testes PHP / 1.304 verificações aprovados**, quatro cenários novos; **três testes JavaScript aprovados**. Chrome isolado aprovado em `storage/app/qa-reports/2026-10-19T16-12-38.591Z/`, incluindo cadastro → liberação direta → voto → apuração → decisão, além das regressões de temas, mobile, acesso, setores e critérios. O teste PHP novo também confere a proposta de bonificação de R$ 100 fictícios sem parecer técnico. Os testes iniciais detectaram colisão de nome da rota com o resumo do cadastro; corrigida para `ideas.review-decision`, com execução completa seguinte aprovada.
+
+Foram atualizados README, roteiro de QA, guia do ciclo, guia da rodada e texto de retomada. O banco/.env local não foi alterado; o usuário já pode retomar seu QA recarregando a página. Hospedagem, MySQL e homologação externa continuam pendentes.
+
+
+## 19/10/2026 — botão Excluir ideias com seleção em pop-up
+
+O usuário solicitou exclusão de ideias por seleção em pop-up. Foi acrescentado o botão Excluir ideias na listagem, somente para administração. O diálogo nativo mostra as ideias da página atual, respeitando filtros e paginação, com caixas para marcar e motivos de bloqueio. Há uma segunda etapa com quantidade, motivo obrigatório e confirmação explícita. Cancelar/Fechar/Escape não gravam dados; o foco é administrado pelo diálogo do navegador. Foram incluídas cores próprias por tema e limite de tamanho para celular.
+
+A operação é uma exclusão administrativa das listagens (`SoftDeletes`), descrita explicitamente na interface, sem apagar definitivamente dados ou arquivos. O model preserva a vedação de exclusão definitiva. A rota valida permissão, IDs distintos/existentes, motivo e confirmação, com limite por requisição e de frequência. O serviço bloqueia registros em ordem e valida o lote inteiro antes de qualquer exclusão; grava histórico, auditoria por ideia e aviso privado aos participantes. Não é um mecanismo de anonimização ou retenção definitiva.
+
+Não podem ser excluídas ideias associadas a qualquer ciclo/voto ou bonificação, com plano/resultados/etapa de execução, ou com documento em preservação obrigatória. A restrição vale também no servidor caso a situação mude depois de abrir o pop-up. Ideias removidas deixam de aparecer nas consultas normais e o vínculo direto retorna 404. Os registros permanecem no banco para preservação de histórico.
+
+A migration `2026_10_19_170000_add_soft_deletes_to_ideas.php` adiciona `deleted_at` com índice. Antes de aplicá-la na base local, foi criado o backup `storage/app/backups/20261019-162354-DL5hxSDX`, restaurado e conferido em `storage/app/restore-check/before_idea_deletion_20261019_test`. A migration foi aplicada com sucesso. Nenhuma ideia do banco local foi excluída durante o desenvolvimento; os cenários de exclusão são executados em banco descartável.
+
+Arquivos principais: `IdeaDeletionService`, `IdeaController`, `IdeaPolicy`, `Idea`, rota `ideas.bulk-destroy`, listagem e parcial `ideas/partials/bulk-delete`, CSS, migration e testes `BulkIdeaDeletionTest`. Roteiros de QA/entrega local atualizados. Resultado final: **220 testes PHP / 1.353 verificações**, três testes JavaScript, Pint, build e diff aprovados. Chrome aprovado em `storage/app/qa-reports/2026-10-19T16-24-49.349Z/`, incluindo pop-up claro/escuro no celular, foco/Escape, seleção, confirmação e retirada da listagem. Captura escura inspecionada visualmente. A conferência de migrations mostrou a nova migration aplicada no batch 8, sem pendências.
+
+
+### Ajuste visual do botão de exclusão
+
+A pedido do usuário, Excluir ideias e Nova ideia foram agrupados lado a lado, à direita do cabeçalho da listagem. O botão de exclusão passou a vermelho com texto branco, hover vermelho mais escuro apenas em dispositivos com mouse e foco visível para teclado nos dois temas. A alteração é apenas visual e não modifica a operação de exclusão nem requer migration.

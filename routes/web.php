@@ -19,6 +19,7 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/ideas/{idea}/review', [WorkflowController::class, 'reviewProposal'])->name('ideas.review-decision');
     Route::post('/ideas/{idea}/proposal-publication', [WorkflowController::class, 'publishProposal'])->name('ideas.publish-proposal');
     Route::post('/cycles/{cycle}/ideas/{idea}/decision', [CycleController::class, 'decide'])->name('cycles.decision');
     Route::patch('/evaluation-criteria/{criterion}', [GovernanceController::class, 'criterion'])->name('criteria.update');
@@ -62,6 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/ideas', [IdeaController::class, 'index'])->name('ideas.index');
+    Route::delete('/ideas/bulk-delete', [IdeaController::class, 'bulkDestroy'])->middleware('throttle:6,1')->name('ideas.bulk-destroy');
     Route::get('/ideas/create', [IdeaController::class, 'create'])->name('ideas.create');
     Route::post('/ideas', [IdeaController::class, 'store'])->name('ideas.store');
     Route::post('/ideas/review', [IdeaController::class, 'review'])->name('ideas.review');

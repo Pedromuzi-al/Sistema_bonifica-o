@@ -245,16 +245,11 @@ try {
     const proposalUrl = employeePage.url();
     const proposalId = new URL(proposalUrl).pathname.split('/').pop();
     await page.goto(proposalUrl);
-    const transition = page.locator('form[action$="/approve"]');
-    await transition.locator('[name=status]').selectOption('triage');
-    await transition.locator('[name=notes]').fill('Proposta compreensível e sem duplicação identificada.');
-    await Promise.all([page.waitForNavigation(),transition.getByRole('button').click()]);
-    const publication = page.locator('form[action$="/proposal-publication"]');
-    await publication.locator('[name=results]').fill('Benefício esperado: atendimento mais simples.');
-    await publication.locator('[name=category]').fill('Processos');
+    const publication = page.locator('form[action$="/review"]');
+    await publication.locator('[name=notes]').fill('Proposta compreensível e sem duplicação identificada.');
     await publication.locator('[name=privacy_reviewed]').check();
-    await Promise.all([page.waitForNavigation(),publication.getByRole('button').click()]);
-    await page.getByText('Proposta revisada e disponível para seleção, sem exigir implementação.',{exact:true}).waitFor();
+    await Promise.all([page.waitForNavigation(),publication.getByRole('button',{name:'Liberar para votação',exact:true}).click()]);
+    await page.getByText('Ideia liberada para votação. Inclua em um ciclo; a execução será decidida depois.',{exact:true}).waitFor();
     await page.goto(`${base}/cycles`);
     await page.getByRole('link',{name:'Novo ciclo',exact:true}).click();
     assert.equal(new URL(page.url()).pathname,'/cycles/create');
@@ -316,7 +311,7 @@ try {
     assert.equal(await page.locator(`input[name="ideas[]"][value="${proposalId}"]`).isDisabled(),false);
     outcomes.push('Propostas: opção bloqueada durante outra votação e enquanto há decisão pendente; liberada após decisão');
 
-    outcomes.push('Seleção: registro rápido sem estimativas, triagem, publicação revisada, abertura, voto de outra pessoa, apuração e decisão para executar');
+    outcomes.push('Seleção: registro rápido sem estimativas, liberação direta sem triagem/notas técnicas, abertura, voto de outra pessoa, apuração e decisão para executar');
 
 
 
@@ -385,6 +380,31 @@ try {
     assert.equal(new URL(page.url()).pathname,'/cycles');
     assert.equal(await page.locator('form[data-cycle-purpose]').count(),0);
     outcomes.push('Criação: erro de período retorna ao formulário com valores preservados e permite voltar à listagem');
+
+    await page.goto(`${base}/ideas?search=QA%20navegador`);
+    const deletionDialog = page.getByRole('dialog', {name:'Excluir ideias', exact:true});
+    for (const dark of [false,true]) {
+        await page.evaluate(dark=>{localStorage.setItem('conted-theme',dark?'dark':'light');},dark);
+        await page.reload();
+        await page.getByRole('button',{name:'Excluir ideias',exact:true}).click();
+        await deletionDialog.waitFor();
+        assert.equal(await deletionDialog.evaluate(element=>getComputedStyle(element).backgroundColor),dark?'rgb(30, 41, 59)':'rgb(255, 255, 255)');
+        assert.ok(await deletionDialog.evaluate(element=>element.contains(document.activeElement)));
+        await page.screenshot({path:join(reports,dark?'excluir-ideias-escuro.png':'excluir-ideias-claro.png'),fullPage:true});
+        await page.keyboard.press('Escape');
+        assert.equal(await deletionDialog.isVisible(),false);
+        assert.equal(await page.getByRole('button',{name:'Excluir ideias',exact:true}).evaluate(element=>element===document.activeElement),true);
+    }
+    await page.getByRole('button',{name:'Excluir ideias',exact:true}).click();
+    await deletionDialog.locator('input[name="ids[]"]:enabled').first().check();
+    await deletionDialog.getByRole('button',{name:'Continuar',exact:true}).click();
+    await deletionDialog.locator('[name=deletion_reason]').fill('Cadastro fictício removido após a validação de QA.');
+    await deletionDialog.locator('[name=confirm_deletion]').check();
+    await Promise.all([page.waitForNavigation(),deletionDialog.getByRole('button',{name:'Confirmar exclusão',exact:true}).click()]);
+    await page.getByText('1 ideia(s) excluída(s) das listagens. O histórico foi preservado.',{exact:true}).waitFor();
+    await page.goto(`${base}/ideas?search=QA%20navegador`);
+    await page.getByText('Nenhuma ideia por aqui ainda',{exact:true}).waitFor();
+    outcomes.push('Exclusão: modal claro/escuro em celular, foco e Escape, seleção, confirmação e remoção das listagens.');
 
     assert.deepEqual(errors, []);
     writeFileSync(join(reports, 'resultado.json'), JSON.stringify({ status: 'passed', outcomes, errors }, null, 2));

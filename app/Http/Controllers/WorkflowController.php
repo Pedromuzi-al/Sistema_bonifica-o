@@ -61,6 +61,27 @@ class WorkflowController extends Controller
         return back()->with('success', 'Publicação revisada disponibilizada.');
     }
 
+    public function reviewProposal(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
+    {
+        $this->authorize('evaluate', $idea);
+        $rules = ['decision' => ['required', 'in:release,adjust,archive'], 'notes' => ['required', 'string', 'min:10', 'max:10000']];
+        if ($request->input('decision') === 'release') {
+            $rules += ['title' => ['required', 'string', 'max:255'], 'problem' => ['required', 'string', 'max:10000'], 'solution' => ['required', 'string', 'max:10000'], 'results' => ['nullable', 'string', 'max:20000'], 'category' => ['nullable', 'string', 'max:255'], 'privacy_reviewed' => ['accepted']];
+        }
+        $data = $request->validate($rules);
+        if ($data['decision'] === 'release') {
+            $data['results'] = $data['results'] ?? 'Benefícios ainda não estimados. Avalie o potencial da proposta.';
+            $data['category'] = $data['category'] ?? 'Melhoria';
+        }
+        $workflow->reviewProposal($request->user(), $idea, $data);
+
+        return back()->with('success', match ($data['decision']) {
+            'release' => 'Ideia liberada para votação. Inclua em um ciclo; a execução será decidida depois.',
+            'adjust' => 'Pedido de ajuste enviado aos participantes.',
+            default => 'Ideia arquivada com justificativa. O histórico foi preservado.',
+        });
+    }
+
     public function publishProposal(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
     {
         $this->authorize('evaluate', $idea);
@@ -87,6 +108,7 @@ class WorkflowController extends Controller
                 }
             }
             IdeaStatusHistory::create(['idea_id' => $idea->id, 'from_status' => $idea->status, 'to_status' => $idea->status, 'changed_by_user_id' => $request->user()->id, 'notes' => 'Resposta do autor: '.$data['notes']]);
+            IdeaStatusHistory::record($idea, 'submitted', $request->user(), 'Ajuste respondido; aguardando nova revisão.');
         });
 
         return back()->with('success', 'Esclarecimento enviado à equipe de avaliação.');

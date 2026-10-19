@@ -15,7 +15,7 @@ O código está organizado pelas convenções do Laravel: models em `app/Models`
 ## Fluxo principal
 
 1. O funcionário registra título, problema, sugestão e setores. Estimativas de benefícios e recursos são opcionais.
-2. A equipe faz a triagem e publica uma versão revisada, sem dados pessoais ou informações confidenciais.
+2. Em Revisão de ideias, a equipe confere o texto já preenchido e escolhe Liberar para votação, Pedir ajuste ou Arquivar. A liberação publica uma versão revisada sem exigir mudança manual para triagem/avaliação nem notas técnicas.
 3. Um ciclo de seleção coleta votos sobre utilidade, relevância e benefício esperado, mesmo antes da implementação.
 4. A apuração classifica as propostas. Um administrador sem conflito decide, com justificativa, quais avançam e quais permanecem no banco para outros ciclos.
 5. As selecionadas seguem para plano, responsável, prazo e implementação. A votação não muda a etapa de execução.

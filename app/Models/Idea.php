@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class Idea extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\SoftDeletes;
 
     public const STATUS_SUBMITTED = 'submitted';
 
@@ -42,8 +42,8 @@ class Idea extends Model
     public const STATUS_FINALIZED = 'finalized';
 
     public const LABELS = [
-        'idea_bank' => 'No banco de ideias', 'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
-        'awaiting_information' => 'Aguardando informações', 'approved' => 'Aprovada',
+        'ready_for_voting' => 'Liberada para votação', 'archived' => 'Arquivada', 'idea_bank' => 'No banco de ideias', 'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
+        'awaiting_information' => 'Precisa de ajuste', 'approved' => 'Aprovada',
         'implementation' => 'Em implementação', 'implemented' => 'Implementada (legado)',
         'validation' => 'Em validação de resultados', 'completed' => 'Concluída',
         'voting' => 'Disponível para votação', 'voting_closed' => 'Votação encerrada',
@@ -74,7 +74,11 @@ class Idea extends Model
 
     protected static function booted(): void
     {
-        static::deleting(fn () => throw new \LogicException('Ideias devem ser preservadas pelo procedimento de retenção.'));
+        static::deleting(function (self $idea) {
+            if ($idea->isForceDeleting()) {
+                throw new \LogicException('A exclusão definitiva exige o procedimento de retenção.');
+            }
+        });
         static::creating(function (self $idea) {
             $idea->idea_code ??= 'IDE-'.strtoupper(Str::random(8));
         });

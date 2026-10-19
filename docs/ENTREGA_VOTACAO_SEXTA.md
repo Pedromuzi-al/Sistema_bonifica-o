@@ -30,7 +30,7 @@ O prazo do link segue `auth.passwords.users.expire` (60 minutos por padrão). É
 ## Sequência operacional
 
 1. Antes de divulgar: escolher o ambiente público e validar HTTPS, persistência, configuração, backup e restauração nesse ambiente. Criar contas reais; desabilitar cadastro público e retirar contas de demonstração. Executar `php artisan app:production-check` e resolver as pendências.
-2. Cadastrar propostas e fazer triagem/revisão dos textos que serão divulgados. Não é necessário resultado comprovado para ciclo de seleção.
+2. Cadastrar propostas e, em Revisão de ideias, usar Liberar para votação após conferir o texto. Pedir ajuste e Arquivar são as outras decisões. Triagem e avaliação técnica não são obrigatórias. Não é necessário resultado comprovado para ciclo de seleção.
 3. Em Votações → Novo ciclo, escolher seleção de ideias, período, valor e limite. Selecionar as ideias elegíveis e confirmar a abertura antes do horário inicial.
 4. Funcionários votam no período. O cartão informa a situação de implementação. Participantes da proposta têm impedimento de voto.
 5. Após o fim, apurar; conferir o ranking; decidir quais ideias avançam com justificativa e dentro do limite. As não selecionadas ficam no banco para uma futura rodada.

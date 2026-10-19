@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class SelectionCycleService
 {
-    public const ELIGIBLE_STATUSES = ['triage', 'evaluation', 'idea_bank', 'approved', 'implementation', 'validation', 'completed', 'finalized'];
+    public const ELIGIBLE_STATUSES = ['ready_for_voting', 'triage', 'evaluation', 'idea_bank', 'approved', 'implementation', 'validation', 'completed', 'finalized'];
 
     public function __construct(private IdeaWorkflowService $workflow) {}
 
@@ -57,7 +57,7 @@ class SelectionCycleService
             }
             foreach ($ideas as $idea) {
                 if (! $idea->is_public || ! $idea->published_at || ! $idea->publication || ! in_array($idea->status, self::ELIGIBLE_STATUSES, true)) {
-                    throw ValidationException::withMessages(['ideas' => $idea->idea_code.': conclua a triagem e revise a publicação antes de incluir no ciclo.']);
+                    throw ValidationException::withMessages(['ideas' => $idea->idea_code.': libere a proposta revisada para votação antes de incluir no ciclo.']);
                 }
                 if ($reason = $this->participationBlocker($idea)) {
                     throw ValidationException::withMessages(['ideas' => $idea->idea_code.': '.$reason]);
@@ -160,13 +160,13 @@ class SelectionCycleService
                 if (DB::table('cycle_idea_decisions')->where('voting_cycle_id', $cycle->id)->where('decision', 'selected')->count() >= $cycle->frozen_configuration['max_selections']) {
                     throw ValidationException::withMessages(['decision' => 'O limite de ideias selecionadas deste ciclo foi atingido.']);
                 }
-                if (in_array($idea->status, ['triage', 'evaluation', 'idea_bank'], true)) {
+                if (in_array($idea->status, ['ready_for_voting', 'triage', 'evaluation', 'idea_bank'], true)) {
                     IdeaStatusHistory::record($idea, 'approved', $actor, 'Selecionada após votação: '.$notes);
                 }
                 if ($cycle->frozen_configuration['reward_amount'] > 0) {
                     $this->proposeIdeaAward($actor, $cycle, $idea, $entry, $outcome);
                 }
-            } elseif (in_array($idea->status, ['triage', 'evaluation', 'idea_bank'], true) && $idea->status !== 'idea_bank') {
+            } elseif (in_array($idea->status, ['ready_for_voting', 'triage', 'evaluation', 'idea_bank'], true) && $idea->status !== 'idea_bank') {
                 IdeaStatusHistory::record($idea, 'idea_bank', $actor, 'Mantida para futuras oportunidades: '.$notes);
             }
             DB::table('cycle_idea_decisions')->insert(['voting_cycle_id' => $cycle->id, 'idea_id' => $idea->id, 'decided_by' => $actor->id, 'decision' => $decision, 'notes' => $notes, 'created_at' => now(), 'updated_at' => now()]);

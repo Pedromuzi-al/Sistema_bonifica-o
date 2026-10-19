@@ -6,7 +6,7 @@ A versão foi verificada com PHP 8.5, SQLite, Node.js e Google Chrome headless. 
 
 | Conferência | Resultado |
 |---|---|
-| Suíte PHP em SQLite | 211 testes aprovados, com 1.263 verificações |
+| Suíte PHP em SQLite | 220 testes aprovados, com 1.353 verificações |
 | Formulário por etapas em JavaScript | 3 testes aprovados |
 | Formatação PHP | Pint aprovado |
 | Instalação reproduzível de frontend | `npm ci --ignore-scripts --no-audit --no-fund` concluído |
@@ -112,3 +112,21 @@ A suíte passou com 211 testes PHP e 1.263 verificações, incluindo nove cenár
 A primeira tentativa do navegador parou no cenário antigo de documento porque o cenário novo já havia confirmado a senha na mesma sessão. O script passou a iniciar nova sessão administrativa entre esses percursos, e a execução completa seguinte passou. Não houve falha funcional de confirmação de senha.
 
 A configuração local efetiva foi conferida como confirmação de e-mail desativada e entrega manual. Não houve migration nova nesta etapa, alteração do `.env`, envio de mensagem real ou publicação. MySQL, TLS público, restauração no futuro servidor e capacidade com funcionários reais continuam sem validação externa.
+
+
+## Revisão simples — 19/10/2026
+
+Após aprovação da alternativa 1, a suíte completa passou com **215 testes PHP / 1.304 verificações**, incluindo quatro testes novos de revisão e um percurso completo até proposta de bonificação sem avaliação técnica. Cobertura: liberação direta de Enviada, campos opcionais de benefícios/categoria, justificativa e privacidade obrigatórias para liberar, pedido de ajuste/resposta que retorna para revisão, arquivamento com histórico, autoria/coautoria/permissões e bloqueio de revisão em ciclo programado/aberto.
+
+Os três testes JavaScript passaram. O Chrome isolado passou em `storage/app/qa-reports/2026-10-19T16-12-38.591Z/`, usando a liberação direta no lugar das transições para triagem e publicação separada. A compilação foi concluída. Não houve migration ou alteração do banco local nesta etapa; os status novos usam a coluna textual já existente. O parecer técnico, a implementação e os ciclos anteriores permanecem compatíveis.
+
+Na implementação inicial, a rota nova usou um nome já reservado pela conferência do cadastro da ideia. A suíte completa detectou a colisão; a rota de decisão passou a se chamar `ideas.review-decision`, preservando `ideas.review` para o resumo antes do envio. A execução completa seguinte passou.
+
+
+## Exclusão em lote — 19/10/2026
+
+A suíte completa passou com **220 testes PHP / 1.353 verificações**. Cinco testes novos cobrem remoção de várias ideias, preservação de registros/auditoria, ausência nas listagens e 404 no detalhe, permissões de administrador, lote protegido sem exclusão parcial, IDs inválidos/repetidos, confirmação/motivo e preservação obrigatória. O primeiro teste do vínculo de ciclo precisou preencher o snapshot obrigatório da fixture; corrigido, e a suíte completa passou.
+
+Três testes JavaScript, Pint, compilação e `git diff --check` aprovados. Chrome aprovado em `storage/app/qa-reports/2026-10-19T16-24-49.349Z/`: diálogo em celular claro/escuro, foco, fechamento com Escape e retorno ao botão, seleção, confirmação e retirada da listagem. A captura escura também foi inspecionada visualmente. Os percursos anteriores de cadastro, revisão simples, ciclo, voto e seleção continuaram aprovados.
+
+A migration `2026_10_19_170000_add_soft_deletes_to_ideas.php` está aplicada na base local (batch 8), sem migrations pendentes na conferência. Backup anterior e restauração isolada concluídos antes da alteração. A exclusão continua apenas lógica, com histórico e documentos preservados; nenhuma ideia da base local foi excluída pelo agente.

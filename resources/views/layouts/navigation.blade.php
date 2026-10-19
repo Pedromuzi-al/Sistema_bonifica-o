@@ -4,7 +4,7 @@
         ['route'=>'cycles.index','match'=>'cycles.*','label'=>'Votações','icon'=>'vote','visible'=>true],
         ['route'=>'ideas.index','match'=>'ideas.*','label'=>'Ideias','icon'=>'idea','visible'=>true],
         ['route'=>'notifications.index','match'=>'notifications.*','label'=>'Avisos','icon'=>'bell','visible'=>true],
-        ['route'=>'evaluation.index','match'=>'evaluation.*','label'=>'Avaliação','icon'=>'check','visible'=>auth()->user()->can('evaluate', new App\Models\Idea)],
+        ['route'=>'evaluation.index','match'=>'evaluation.*','label'=>'Revisão de ideias','icon'=>'check','visible'=>auth()->user()->can('evaluate', new App\Models\Idea)],
         ['route'=>'admin.index','match'=>'admin.*','label'=>'Administração','icon'=>'settings','visible'=>auth()->user()->can('manage-admin')],
         ['route'=>'reports.index','match'=>'reports.*','label'=>'Relatórios','icon'=>'chart','visible'=>auth()->user()->can('manage-admin')],
         ['route'=>'audit.index','match'=>'audit.*','label'=>'Auditoria','icon'=>'audit','visible'=>auth()->user()->hasSystemPermission('view_audit_logs')],

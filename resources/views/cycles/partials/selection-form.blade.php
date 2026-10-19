@@ -3,8 +3,8 @@
     <input type="hidden" name="purpose" value="selection">
     <input type="hidden" name="timezone" value="{{ config('innovation.cycle_timezone') }}">
     <h3 class="text-2xl font-bold">Criar ciclo de seleção de ideias</h3>
-    <p>Registre → faça a triagem → vote no potencial → selecione → implemente → comprove os resultados.</p>
-    <p class="text-sm text-slate-600">Podem participar propostas ainda não implementadas, em execução ou já implementadas. Basta concluir a triagem e revisar a publicação para retirar dados pessoais e informações confidenciais.</p>
+    <p>Registre → revise e libere → vote no potencial → selecione → implemente → comprove os resultados.</p>
+    <p class="text-sm text-slate-600">Podem participar propostas ainda não implementadas, em execução ou já implementadas. Basta revisar a ideia e usar Liberar para votação, retirando dados pessoais e informações confidenciais.</p>
     <x-workflow-field name="name" label="Nome do ciclo" placeholder="Ex.: Ideias para melhorar nosso trabalho" />
     <div class="grid gap-4 sm:grid-cols-2">
         <x-workflow-field name="starts_at" label="Início da votação" type="datetime-local" :value="now()->setTimezone(config('innovation.cycle_timezone'))->addMinutes(10)->format('Y-m-d\TH:i')" />

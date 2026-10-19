@@ -1,12 +1,17 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Ideias e propostas</h2>
+            <div class="ml-auto flex flex-wrap items-center gap-3">
+            @can('manage-admin')
+                <button type="button" class="apple-button--light idea-delete-trigger" x-data @click="document.getElementById('idea-delete-dialog').showModal()" aria-haspopup="dialog" aria-controls="idea-delete-dialog">Excluir ideias</button>
+            @endcan
             @if (auth()->user()->can('create', App\Models\Idea::class))
                 <a href="{{ route('ideas.create') }}" data-permission="true" data-permission-message="Você não tem permissão para criar ideias." class="rounded-full bg-[#0faddf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-sm shadow-sky-500/20 hover:bg-[#0b96c2]">Nova ideia</a>
             @else
                 <button type="button" data-permission="false" data-permission-message="Você não tem permissão para criar ideias." class="rounded-md bg-slate-300 px-4 py-2 text-sm font-semibold text-slate-600">Nova ideia</button>
             @endif
+            </div>
         </div>
     </x-slot>
 
@@ -48,4 +53,7 @@
             <div class="mt-6">{{ $ideas->links() }}</div>
         </div>
     </div>
+    @can('manage-admin')
+        @include('ideas.partials.bulk-delete')
+    @endcan
 </x-app-layout>

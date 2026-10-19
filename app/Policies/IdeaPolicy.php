@@ -26,7 +26,7 @@ class IdeaPolicy
 
     public function delete(User $user, Idea $idea): bool
     {
-        return false;
+        return $user->can('manage-admin');
     }
 
     public function vote(User $user, Idea $idea): bool

@@ -500,3 +500,38 @@ html.dark .idea-preview { background: #19263a; }
 }
 
 html.dark .app-frame .apple-card:not(.dashboard-welcome) { background: var(--workspace-panel); border-color: var(--workspace-line); box-shadow: 0 3px 16px rgb(0 0 0 / 8%); }
+
+.idea-delete-dialog {
+    width: min(44rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 0;
+    overflow-y: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 1rem;
+    color: #0f172a;
+    background: #fff;
+    box-shadow: 0 24px 64px rgb(15 23 42 / 28%);
+}
+.idea-delete-dialog::backdrop { background: rgb(15 23 42 / 65%); }
+html.dark .idea-delete-dialog { background: #1e293b; color: #f1f5f9; border-color: #475569; }
+html.dark .idea-delete-dialog :is(input, textarea) { background-color: #0f172a; color: #f1f5f9; border-color: #64748b; }
+
+
+.app-frame .idea-delete-trigger {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+    color: #fff;
+}
+@media (hover: hover) and (pointer: fine) {
+    .app-frame .idea-delete-trigger:not(:disabled):hover {
+        background-color: #991b1b;
+        border-color: #991b1b;
+    }
+}
+.app-frame .idea-delete-trigger:focus-visible {
+    outline-color: #e11d48;
+}
+html.dark .app-frame .idea-delete-trigger:focus-visible {
+    outline-color: #fda4af;
+}

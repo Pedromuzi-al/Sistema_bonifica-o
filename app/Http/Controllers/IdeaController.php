@@ -10,6 +10,7 @@ use App\Models\Idea;
 use App\Models\Sector;
 use App\Models\User;
 use App\Models\VotingCycle;
+use App\Services\IdeaDeletionService;
 use App\Services\IdeaWorkflowService;
 use App\Services\PrivateDocumentService;
 use App\Services\VoteAvailabilityService;
@@ -58,7 +59,23 @@ class IdeaController extends Controller
             ->latest()
             ->paginate(15)->withQueryString();
 
-        return view('ideas.index', compact('ideas'));
+        $deletionBlockers = $user->can('manage-admin') ? $ideas->getCollection()->mapWithKeys(fn ($idea) => [$idea->id => app(IdeaDeletionService::class)->blocker($idea)]) : collect();
+
+        return view('ideas.index', compact('ideas', 'deletionBlockers'));
+    }
+
+    public function bulkDestroy(Request $request, IdeaDeletionService $deletion): RedirectResponse
+    {
+        $this->authorize('manage-admin');
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['required', 'integer', 'distinct', Rule::exists('ideas', 'id')->whereNull('deleted_at')],
+            'deletion_reason' => ['required', 'string', 'min:10', 'max:1000'],
+            'confirm_deletion' => ['accepted'],
+        ]);
+        $count = $deletion->delete($request->user(), $data['ids'], $data['deletion_reason']);
+
+        return redirect()->route('ideas.index')->with('success', $count.' ideia(s) excluída(s) das listagens. O histórico foi preservado.');
     }
 
     public function create(): View|RedirectResponse

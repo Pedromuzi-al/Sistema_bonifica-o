@@ -28,7 +28,7 @@
             <section aria-label="Indicadores do painel" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 @foreach([
                     ['label'=>'Total de ideias','value'=>$stats['total'],'icon'=>'idea','tone'=>'brand','description'=>'Propostas registradas'],
-                    ['label'=>'Em avaliação','value'=>$stats['in_evaluation'],'icon'=>'check','tone'=>'amber','description'=>'Triagem e avaliação'],
+                    ['label'=>'Aguardando revisão','value'=>$stats['in_evaluation'],'icon'=>'check','tone'=>'amber','description'=>'Ideias recebidas para conferir'],
                     ['label'=>'Aprovadas','value'=>$stats['approved'],'icon'=>'check','tone'=>'emerald','description'=>'Prontas para avançar'],
                     ['label'=>'Em implementação','value'=>$stats['implementation'],'icon'=>'settings','tone'=>'violet','description'=>'Melhorias em execução'],
                     ['label'=>'Votações abertas','value'=>$stats['open_votes'],'icon'=>'vote','tone'=>'sky','description'=>'Abertas ou programadas'],

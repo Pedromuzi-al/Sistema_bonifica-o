@@ -78,3 +78,8 @@ As animações usam CSS: entrada por opacidade dos indicadores em sequência, ho
 ## Acesso da primeira rodada
 
 A confirmação de e-mail é opcional por configuração e vem desativada para esta rodada. A administração cadastra a pessoa, confirma a própria senha e gera um link individual, temporário e de uso único para o titular definir sua senha. A recuperação usa o mesmo procedimento. O registro de e-mail verificado não é preenchido artificialmente; permissões e bloqueios continuam aplicados. Consulte [ENTREGA_VOTACAO_SEXTA.md](ENTREGA_VOTACAO_SEXTA.md) para configuração, passos e pendências de publicação.
+
+
+## Exclusão em lote das ideias
+
+Em Ideias → Excluir ideias, administradores selecionam cadastros da página atual, avançam para confirmação, informam motivo e confirmam. A retirada das listagens utiliza `deleted_at`; histórico, auditoria e documentos são preservados. Ciclos/votos/bonificações, execução/resultados e preservação obrigatória impedem a exclusão; o lote é validado inteiro antes de gravar. A operação não apaga definitivamente os dados. Requer a migration `2026_10_19_170000_add_soft_deletes_to_ideas.php`.

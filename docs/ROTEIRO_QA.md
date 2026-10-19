@@ -1,5 +1,12 @@
 # Roteiro de QA da versão local
 
+## Atualização de 19/10: revisão simples
+
+Para o ciclo de seleção desta rodada, use Enviada → Liberada para votação. Em Revisão de ideias, abra a proposta e use os três botões do início da página: Liberar para votação, Pedir ajuste ou Arquivar. Triagem, mudança para avaliação e critérios técnicos deixaram de ser passos obrigatórios. Cenários antigos abaixo que citam essas etapas são do percurso técnico opcional/legado.
+
+Teste uma proposta recém-enviada com benefícios vazios: título, problema e solução já preenchidos; justificativa e revisão de privacidade liberam diretamente para um ciclo. Teste Pedir ajuste sem preencher publicação: o autor recebe aviso e responde; a ideia volta para nova revisão. Teste Arquivar: mantém histórico e não pode entrar em votação. Funcionários, autor/coautores e pessoas impedidas não revisam a própria ideia. Durante ciclo programado/aberto ou com decisão pendente, pedir ajuste, arquivar e liberar de novo devem ser bloqueados. Conclua voto, apuração, seleção e proposta de bonificação sem registrar avaliação técnica.
+
+
 Esta versão reúne administração/acesso, avaliação/reconhecimento e documentos/privacidade. Execute os cenários abaixo com contas de administrador, avaliador, autor, coautor e funcionário sem participação na proposta. Use dados fictícios. Registre cenário, passos, resultado esperado, resultado observado, tema, tamanho da tela e evidência quando encontrar um defeito.
 
 O fluxo principal de seleção antes da implementação tem um roteiro próprio em [CICLO_SELECAO.md](CICLO_SELECAO.md). Comece por ele para avaliar a nova lógica; os cenários de faixas e resultados abaixo cobrem o reconhecimento posterior.
@@ -263,3 +270,15 @@ Use `EMAIL_VERIFICATION_REQUIRED=false` e `ACCOUNT_INVITATION_DELIVERY=manual`. 
 Gere outro link e confira que o anterior não funciona. Use um link duas vezes e teste sua expiração. Na recuperação, confira que a senha anterior e sessões antigas deixam de funcionar após redefinir. Tente gerar link de conta bloqueada e sem confirmar a senha do administrador. Confira a auditoria sem token e que recarregar a página deixa de exibir o link. Não inclua links individuais nas evidências.
 
 O roteiro operacional desta rodada está em [ENTREGA_VOTACAO_SEXTA.md](ENTREGA_VOTACAO_SEXTA.md). Os cenários antigos de verificação automática exigem ativar explicitamente a confirmação e a entrega por e-mail.
+
+
+## Exclusão administrativa de ideias em lote
+
+1. Como administrador, abra Ideias → Excluir ideias. O pop-up mostra as ideias da página e respeita os filtros/paginação da listagem.
+2. Marque duas ideias de teste sem ciclos/bonificações/execução e clique em Continuar. Informe motivo com dez caracteres ou mais, marque a confirmação e use Confirmar exclusão.
+3. Confira que as ideias somem da listagem, painel, revisão e relatórios correntes; seus endereços retornam 404, inclusive para o autor. Auditoria, histórico e documentos privados são preservados: não é exclusão definitiva nem atendimento automático de anonimização.
+4. Abra o pop-up com ideias vinculadas a ciclos, votos, bonificações, execução/resultados ou documentos sob preservação obrigatória: devem aparecer desabilitadas com motivo. Tentar forçar esses IDs pelo servidor deve rejeitar o lote inteiro, sem excluir as demais selecionadas.
+5. Teste Cancelar, Fechar e Escape sem alterações. Confira foco dentro do pop-up e retorno ao botão; repita em celular e nos temas claro/escuro. A confirmação deve ser explícita após selecionar.
+6. Como funcionário e avaliador, confira ausência do botão e recusa da rota mesmo conhecendo IDs. Listas vazias, IDs repetidos/inexistentes e pedido sem confirmação/motivo devem ser rejeitados.
+
+A migration `2026_10_19_170000_add_soft_deletes_to_ideas.php` precisa ser aplicada em cada nova instalação antes de usar esta versão. Foi aplicada na base local após backup e restauração em cópia isolada. Nenhuma ideia real foi excluída durante o desenvolvimento: os testes usam banco descartável.
