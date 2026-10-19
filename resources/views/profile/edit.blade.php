@@ -68,7 +68,7 @@
             </section>
 
             @if (! $isAdminViewingAnotherUser)
-                <section class="apple-card space-y-4 p-6"><h3 class="text-xl font-bold">Meus dados e privacidade</h3><p>O anonimato das propostas é perante os demais colaboradores. Pessoas com autorização específica podem consultar a autoria. Propostas, avaliações, votos e reconhecimentos são mantidos para conduzir o programa e preservar sua integridade.</p><p>Documentos são privados. A exclusão de uma conta não apaga automaticamente o histórico corporativo; solicitações são analisadas e justificadas pela administração.</p>@if(config('innovation.privacy_contact'))<p>Contato de privacidade: {{ config('innovation.privacy_contact') }}</p>@endif<a class="apple-button--light" href="{{ route('privacy.export') }}">Baixar meus dados</a><form method="POST" action="{{ route('privacy.request') }}" class="space-y-3">@csrf<x-workflow-field name="reason" label="Solicitação sobre meus dados ou anonimização da conta" type="textarea" /><button class="apple-button--light">Enviar solicitação de privacidade</button></form>@foreach($privacyRequests as $privacyRequest)<p class="text-sm">Solicitação #{{ $privacyRequest->id }}: {{ ['pending'=>'Em análise','retained'=>'Analisada; retenção justificada','account_anonymized'=>'Conta anonimizada'][$privacyRequest->status] ?? $privacyRequest->status }}. {{ $privacyRequest->decision }}</p>@endforeach</section>
+                @include('profile.partials.privacy')
             @endif
             @if (! $isAdminViewingAnotherUser)
                 <section class="apple-card p-5 sm:p-8">
@@ -162,9 +162,7 @@
                 @endif
             </section>
 
-            @if (! $isAdminViewingAnotherUser)
-                <section class="apple-card space-y-4 p-6"><h3 class="text-xl font-bold">Meus dados e privacidade</h3><p>O anonimato das propostas é perante os demais colaboradores. Pessoas com autorização específica podem consultar a autoria. Propostas, avaliações, votos e reconhecimentos são mantidos para conduzir o programa e preservar sua integridade.</p><p>Documentos são privados. A exclusão de uma conta não apaga automaticamente o histórico corporativo; solicitações são analisadas e justificadas pela administração.</p>@if(config('innovation.privacy_contact'))<p>Contato de privacidade: {{ config('innovation.privacy_contact') }}</p>@endif<a class="apple-button--light" href="{{ route('privacy.export') }}">Baixar meus dados</a><form method="POST" action="{{ route('privacy.request') }}" class="space-y-3">@csrf<x-workflow-field name="reason" label="Solicitação sobre meus dados ou anonimização da conta" type="textarea" /><button class="apple-button--light">Enviar solicitação de privacidade</button></form>@foreach($privacyRequests as $privacyRequest)<p class="text-sm">Solicitação #{{ $privacyRequest->id }}: {{ ['pending'=>'Em análise','retained'=>'Analisada; retenção justificada','account_anonymized'=>'Conta anonimizada'][$privacyRequest->status] ?? $privacyRequest->status }}. {{ $privacyRequest->decision }}</p>@endforeach</section>
-            @endif
+
             @if (! $isAdminViewingAnotherUser)
                 <section class="apple-card border-rose-100 p-5 sm:p-8">
                     <div class="mb-5">

@@ -35,6 +35,12 @@ class IdeaPolicy
             && ! $idea->hasConflict($user) && $user->hasSystemPermission('vote_ideas');
     }
 
+    public function voteInSelection(User $user, Idea $idea): bool
+    {
+        return $idea->is_public && $idea->published_at !== null
+            && ! $idea->hasConflict($user) && $user->hasSystemPermission('vote_ideas');
+    }
+
     public function evaluate(User $user, Idea $idea): bool
     {
         return $this->canReview($user) && (! $idea->exists || ! $idea->hasConflict($user));

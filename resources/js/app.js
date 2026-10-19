@@ -41,4 +41,54 @@ syncThemeControls();
 
 Alpine.data('ideaWizard', ideaWizard);
 
+Alpine.data('layoutSidebar', () => ({
+    sidebarOpen: false,
+    mobile: window.matchMedia('(max-width: 1023px)').matches,
+    media: null,
+    mediaListener: null,
+    lastFocused: null,
+    init() {
+        this.media = window.matchMedia('(max-width: 1023px)');
+        this.mediaListener = event => {
+            const active = document.activeElement === document.body ? this.lastFocused : document.activeElement;
+            const focusWasInSidebar = this.$refs.sidebar.contains(active);
+            const focusWasOnToggle = active === this.$refs.menuButton;
+            this.mobile = event.matches;
+            this.sidebarOpen = false;
+            document.documentElement.style.overflow = '';
+            this.$nextTick(() => {
+                if (this.mobile && focusWasInSidebar) {
+                    this.$refs.menuButton.focus();
+                } else if (!this.mobile && (focusWasOnToggle || active?.classList.contains('sidebar-close'))) {
+                    (this.$refs.sidebar.querySelector('[aria-current="page"]') ?? this.$refs.sidebar.querySelector('nav a'))?.focus();
+                }
+            });
+        };
+        this.media.addEventListener('change', this.mediaListener);
+    },
+    destroy() {
+        this.media?.removeEventListener('change', this.mediaListener);
+        document.documentElement.style.overflow = '';
+    },
+    openMenu() {
+        if (!this.mobile) return;
+        this.sidebarOpen = true;
+        document.documentElement.style.overflow = 'hidden';
+        this.$nextTick(() => this.$refs.sidebar.querySelector('button').focus());
+    },
+    closeMenu() {
+        if (!this.sidebarOpen) return;
+        this.sidebarOpen = false;
+        document.documentElement.style.overflow = '';
+        this.$nextTick(() => this.$refs.menuButton.focus());
+    },
+    trapFocus(event) {
+        if (!this.mobile || !this.sidebarOpen || event.key !== 'Tab') return;
+        const items = Array.from(this.$refs.sidebar.querySelectorAll('a[href], button:not([disabled])')).filter(item => item.getClientRects().length);
+        const first = items[0], last = items.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    },
+}));
+
 Alpine.start();

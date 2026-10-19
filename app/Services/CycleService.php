@@ -9,6 +9,7 @@ use App\Models\Idea;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\VotingCycle;
+use App\Support\ImplementationStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,9 @@ class CycleService
     public function create(User $user, array $data): VotingCycle
     {
         Gate::forUser($user)->authorize('manage-admin');
+        if (($data['purpose'] ?? null) === 'selection') {
+            return app(SelectionCycleService::class)->create($user, $data);
+        }
         $this->scoring->validateWeights($data['weights']);
         if (abs(array_sum(array_column($data['criteria'], 'weight')) - 100) > 0.001) {
             throw ValidationException::withMessages(['criteria' => 'Os pesos dos critérios devem somar 100%.']);
@@ -53,6 +57,11 @@ class CycleService
 
     public function open(User $user, VotingCycle $cycle, array $ideaIds): void
     {
+        if ($cycle->isSelection()) {
+            app(SelectionCycleService::class)->open($user, $cycle, $ideaIds);
+
+            return;
+        }
         Gate::forUser($user)->authorize('manage-admin');
         DB::transaction(function () use ($user, $cycle, $ideaIds) {
             $cycle = $this->workflow->lockCycle($cycle->id);
@@ -73,8 +82,11 @@ class CycleService
                 throw ValidationException::withMessages(['ideas' => 'Seleção de ideias inválida.']);
             }
             foreach ($ideas as $idea) {
-                if (! $idea->is_public || ! $idea->published_at || ! $idea->result?->validated_at || ! in_array($idea->status, ['completed', 'voting_closed', 'finalized'], true)) {
+                if (($idea->publication['kind'] ?? 'results') !== 'results' || ! $idea->is_public || ! $idea->published_at || ! $idea->result?->validated_at || ! in_array($idea->status, ['completed', 'voting_closed', 'finalized'], true)) {
                     throw ValidationException::withMessages(['ideas' => 'Selecione somente publicações revisadas com resultados validados.']);
+                }
+                if ($reason = app(SelectionCycleService::class)->participationBlocker($idea)) {
+                    throw ValidationException::withMessages(['ideas' => $idea->idea_code.': '.$reason]);
                 }
                 $real = $this->scoring->resultsScore($idea->result->measurements ?? [], $config['result_indicators']);
                 $evaluation = $idea->evaluations()->latest('id')->first();
@@ -82,7 +94,7 @@ class CycleService
                 if ($real === null || $technical === null) {
                     throw ValidationException::withMessages(['ideas' => 'Cada ideia precisa de avaliação favorável e indicador compatível com a metodologia.']);
                 }
-                $cycle->ideas()->attach($idea->id, ['snapshot' => json_encode(['publication' => $idea->publication, 'real_results' => $real, 'technical' => (float) $technical, 'contributors' => $idea->recognitionShares()], JSON_THROW_ON_ERROR)]);
+                $cycle->ideas()->attach($idea->id, ['snapshot' => json_encode(['publication' => $idea->publication, 'implementation_status' => ImplementationStatus::forIdea($idea), 'real_results' => $real, 'technical' => (float) $technical, 'contributors' => $idea->recognitionShares()], JSON_THROW_ON_ERROR)]);
                 $this->workflow->transition($user, $idea, 'voting', 'Publicação selecionada para o ciclo '.$cycle->name, true);
                 $this->workflow->notifyContributors($idea, 'Votação programada', 'Sua ideia participa do ciclo '.$cycle->name, 'voting_opened');
             }
@@ -94,6 +106,11 @@ class CycleService
 
     public function close(User $user, VotingCycle $cycle): void
     {
+        if ($cycle->isSelection()) {
+            app(SelectionCycleService::class)->close($user, $cycle);
+
+            return;
+        }
         Gate::forUser($user)->authorize('manage-admin');
         DB::transaction(function () use ($user, $cycle) {
             $cycle = $this->workflow->lockCycle($cycle->id);
@@ -128,7 +145,13 @@ class CycleService
                 $popular = $weighted ? round(array_sum($weighted) / count($weighted), 2) : null;
                 $enough = count($weighted) >= $config['minimum_votes'];
                 $final = $enough && $popular !== null ? $this->scoring->calculateWeightedScore($snapshot['real_results'], $snapshot['technical'], $popular, $config['weights']) : null;
-                $outcome = ['real_results' => $snapshot['real_results'], 'technical' => $snapshot['technical'], 'votes' => $popular, 'vote_count' => count($weighted), 'final_score' => $final, 'eligible' => $enough && $final !== null && (empty($config['categories']) ? $final >= $config['minimum_score'] : collect($config['categories'])->contains(fn ($band) => $final >= $band['minimum_score'] && $final <= $band['maximum_score'])), 'review_required' => $patterns && max($patterns) >= $config['anomaly_threshold']];
+                $eligibleCategories = collect($config['categories'] ?? [])->filter(fn ($band) => $final !== null
+                    && $final >= $band['minimum_score'] && $final <= $band['maximum_score']
+                    && count($weighted) >= max($config['minimum_votes'], $band['minimum_votes'] ?? 1)
+                    && $snapshot['technical'] >= ($band['minimum_technical'] ?? 0)
+                    && $snapshot['real_results'] >= ($band['minimum_results'] ?? 0)
+                    && (empty($band['idea_category']) || ($snapshot['publication']['category'] ?? null) === $band['idea_category']))->pluck('name')->all();
+                $outcome = ['real_results' => $snapshot['real_results'], 'technical' => $snapshot['technical'], 'votes' => $popular, 'vote_count' => count($weighted), 'final_score' => $final, 'eligible' => $enough && $final !== null && (empty($config['categories']) ? $final >= $config['minimum_score'] : count($eligibleCategories) > 0), 'eligible_categories' => $eligibleCategories, 'review_required' => $patterns && max($patterns) >= $config['anomaly_threshold']];
                 $ranking[] = ['idea' => $idea, 'outcome' => $outcome];
             }
             usort($ranking, function ($a, $b) use ($config) {
@@ -152,7 +175,7 @@ class CycleService
                 $outcome = [...$row['outcome'], 'rank' => $position + 1];
                 $cycle->ideas()->updateExistingPivot($idea->id, ['outcome' => json_encode($outcome, JSON_THROW_ON_ERROR)]);
                 foreach ($categories as $index => $category) {
-                    if (! $outcome['eligible'] || $awarded[$index] >= $category['max_awards'] || $outcome['final_score'] < $category['minimum_score'] || $outcome['final_score'] > $category['maximum_score']) {
+                    if (! $outcome['eligible'] || (! empty($config['categories']) && ! in_array($category['name'], $outcome['eligible_categories'], true)) || $awarded[$index] >= $category['max_awards'] || $outcome['final_score'] < $category['minimum_score'] || $outcome['final_score'] > $category['maximum_score']) {
                         continue;
                     }
                     $award = BonusAward::create(['idea_id' => $idea->id, 'voting_cycle_id' => $cycle->id, 'rule_id' => $rules[$index]->id, 'user_id' => $idea->author_id, 'score' => $outcome['final_score'], 'award_amount' => $category['reward_amount'], 'category' => $category['name'], 'justification' => 'Classificação '.$outcome['rank'].' segundo regras congeladas; aguardando aprovação.']);
@@ -207,7 +230,7 @@ class CycleService
                 throw ValidationException::withMessages(['award' => 'A divulgação exige aprovação e ausência de conflito.']);
             }
             $award->update(['published_at' => now()]);
-            if ($idea->status === 'voting_closed' && (int) DB::table('idea_voting_cycle')->where('idea_id', $idea->id)->latest('id')->value('voting_cycle_id') === (int) $award->voting_cycle_id) {
+            if (! VotingCycle::findOrFail($award->voting_cycle_id)->isSelection() && $idea->status === 'voting_closed' && (int) DB::table('idea_voting_cycle')->where('idea_id', $idea->id)->latest('id')->value('voting_cycle_id') === (int) $award->voting_cycle_id) {
                 $this->workflow->transition($user, $award->idea, 'finalized', 'Reconhecimento aprovado e divulgado.', true);
             }
             $this->workflow->audit($user, $award->idea, 'award_published', ['award_id' => $award->id]);

@@ -26,11 +26,11 @@ class DatabaseSeeder extends Seeder
     private function seedDefaults(): void
     {
         $sectors = [
-            ['name' => 'Operações', 'description' => 'Setor responsável pela operação da empresa.'],
-            ['name' => 'Financeiro', 'description' => 'Gestão financeira e controladoria.'],
+            ['name' => 'Material Didático', 'description' => 'Produção e gestão de materiais didáticos.'],
+            ['name' => 'Sucesso do Cliente', 'description' => 'Relacionamento e acompanhamento do sucesso dos clientes.'],
             ['name' => 'Tecnologia', 'description' => 'Inovação tecnológica e sistemas.'],
-            ['name' => 'Recursos Humanos', 'description' => 'Gestão de pessoas e cultura.'],
-            ['name' => 'Vendas', 'description' => 'Relacionamento com clientes e canais.'],
+            ['name' => 'Produto', 'description' => 'Gestão e evolução dos produtos.'],
+            ['name' => 'Administração', 'description' => 'Gestão administrativa, financeira e de pessoas.'],
         ];
 
         foreach ($sectors as $sector) {
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
         $employeeUser = User::withTrashed()->firstOrCreate(['email' => 'funcionario@corp.local'], User::factory()->raw([
             'name' => 'Colaborador da Operação',
             'email' => 'funcionario@corp.local',
-            'sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'sector_id' => Sector::where('name', 'Produto')->value('id'),
         ]));
         if ($employeeUser->wasRecentlyCreated) {
             $employeeUser->assignRole('employee');
@@ -106,7 +106,7 @@ class DatabaseSeeder extends Seeder
 
         $idea = Idea::firstOrCreate(['author_id' => $employeeUser->id, 'title' => 'Automatização de triagem de pendências'], [
             'author_id' => $employeeUser->id,
-            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'origin_sector_id' => Sector::where('name', 'Produto')->value('id'),
             'title' => 'Automatização de triagem de pendências',
             'problem_description' => 'O setor operacional tem mais de 60 pendências diárias sem rastreio automatizado.',
             'solution_description' => 'Criar uma fila automatizada para priorizar tarefas e reduzir retrabalho.',
@@ -118,7 +118,7 @@ class DatabaseSeeder extends Seeder
 
         if ($idea->wasRecentlyCreated) {
             $idea->beneficiarySectors()->sync([
-                Sector::where('name', 'Operações')->value('id'),
+                Sector::where('name', 'Produto')->value('id'),
                 Sector::where('name', 'Tecnologia')->value('id'),
             ]);
             IdeaStatusHistory::create(['idea_id' => $idea->id, 'from_status' => null, 'to_status' => Idea::STATUS_SUBMITTED, 'changed_by_user_id' => $employeeUser->id, 'notes' => 'Proposta de demonstração enviada.']);

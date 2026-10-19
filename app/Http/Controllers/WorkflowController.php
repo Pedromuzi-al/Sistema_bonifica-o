@@ -61,6 +61,16 @@ class WorkflowController extends Controller
         return back()->with('success', 'Publicação revisada disponibilizada.');
     }
 
+    public function publishProposal(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
+    {
+        $this->authorize('evaluate', $idea);
+        $data = $request->validate(['title' => ['required', 'string', 'max:255'], 'problem' => ['required', 'string', 'max:10000'], 'solution' => ['required', 'string', 'max:10000'], 'results' => ['required', 'string', 'max:20000'], 'category' => ['required', 'string', 'max:255'], 'privacy_reviewed' => ['accepted']]);
+        unset($data['privacy_reviewed']);
+        $workflow->publishProposal($request->user(), $idea, $data);
+
+        return back()->with('success', 'Proposta revisada e disponível para seleção, sem exigir implementação.');
+    }
+
     public function reply(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
     {
         $this->authorize('view', $idea);
@@ -107,7 +117,7 @@ class WorkflowController extends Controller
             AuditLog::create(['causer_id' => $request->user()->id, 'model_type' => EvaluationCriterion::class, 'model_id' => $criterion->id, 'action' => 'criterion_created', 'details' => $data]);
         });
 
-        return back()->with('success', 'Critério técnico criado.');
+        return redirect()->route('admin.criteria.index')->with('success', 'Critério técnico criado.');
     }
 
     public function notifications(Request $request): View

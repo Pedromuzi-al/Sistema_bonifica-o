@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CycleScheduleRequest;
 use App\Models\AuditLog;
 use App\Models\BonusAward;
 use App\Models\EvaluationCriterion;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Models\VotingCycle;
 use App\Services\AdministrationService;
 use App\Services\IdeaWorkflowService;
+use App\Services\PrivateDocumentService;
 use App\Services\RecognitionGovernanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,13 +29,13 @@ class GovernanceController extends Controller
         $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'description' => ['required', 'string', 'max:1000'], 'weight' => ['required', 'numeric', 'gt:0', 'max:100'], 'active' => ['required', 'boolean']]);
         $service->updateCriterion($request->user(), $criterion, $data);
 
-        return back()->with('success', 'Critério atualizado. As notas e descrições dos pareceres anteriores foram preservadas.');
+        return redirect()->route('admin.criteria.index')->with('success', 'Critério atualizado. As notas e descrições dos pareceres anteriores foram preservadas.');
     }
 
-    public function draft(Request $request, VotingCycle $cycle, RecognitionGovernanceService $service): RedirectResponse
+    public function draft(CycleScheduleRequest $request, VotingCycle $cycle, RecognitionGovernanceService $service): RedirectResponse
     {
         $this->authorize('manage-admin');
-        $data = $request->validate(['name' => ['required', 'string', 'max:255'], 'starts_at' => ['required', 'date', 'after:now'], 'ends_at' => ['required', 'date', 'after:starts_at']]);
+        $data = $request->safe()->only(['name', 'starts_at', 'ends_at']);
         $service->draft($request->user(), $cycle, $data);
 
         return back()->with('success', 'Nome e período do rascunho atualizados.');
@@ -81,7 +83,7 @@ class GovernanceController extends Controller
 
     private function authorizeDocuments(Request $request, Idea $idea): void
     {
-        abort_unless($idea->isContributor($request->user()) || $request->user()->can('evaluate', $idea), 404);
+        abort_unless($idea->isContributor($request->user()) || $request->user()->can('evaluate', $idea) || app(PrivateDocumentService::class)->canReview($request->user()), 404);
     }
 
     public function upload(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
@@ -94,7 +96,7 @@ class GovernanceController extends Controller
             DB::transaction(function () use ($request, $idea, $workflow, &$path) {
                 $idea = $workflow->lockIdea($idea->id);
                 abort_unless(in_array($idea->status, ['submitted', 'triage', 'evaluation', 'awaiting_information', 'implementation', 'validation'], true), 422, 'Esta etapa não permite adicionar documentos.');
-                abort_if(DB::table('idea_attachments')->where('idea_id', $idea->id)->count() >= 10, 422, 'Limite de dez documentos por proposta.');
+                abort_if(DB::table('idea_attachments')->where('idea_id', $idea->id)->whereNull('deleted_at')->count() >= 10, 422, 'Limite de dez documentos por proposta.');
                 $path = $request->file('document')->store('idea-documents', 'local');
                 abort_unless($path, 500, 'Não foi possível armazenar o documento.');
                 $id = DB::table('idea_attachments')->insertGetId(['idea_id' => $idea->id, 'uploaded_by' => $request->user()->id, 'path' => $path, 'mime' => $request->file('document')->getMimeType(), 'size' => $request->file('document')->getSize(), 'created_at' => now(), 'updated_at' => now()]);
@@ -114,11 +116,30 @@ class GovernanceController extends Controller
     {
         $this->authorizeDocuments($request, $idea);
         $record = DB::table('idea_attachments')->where('idea_id', $idea->id)->where('id', $document)->first();
-        abort_unless($record && Storage::disk('local')->exists($record->path), 404);
+        abort_unless($record && ! $record->deleted_at && ! in_array($record->review_status, ['deleted', 'deletion_pending'], true) && Storage::disk('local')->exists($record->path), 404);
+        abort_if($record->review_status === 'restricted' && ! app(PrivateDocumentService::class)->canReview($request->user()), 404);
         $extensions = ['application/pdf' => 'pdf', 'image/png' => 'png', 'image/jpeg' => 'jpg', 'text/plain' => 'txt'];
         $workflow->audit($request->user(), $idea, 'private_document_downloaded', ['document_id' => $document]);
 
         return Storage::disk('local')->download($record->path, 'documento-'.$record->id.'.'.($extensions[$record->mime] ?? 'bin'), ['Content-Type' => 'application/octet-stream', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store']);
+    }
+
+    public function reviewDocument(Request $request, Idea $idea, int $document, PrivateDocumentService $documents): RedirectResponse
+    {
+        $this->authorize('manage-admin');
+        abort_unless($documents->canReview($request->user()), 403);
+        $data = $request->validate([
+            'action' => ['required', 'in:approve,restrict,delete'],
+            'notes' => ['required', 'string', 'min:20', 'max:5000'],
+            'retention_until' => ['nullable', 'date', 'after:today'],
+            'legal_hold' => ['sometimes', 'boolean'],
+            'review_confirmed' => ['accepted'],
+        ]);
+        if (! $documents->review($request->user(), $idea, $document, $data)) {
+            return back()->withErrors(['document' => 'Decisão registrada, mas a exclusão do arquivo está pendente. O download foi bloqueado e a rotina de retenção tentará novamente.']);
+        }
+
+        return back()->with('success', 'Revisão registrada. Documentos excluídos não podem ser recuperados pela aplicação.');
     }
 
     public function export(Request $request): StreamedResponse
@@ -158,7 +179,7 @@ class GovernanceController extends Controller
         $data = $request->validate(['decision' => ['required', 'string', 'min:20', 'max:5000'], 'action' => ['required', 'in:retain,anonymize'], 'review_confirmed' => ['accepted']]);
         DB::transaction(function () use ($request, $privacy, $data, $administration) {
             // Use the same account-lock order as access administration.
-            User::withTrashed()->orderBy('id')->lockForUpdate()->get();
+            $administration->lockAccounts($request->user());
             $record = DB::table('privacy_requests')->where('id', $privacy)->lockForUpdate()->first();
             abort_unless($record && $record->status === 'pending', 422);
             $target = User::withTrashed()->findOrFail($record->user_id);

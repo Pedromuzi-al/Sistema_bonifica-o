@@ -15,6 +15,7 @@ class ProductionCheck extends Command
     public function handle(): int
     {
         $mailer = config('mail.default');
+        $usesEmail = config('innovation.email_verification_required') || config('innovation.invitation_delivery') === 'email';
         $checks = [
             'Ambiente production' => app()->isProduction(),
             'Depuração desativada' => ! config('app.debug'),
@@ -26,7 +27,8 @@ class ProductionCheck extends Command
             'Cookie seguro e HttpOnly' => config('session.secure') && config('session.http_only'),
             'Cadastro público desativado' => ! config('innovation.registration_enabled'),
             'Contato de privacidade definido' => filled(config('innovation.privacy_contact')),
-            'E-mail SMTP configurado' => $mailer === 'smtp' && filled(config('mail.mailers.smtp.host')) && filled(config('mail.from.address')) && ! str_ends_with((string) config('mail.from.address'), '@example.com'),
+            'Convites e recuperação configurados' => in_array(config('innovation.invitation_delivery'), ['manual', 'email'], true),
+            'E-mail SMTP quando habilitado' => ! $usesEmail || $mailer === 'smtp' && filled(config('mail.mailers.smtp.host')) && filled(config('mail.from.address')) && ! str_ends_with((string) config('mail.from.address'), '@example.com'),
             'Assets compilados, sem servidor Vite de desenvolvimento' => is_file(public_path('build/manifest.json')) && ! is_file(public_path('hot')),
             'Diretórios graváveis' => is_writable(storage_path()) && is_writable(base_path('bootstrap/cache')),
         ];
@@ -35,7 +37,7 @@ class ProductionCheck extends Command
             $checks['Conexão com banco'] = true;
             $migrator = app('migrator');
             $checks['Migrations atualizadas'] = $migrator->repositoryExists() && count(array_diff(array_keys($migrator->getMigrationFiles(database_path('migrations'))), $migrator->getRepository()->getRan())) === 0;
-            $checks['Administrador ativo e verificado'] = User::whereNull('blocked_at')->whereNotNull('email_verified_at')->get()->contains(fn ($user) => $user->hasAdministrativeAccess());
+            $checks['Administrador ativo e liberado'] = User::whereNull('blocked_at')->get()->contains(fn ($user) => $user->hasAdministrativeAccess());
             $checks['Contas demonstrativas ausentes'] = ! User::withTrashed()->whereIn('email', ['admin@corp.local', 'avaliador@corp.local', 'funcionario@corp.local'])->exists();
         } catch (\Throwable) {
             $checks['Banco e estrutura acessíveis'] = false;

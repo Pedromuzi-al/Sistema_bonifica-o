@@ -42,7 +42,7 @@ class Idea extends Model
     public const STATUS_FINALIZED = 'finalized';
 
     public const LABELS = [
-        'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
+        'idea_bank' => 'No banco de ideias', 'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
         'awaiting_information' => 'Aguardando informações', 'approved' => 'Aprovada',
         'implementation' => 'Em implementação', 'implemented' => 'Implementada (legado)',
         'validation' => 'Em validação de resultados', 'completed' => 'Concluída',
@@ -136,6 +136,18 @@ class Idea extends Model
     public function result(): HasOne
     {
         return $this->hasOne(IdeaResult::class);
+    }
+
+    public function canRecordTechnicalEvaluation(): bool
+    {
+        return $this->status === 'evaluation'
+            || (in_array($this->status, ['approved', 'implementation', 'validation', 'completed'], true)
+                && DB::table('cycle_idea_decisions')->where('idea_id', $this->id)->where('decision', 'selected')->exists());
+    }
+
+    public function votingCycles(): BelongsToMany
+    {
+        return $this->belongsToMany(VotingCycle::class, 'idea_voting_cycle')->withPivot('snapshot', 'outcome');
     }
 
     public function votes(): HasMany

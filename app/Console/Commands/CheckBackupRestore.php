@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\LocalBackupService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Process\Process;
@@ -14,6 +15,19 @@ class CheckBackupRestore extends Command
 
     public function handle(): int
     {
+        if (config('database.default') === 'sqlite' && ! app()->isProduction()) {
+            try {
+                $path = app(LocalBackupService::class)->verify($this->argument('directory'), (string) $this->option('database'));
+                $this->info('SQLite e documentos restaurados e conferidos em '.$path);
+
+                return self::SUCCESS;
+            } catch (\Throwable $exception) {
+                report($exception);
+                $this->error('Restauração local não concluída. Confira checksums e use um destino novo terminado em _test. A aplicação não foi alterada.');
+
+                return self::FAILURE;
+            }
+        }
         $database = $this->option('database');
         $config = DB::connection()->getConfig();
         if (config('database.default') !== 'mysql' || ! is_string($database) || ! preg_match('/\A[a-zA-Z0-9_]+_test\z/', $database) || $database === $config['database']) {

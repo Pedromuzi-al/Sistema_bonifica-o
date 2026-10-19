@@ -20,3 +20,5 @@ Artisan::command('app:prune-read-notifications', function () {
     $this->info($count.' notificações lidas removidas. Propostas, votos e auditoria foram preservados.');
 })->purpose('Aplica o prazo configurado somente às notificações já lidas');
 Schedule::command('app:prune-read-notifications')->daily()->withoutOverlapping();
+
+Schedule::command('app:purge-private-documents --execute')->daily()->withoutOverlapping();

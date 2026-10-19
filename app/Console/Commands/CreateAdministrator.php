@@ -14,7 +14,7 @@ class CreateAdministrator extends Command
 {
     protected $signature = 'app:create-administrator {email} {--name=Administrador}';
 
-    protected $description = 'Cria administrador real com senha oculta e envia a verificação de e-mail';
+    protected $description = 'Cria administrador real com senha oculta e verificação de e-mail quando exigida';
 
     public function handle(): int
     {
@@ -37,6 +37,11 @@ class CreateAdministrator extends Command
 
             return $user;
         });
+        if (! config('innovation.email_verification_required')) {
+            $this->info('Administrador criado. O acesso depende da senha definida; confirmação de e-mail desativada nesta versão.');
+
+            return self::SUCCESS;
+        }
         try {
             $user->sendEmailVerificationNotification();
         } catch (\Throwable $error) {

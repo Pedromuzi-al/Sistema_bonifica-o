@@ -28,7 +28,7 @@
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail() && $user->id === auth()->id())
+            @if (config('innovation.email_verification_required') && $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail() && $user->id === auth()->id())
                 <div>
                     <p class="text-sm mt-2 text-gray-800">
                         {{ __('Seu endereço de e-mail ainda não foi verificado.') }}

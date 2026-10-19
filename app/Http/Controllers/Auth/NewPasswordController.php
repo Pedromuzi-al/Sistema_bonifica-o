@@ -55,12 +55,13 @@ class NewPasswordController extends Controller
                         'access_version' => (int) $current->access_version + 1,
                         'invitation_pending' => false,
                     ]);
-                    if ($invited) {
+                    $emailInvitation = $invited && config('innovation.invitation_delivery') === 'email';
+                    if ($emailInvitation) {
                         $current->email_verified_at = now();
                     }
                     $current->save();
                     DB::table('sessions')->where('user_id', $current->id)->delete();
-                    if ($invited) {
+                    if ($emailInvitation) {
                         event(new Verified($current));
                     }
                     event(new PasswordReset($current));

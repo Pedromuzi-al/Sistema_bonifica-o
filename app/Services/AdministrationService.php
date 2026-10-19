@@ -38,6 +38,9 @@ class AdministrationService
                 $this->authorizeAdmin($actor);
             }
             $target = User::withTrashed()->findOrFail($target->id);
+            if ($target->anonymized_at) {
+                throw ValidationException::withMessages(['user' => 'Dados de uma conta anonimizada não podem ser alterados.']);
+            }
             $hadAdministrator = $this->hasAvailableAdministrator();
             $before = $this->userSnapshot($target);
             if (! $profileOnly) {
@@ -70,6 +73,9 @@ class AdministrationService
             $this->lockAccounts($actor);
             $this->authorizeAdmin($actor);
             $target = User::findOrFail($target->id);
+            if ($target->anonymized_at) {
+                throw ValidationException::withMessages(['user' => 'Dados de uma conta anonimizada não podem ser alterados.']);
+            }
             $hadAdministrator = $this->hasAvailableAdministrator();
             $before = $this->userSnapshot($target);
             $this->assignAccess($target, $data);
@@ -127,6 +133,25 @@ class AdministrationService
             $this->preserveAdministrator($hadAdministrator);
             $this->revokeSessions($target);
             $this->audit($user, $target, 'account_deactivated', ['reason' => 'Solicitação do titular; histórico preservado.']);
+        }, 3);
+    }
+
+    public function sectorMembership(User $actor, Sector $sector, User $user, string $action): void
+    {
+        DB::transaction(function () use ($actor, $sector, $user, $action) {
+            $this->lockAccounts($actor);
+            $this->authorizeAdmin($actor);
+            $sector = Sector::whereKey($sector->id)->lockForUpdate()->firstOrFail();
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            if ($user->anonymized_at || ! in_array($action, ['link', 'unlink'], true) || ($action === 'link' && ! $sector->is_active)) {
+                throw ValidationException::withMessages(['membership' => 'Não é possível vincular esta conta a um setor inativo ou alterar uma conta anonimizada.']);
+            }
+            if ($action === 'unlink' && (int) $user->sector_id !== (int) $sector->id) {
+                throw ValidationException::withMessages(['membership' => 'Esta pessoa já não está vinculada a este setor. Atualize a página.']);
+            }
+            $before = $user->sector_id;
+            $user->update(['sector_id' => $action === 'link' ? $sector->id : null]);
+            $this->audit($actor, $user, 'sector_membership_updated', ['previous_sector_id' => $before, 'sector_id' => $user->sector_id]);
         }, 3);
     }
 
@@ -190,7 +215,7 @@ class AdministrationService
         $user->syncPermissions($data['permissions'] ?? []);
     }
 
-    private function lockAccounts(User $actor): void
+    public function lockAccounts(User $actor): void
     {
         if (DB::connection()->getDriverName() === 'sqlite') {
             DB::table('administration_locks')->where('id', 1)->update(['id' => 1]);
@@ -207,7 +232,7 @@ class AdministrationService
 
     private function hasAvailableAdministrator(): bool
     {
-        return User::whereNull('blocked_at')->whereNotNull('email_verified_at')->with('roles.permissions', 'permissions')->get()->contains(fn ($user) => $user->hasAdministrativeAccess());
+        return User::whereNull('blocked_at')->where('invitation_pending', false)->when(config('innovation.email_verification_required'), fn ($query) => $query->whereNotNull('email_verified_at'))->with('roles.permissions', 'permissions')->get()->contains(fn ($user) => $user->hasAdministrativeAccess());
     }
 
     private function preserveAdministrator(bool $hadAdministrator): void

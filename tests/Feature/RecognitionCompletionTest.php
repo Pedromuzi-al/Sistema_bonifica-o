@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class RecognitionCompletionTest extends TestCase
@@ -308,5 +309,31 @@ class RecognitionCompletionTest extends TestCase
         $this->assertSame($idea->idea_code, $data['participations'][0]['idea_code']);
         $this->assertSame(40, (int) $data['participations'][0]['share']);
         $this->assertStringNotContainsString($author->email, $response->streamedContent());
+    }
+
+    #[TestWith(['minimum_votes', 2, false])]
+    #[TestWith(['minimum_technical', 75, false])]
+    #[TestWith(['minimum_results', 75, false])]
+    #[TestWith(['idea_category', 'Outra categoria', false])]
+    #[TestWith(['idea_category', 'Processos', true])]
+    public function test_category_specific_eligibility_is_frozen_and_enforced(string $field, mixed $value, bool $eligible): void
+    {
+        [$admin, $author, , $evaluator] = $this->accounts();
+        $idea = $this->ready($author, $evaluator);
+        $idea->evaluations()->first()->update(['technical_score' => 50]);
+        $idea->result->update(['measurements' => [['indicator' => 'Tempo', 'unit' => 'horas', 'before' => 20, 'after' => 15]]]);
+        $data = $this->data();
+        $data['categories'] = [['name' => 'Faixa com requisitos', 'minimum_score' => 0, 'maximum_score' => 100, 'reward_amount' => 100, 'max_awards' => 1, $field => $value]];
+        $service = app(CycleService::class);
+        $cycle = $service->create($admin, $data);
+        $service->open($admin, $cycle, [$idea->id]);
+        $this->assertSame($value, $cycle->fresh()->frozen_configuration['categories'][0][$field]);
+        $this->travel(61)->minutes();
+        $this->actingAs($evaluator)->post(route('ideas.vote', $idea), ['voting_cycle_id' => $cycle->id, 'scores' => [$cycle->criteria()->first()->id => 5]])->assertSessionHasNoErrors();
+        $this->travel(60)->minutes();
+        $service->close($admin, $cycle);
+        $this->assertSame($eligible ? 1 : 0, BonusAward::where('voting_cycle_id', $cycle->id)->count());
+        $outcome = json_decode($cycle->ideas()->first()->pivot->outcome, true);
+        $this->assertSame($eligible, $outcome['eligible']);
     }
 }

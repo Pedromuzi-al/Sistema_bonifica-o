@@ -18,8 +18,13 @@
         </include>
     </source>
     <php>
+        <env name="EMAIL_VERIFICATION_REQUIRED" value="true" force="true"/>
+        <env name="ACCOUNT_INVITATION_DELIVERY" value="email" force="true"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="IDEA_ATTACHMENTS_ENABLED" value="false" force="true"/>
+        <env name="REGISTRATION_ENABLED" value="true" force="true"/>
+        <env name="READ_NOTIFICATIONS_RETENTION_DAYS" value="0" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

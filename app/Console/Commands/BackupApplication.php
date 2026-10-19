@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\LocalBackupService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -11,10 +12,24 @@ class BackupApplication extends Command
 {
     protected $signature = 'app:backup';
 
-    protected $description = 'Cria cópia privada do MySQL e dos documentos; execute sem alterações concorrentes de arquivos';
+    protected $description = 'Cria cópia privada do banco e dos documentos; execute sem alterações concorrentes de arquivos';
 
     public function handle(): int
     {
+        if (config('database.default') === 'sqlite' && ! app()->isProduction()) {
+            try {
+                $path = app(LocalBackupService::class)->create();
+                $this->info('Backup local SQLite criado em '.$path);
+                $this->warn('A cópia não é criptografada. Preserve APP_KEY separadamente e confira a restauração.');
+
+                return self::SUCCESS;
+            } catch (\Throwable $exception) {
+                report($exception);
+                $this->error('Backup local não concluído. Confira espaço e permissões. Uma cópia sem manifesto completo não deve ser utilizada.');
+
+                return self::FAILURE;
+            }
+        }
         if (config('database.default') !== 'mysql') {
             $this->error('Este backup exige MySQL.');
 

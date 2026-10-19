@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -26,6 +27,21 @@ class VotingCycle extends Model
                 throw new \LogicException('As regras de um ciclo aberto são imutáveis.');
             }
         });
+    }
+
+    protected function localStartsAt(): Attribute
+    {
+        return Attribute::get(fn () => $this->starts_at?->copy()->setTimezone(config('innovation.cycle_timezone')));
+    }
+
+    protected function localEndsAt(): Attribute
+    {
+        return Attribute::get(fn () => $this->ends_at?->copy()->setTimezone(config('innovation.cycle_timezone')));
+    }
+
+    public function isSelection(): bool
+    {
+        return ($this->frozen_configuration['purpose'] ?? $this->weight_configuration['purpose'] ?? 'recognition') === 'selection';
     }
 
     public function ideas(): BelongsToMany

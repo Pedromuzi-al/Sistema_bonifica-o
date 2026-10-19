@@ -47,6 +47,9 @@ class RecognitionGovernanceService
         DB::transaction(function () use ($actor, $idea, $contributors) {
             $idea = $this->workflow->lockIdea($idea->id);
             $this->workflow->requireStatus($idea, ['submitted', 'triage']);
+            if (DB::table('idea_voting_cycle')->join('voting_cycles', 'voting_cycles.id', '=', 'idea_voting_cycle.voting_cycle_id')->where('idea_id', $idea->id)->whereNotNull('frozen_configuration')->exists()) {
+                throw ValidationException::withMessages(['contributors' => 'Participantes e divisão ficam preservados após a abertura da primeira votação.']);
+            }
             $ids = array_column($contributors, 'user_id');
             if (array_sum(array_column($contributors, 'share')) !== 100 || ! in_array((int) $idea->author_id, array_map('intval', $ids), true) || count($ids) !== count(array_unique($ids))) {
                 throw ValidationException::withMessages(['contributors' => 'Inclua o autor principal, sem repetir pessoas, e distribua exatamente 100%.']);
@@ -103,7 +106,7 @@ class RecognitionGovernanceService
             $cycle = $this->workflow->lockCycle($cycle->id);
             $idea = $this->workflow->lockIdea($idea->id);
             $cycle->ideas()->where('ideas.id', $idea->id)->firstOrFail();
-            if ($cycle->status !== 'closed' || (int) DB::table('idea_voting_cycle')->where('idea_id', $idea->id)->latest('id')->value('voting_cycle_id') !== (int) $cycle->id || BonusAward::where('idea_id', $idea->id)->where('voting_cycle_id', $cycle->id)->whereNull('published_at')->whereNull('rejected_at')->exists() || $idea->hasConflict($actor)) {
+            if ($cycle->isSelection() || $cycle->status !== 'closed' || (int) DB::table('idea_voting_cycle')->where('idea_id', $idea->id)->latest('id')->value('voting_cycle_id') !== (int) $cycle->id || BonusAward::where('idea_id', $idea->id)->where('voting_cycle_id', $cycle->id)->whereNull('published_at')->whereNull('rejected_at')->exists() || $idea->hasConflict($actor)) {
                 throw ValidationException::withMessages(['cycle' => 'Encerre o ciclo mais recente e conclua os reconhecimentos pendentes antes de finalizar.']);
             }
             $this->workflow->transition($actor, $idea, 'finalized', $notes, true);
