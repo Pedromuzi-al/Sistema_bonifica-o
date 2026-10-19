@@ -252,3 +252,40 @@ Arquivos principais: `IdeaDeletionService`, `IdeaController`, `IdeaPolicy`, `Ide
 ### Ajuste visual do botão de exclusão
 
 A pedido do usuário, Excluir ideias e Nova ideia foram agrupados lado a lado, à direita do cabeçalho da listagem. O botão de exclusão passou a vermelho com texto branco, hover vermelho mais escuro apenas em dispositivos com mouse e foco visível para teclado nos dois temas. A alteração é apenas visual e não modifica a operação de exclusão nem requer migration.
+
+
+### Painel e orientação para escolher ideias no ciclo
+
+Removido somente o botão Nova ideia do cabeçalho do Painel corporativo, a pedido do usuário. O acesso Tenho uma ideia do cartão de boas-vindas e Nova ideia na listagem permanecem. A mensagem de ciclo sem propostas foi alinhada à revisão simples: orienta usar Liberar para votação, sem exigir triagem, implementação ou notas técnicas, e oferece atalho para Revisão de ideias. Não há migration nesta alteração.
+
+
+## 19/10/2026 — animações na escolha das notas
+
+A pedido do usuário, os cartões de notas da votação ganharam transições de cor, borda e sombra, breve realce de escala ao selecionar, entrada discreta das perguntas em sequência e entrada do resumo por opacidade. O hover levanta apenas opções ainda não selecionadas em dispositivos com mouse. O destaque visual é uniforme para notas 1 a 5, sem favorecer respostas altas. Foi retirado o contorno duplicado da seleção com mouse; o foco do teclado continua destacado no cartão inteiro. A preferência de reduzir movimento desativa animações, deslocamentos e transições. Nenhuma migration ou alteração do cálculo/envio de votos foi necessária.
+
+A validação do navegador foi ampliada para conferir ausência de nota inicial, troca por setas, estilo nos dois temas, preferência de reduzir movimento e layout de celular, seguida do voto e apuração existentes. Compilação e Chrome aprovados. Evidências em `storage/app/qa-reports/2026-10-19T20-39-08.342Z/`, incluindo notas claro/escuro/celular, nenhuma resposta inicial, navegação por setas e foco, movimento reduzido sem transições, conferência/confirmação do voto e continuidade até apuração/seleção. O teste detectou uma regra global que ainda impunha uma duração mínima com movimento reduzido; a regra específica foi ajustada para desativar totalmente as transições das notas. Captura escura inspecionada visualmente e diff conferido. Não houve nova alteração de PHP/regras de negócio nem necessidade de repetir a suíte PHP nesta etapa visual.
+
+
+### Explicação da votação sempre visível
+
+O bloco Como os votos ajudam no reconhecimento? passou de um acordeão para uma seção fixa, com título e texto sempre visíveis e o link das regras preservado. Alteração apenas de marcação, sem migration ou mudança de votação.
+
+
+### Auditoria retirada do menu e proposta de reformulação de relatórios/resultados
+
+A pedido do usuário, Auditoria deixou de aparecer no menu lateral, inclusive no celular. O registro interno de ações e as permissões da rota existente foram preservados. O usuário solicitou três alternativas para a reformulação de Relatórios e da apresentação dos resultados de votação; as propostas estão sendo apresentadas para escolha antes de alterar essas duas telas. A preferência é por mais clareza e movimento visual, preservando privacidade, neutralidade durante a votação e redução de movimento.
+
+
+## 19/10/2026 — alternativa 1 de relatórios e resultados entregue
+
+O usuário aprovou a visão por ciclo e perguntou sobre a melhoria visual. Relatórios passou a abrir a rodada mais recente, com seletor de ciclo, tipo/período/situação e indicadores de ideias, pessoas únicas e votos válidos. Depois da apuração, exibe uma tabela de classificação com pontuação, quantidade de votos, decisão e estado da bonificação. Os dados usam os snapshots/resultados congelados; notas e ranking não aparecem durante a votação.
+
+A página do ciclo compartilha a classificação e o resumo, recolhendo textos extensos e formulários nos detalhes de cada proposta. Ver detalhes abre a proposta correspondente e preserva o acesso às decisões e aos acompanhamentos. Alertas, impedimentos e aprovação/divulgação continuam com a validação anterior. A classificação não concede prêmio automaticamente.
+
+A área financeira distingue propostas pendentes, total aprovado (incluindo divulgado) e divulgado, sem somar valores que se sobrepõem. Funcionários só recebem valores de bonificações publicadas e não veem justificativas administrativas. A exportação CSV específica do ciclo é restrita à administração e bloqueada antes da apuração; usa proteção contra fórmulas e não inclui autoria ou votos individuais. O CSV e os indicadores gerais de execução anteriores continuam numa área complementar acessível por Indicadores de execução.
+
+Visual: cartões com ícones/cores e entrada em sequência, barras de pontuação com preenchimento, linhas da classificação com entrada breve e detalhes com transição de opacidade. Redução de movimento desativa animações. Tabelas contêm sua própria rolagem no celular. Auditoria continua fora do menu, mantendo os registros internos.
+
+Implementação centralizada em `CycleReportService`, compartilhada por `CycleController` e `ReportController`; parciais de resumo/classificação/financeiro evitam discrepância entre telas. Não houve migration, alteração do banco local ou recálculo de resultados existentes. As expectativas dos testes antigos de indicadores foram direcionadas explicitamente à área complementar, preservando sua cobertura.
+
+Validação: **226 testes PHP / 1.393 verificações**, **três testes JavaScript**, build e Chrome aprovados. Seis testes novos cobrem seleção do ciclo, título congelado, zero válido e votos insuficientes, contagem única, estados financeiros, privacidade, ranking/CSV bloqueados antes da apuração, filtro de ciclo, fórmula em CSV e ausência de ciclos. Chrome passou em `storage/app/qa-reports/2026-10-19T20-55-49.851Z/`, com relatórios nos dois temas, detalhes com âncora, movimento reduzido, 320/390 px e regressão até voto/apuração/decisão. Capturas de relatórios claro/escuro inspecionadas; ajustado o contraste do selo de situação no tema escuro. Guia novo: `docs/RELATORIO_POR_CICLO.md`.

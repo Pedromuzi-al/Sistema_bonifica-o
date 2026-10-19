@@ -8,6 +8,7 @@ use App\Models\Idea;
 use App\Models\Sector;
 use App\Models\Vote;
 use App\Models\VotingCycle;
+use App\Services\CycleReportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -30,7 +31,43 @@ class ReportController extends Controller
             ->when($request->filled('category'), fn ($q) => $q->where('publication->category', $request->input('category')));
     }
 
-    public function index(Request $request): View
+    public function index(Request $request, CycleReportService $reports): View
+    {
+        $this->authorize('manage-admin');
+        $request->validate(['view' => ['nullable', 'in:cycle,general'], 'cycle' => ['nullable', 'integer', 'exists:voting_cycles,id']]);
+        if ($request->input('view') === 'general') {
+            return $this->general($request);
+        }
+        $cycles = VotingCycle::latest('id')->get();
+        $cycle = $request->filled('cycle') ? $cycles->firstWhere('id', $request->integer('cycle')) : $cycles->first();
+        $cycleReport = $cycle ? $reports->build($cycle, true) : null;
+
+        return view('reports.cycle', compact('cycles', 'cycle', 'cycleReport'));
+    }
+
+    public function cycleExport(Request $request, CycleReportService $reports): StreamedResponse
+    {
+        $this->authorize('manage-admin');
+        $data = $request->validate(['cycle' => ['required', 'integer', 'exists:voting_cycles,id']]);
+        $cycle = VotingCycle::findOrFail($data['cycle']);
+        abort_unless($cycle->status === 'closed', 422, 'Apure o ciclo antes de exportar a classificação.');
+        $report = $reports->build($cycle, true);
+
+        return response()->streamDownload(function () use ($report, $cycle) {
+            $stream = fopen('php://output', 'w');
+            fwrite($stream, "\xEF\xBB\xBF");
+            fputcsv($stream, ['Posição', 'Código', 'Ideia', 'Votos válidos', 'Pontuação (0 a 100)', 'Decisão', 'Pendente de aprovação (R$)', 'Total aprovado, inclui divulgado (R$)', 'Divulgado (R$)'], ';', '"', '');
+            foreach ($report['entries'] as $entry) {
+                $row = [$entry['score'] !== null ? $entry['rank'] : '', $entry['code'], $entry['title'], $entry['votes'], $entry['score'] ?? '', ! $cycle->isSelection() ? 'Reconhecimento por resultados' : match ($entry['decision']) {
+                    'selected' => 'Selecionada', 'bank' => 'No banco de ideias', default => 'Aguardando decisão'
+                }, $entry['pending_amount'], $entry['approved_amount'], $entry['published_amount']];
+                fputcsv($stream, array_map(fn ($value) => preg_match('/^[\s]*[=+@-]/u', (string) $value) ? "'".$value : $value, $row), ';', '"', '');
+            }
+            fclose($stream);
+        }, 'resultado-ciclo-'.$cycle->id.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function general(Request $request): View
     {
         $this->authorize('manage-admin');
         $query = $this->query($request);

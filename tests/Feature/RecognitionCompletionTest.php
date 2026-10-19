@@ -224,7 +224,7 @@ class RecognitionCompletionTest extends TestCase
         $idea = $this->ready($author, $evaluator);
         $idea->update(['status' => 'finalized']);
         $this->actingAs($admin)->get(route('admin.index'))->assertOk()->assertViewHas('stats', fn ($stats) => $stats['completed'] === 1 && $stats['approved'] === 1);
-        $this->get(route('reports.index'))->assertOk()->assertSeeText('Evolução das contribuições')->assertViewHas('benefits', fn ($benefits) => count($benefits) === 1 && (float) array_values($benefits)[0]['difference'] === -10.0);
+        $this->get(route('reports.index', ['view' => 'general']))->assertOk()->assertSeeText('Evolução das contribuições')->assertViewHas('benefits', fn ($benefits) => count($benefits) === 1 && (float) array_values($benefits)[0]['difference'] === -10.0);
     }
 
     public function test_rejected_recognition_can_be_finalized_and_cannot_be_approved(): void

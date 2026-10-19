@@ -1,7 +1,8 @@
 <x-app-layout>
 <x-slot name="header"><h2 class="text-2xl font-bold">Indicadores e relatórios</h2></x-slot>
 <div class="mx-auto max-w-6xl space-y-6 px-4 py-8">
-    <form class="apple-card grid gap-3 p-6 md:grid-cols-3" method="GET">
+    <a class="apple-button--light" href="{{ route('reports.index') }}">Voltar ao relatório por ciclo</a>
+    <form class="apple-card grid gap-3 p-6 md:grid-cols-3" method="GET"><input type="hidden" name="view" value="general">
         <x-workflow-field name="from" label="De" type="date" :required="false" :value="request('from')" /><x-workflow-field name="to" label="Até" type="date" :required="false" :value="request('to')" />
         <label>Setor<select name="sector" class="block w-full rounded-lg"><option value="">Todos</option>@foreach ($sectors as $sector)<option value="{{ $sector->id }}" @selected(request('sector') == $sector->id)>{{ $sector->name }}</option>@endforeach</select></label>
         <label>Status<select name="status" class="block w-full rounded-lg"><option value="">Todos</option>@foreach (\App\Models\Idea::LABELS as $status=>$label)<option value="{{ $status }}" @selected(request('status') == $status)>{{ $label }}</option>@endforeach</select></label>

@@ -5,11 +5,6 @@
                 <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Visão geral</p>
                 <h2 class="mt-2 text-3xl font-black tracking-[-0.05em] text-slate-900">Painel corporativo</h2>
             </div>
-            @if (auth()->user()->can('create', App\Models\Idea::class))
-                <a href="{{ route('ideas.create') }}" data-permission="true" data-permission-message="Você não tem permissão para criar uma nova ideia." class="apple-button">Nova ideia</a>
-            @else
-                <button type="button" data-permission="false" data-permission-message="Você não tem permissão para criar uma nova ideia." class="apple-button">Nova ideia</button>
-            @endif
         </div>
     </x-slot>
 

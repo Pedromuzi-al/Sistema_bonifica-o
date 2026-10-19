@@ -1,6 +1,12 @@
 <x-app-layout>
 <x-slot name="header"><h2 class="text-2xl font-bold">{{ $cycle->name }}</h2></x-slot>
-<div class="mx-auto max-w-5xl space-y-6 px-4 py-8">
+<div class="mx-auto max-w-7xl space-y-6 px-4 py-8" x-data x-init="$nextTick(() => { const target = document.getElementById(location.hash.slice(1)); if (target?.tagName === 'DETAILS' && target.id.startsWith('cycle-entry-')) target.open = true; })">
+    @include('cycles.partials.overview')
+    @if($cycleReport['closed'])
+        @if($canManage)<a class="apple-button--light" href="{{ route('reports.index',['cycle'=>$cycle->id]) }}">Relatório e exportação deste ciclo</a>@endif
+        @include('cycles.partials.ranking')
+        @include('cycles.partials.finance')
+    @endif
     @php($config = $cycle->frozen_configuration ?? $cycle->weight_configuration)
     <details class="apple-card space-y-3 p-6"><summary class="cursor-pointer text-xl font-bold">Regras do ciclo {{ $cycle->frozen_configuration ? '(confirmadas)' : '(rascunho)' }}</summary>
         <p>{{ $cycle->local_starts_at->format('d/m/Y H:i') }} a {{ $cycle->local_ends_at->format('d/m/Y H:i') }} ({{ config('innovation.cycle_timezone') }})</p>
@@ -36,8 +42,8 @@
                 <span><span class="block font-semibold">{{ $idea->publication['title'] ?? 'Sem revisão' }}</span><span class="text-sm text-slate-500">{{ $idea->idea_code }}</span>@if($unavailableIdeas->has($idea->id))<span id="unavailable-{{ $idea->id }}" class="mt-2 block text-sm text-slate-600">{{ $unavailableIdeas[$idea->id] }}</span>@endif</span>
             </label>
         @empty
-            <p class="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">{{ $cycle->isSelection() ? 'Nenhuma proposta disponível. Faça a triagem e publique uma versão revisada da ideia. Não é necessário implementá-la primeiro.' : 'Nenhuma ideia disponível. Conclua a implementação, valide os resultados e publique a ideia para incluí-la aqui.' }}</p>
-            <a class="apple-button--light" href="{{ route('ideas.index') }}">Ir para ideias</a>
+            <p class="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">{{ $cycle->isSelection() ? 'Nenhuma proposta liberada para votação. Em Revisão de ideias, abra a proposta e clique em Liberar para votação após conferir o texto e confirmar a revisão de privacidade. Não é necessário implementar nem dar notas técnicas.' : 'Nenhuma ideia disponível. Conclua a implementação, valide os resultados e publique a ideia para incluí-la aqui.' }}</p>
+            <a class="apple-button--light" href="{{ $cycle->isSelection() ? route('evaluation.index') : route('ideas.index') }}">{{ $cycle->isSelection() ? 'Ir para revisão de ideias' : 'Ir para ideias' }}</a>
         @endforelse
         <p class="text-sm text-slate-500" x-text="selected.length + ' ideia(s) selecionada(s)'"></p>
         <button class="apple-button" :disabled="selected.length === 0" @disabled(now()->gte($cycle->starts_at))>Confirmar e programar votação</button>
@@ -45,7 +51,13 @@
     </form>
     @endif
     @foreach ($entries as $entry)
+        @if($cycleReport['closed'])
+        <details id="cycle-entry-{{ $entry['idea']->id }}" class="apple-card cycle-entry-details p-6" @if($errors->any()) open @endif>
+            <summary class="cursor-pointer font-semibold">{{ $entry['idea']->idea_code }} — {{ $entry['snapshot']['publication']['title'] }} · Detalhes{{ $canManage ? ' e decisão' : '' }}</summary>
+            <div class="cycle-entry-content mt-5 space-y-4">
+        @else
         <section class="apple-card space-y-3 p-6"><h3 class="text-xl font-bold">{{ $entry['idea']->idea_code }} — {{ $entry['snapshot']['publication']['title'] }}</h3>
+        @endif
             <x-implementation-status :snapshot="$entry['snapshot']" />
             @foreach (['problem'=>'Problema', 'solution'=>'Solução', 'results'=>'Benefícios apresentados'] as $field=>$label)<div><h4 class="font-semibold">{{ $label }}</h4><p class="whitespace-pre-line">{{ $entry['snapshot']['publication'][$field] }}</p></div>@endforeach
             <p>Setores: {{ implode(', ', $entry['snapshot']['publication']['sectors'] ?? []) }}</p>
@@ -78,10 +90,11 @@
             @else
                 <a class="text-sky-700 underline" href="{{ route('ideas.vote-form', [$entry['idea'], $cycle]) }}">Conhecer a ideia e votar</a>
             @endif
-        </section>
+        @if($cycleReport['closed'])</div></details>@else</section>@endif
     @endforeach
     @if ($canManage && $cycle->status === 'open')<form method="POST" action="{{ route('cycles.close', $cycle) }}">@csrf<button class="apple-button" @disabled(now()->lt($cycle->ends_at))>Encerrar e apurar após o prazo</button></form>@endif
     @if ($reviewVotes->isNotEmpty())<details class="apple-card space-y-3 p-6"><summary class="font-bold">Revisão excepcional de votos — acesso restrito</summary><p>Invalide somente com justificativa. O registro e suas notas são preservados; o funcionário não poderá enviar outro voto neste ciclo. Após a apuração, utilize um novo ciclo.</p>@foreach ($reviewVotes as $vote)<form method="POST" action="{{ route('votes.invalidate', $vote) }}" class="space-y-3 border-t py-3">@csrf<p>Registro interno #{{ $vote->id }} · Ideia #{{ $vote->idea_id }} · {{ $vote->created_at->format('d/m/Y H:i') }}</p><x-workflow-field name="notes" label="Justificativa obrigatória da invalidação" type="textarea" /><button class="apple-button--light">Invalidar este voto</button></form>@endforeach</details>@endif
+    <div id="cycle-awards" class="space-y-6">
     @foreach ($awards as $award)
         <section class="apple-card space-y-4 p-6"><h3 class="text-xl font-bold">Reconhecimento — {{ $award->idea->idea_code }}</h3><p>{{ $award->category }} · {{ $award->score }}/100 · R$ {{ number_format($award->award_amount, 2, ',', '.') }}</p><p>{{ $award->rejected_at ? 'Não aprovado' : ($award->published_at ? 'Divulgado' : ($award->approved_at ? 'Aprovado; divulgação pendente' : 'Proposto; aprovação pendente')) }}</p>
             @if ($canManage && !$award->approved_at && !$award->rejected_at)<form method="POST" action="{{ route('awards.approve', $award) }}" class="space-y-3">@csrf<x-workflow-field name="notes" label="Justificativa da aprovação e da revisão dos alertas" type="textarea" /><button class="apple-button">Aprovar reconhecimento</button></form>@endif
@@ -89,5 +102,6 @@
             @if ($canManage && $award->approved_at && !$award->published_at)<form method="POST" action="{{ route('awards.publish', $award) }}">@csrf<button class="apple-button">Divulgar reconhecimento sem autoria</button></form>@endif
         </section>
     @endforeach
+    </div>
 </div>
 </x-app-layout>

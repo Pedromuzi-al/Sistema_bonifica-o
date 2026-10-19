@@ -10,8 +10,11 @@ Copie o texto abaixo depois de abrir a pasta deste repositório no Codex:
 >
 > Já foram implementados navegação lateral, listagem de ciclos separada da criação, áreas administrativas separadas, setores e vínculos, critérios, correções de temas/hover e animações discretas com redução de movimento. Não refaça essas partes sem identificar um problema concreto.
 >
-> A última validação registrada tem 211 testes PHP, três testes JavaScript e percursos em Chrome aprovados. MySQL, carga real, HTTPS e restauração no futuro servidor ainda não foram homologados. Não trate os testes locais como publicação concluída. Retenção/anonimização, incluindo banco de ideias, ainda exige revisão e política corporativa.
+> A última validação registrada tem 226 testes PHP, três testes JavaScript e percursos em Chrome aprovados. MySQL, carga real, HTTPS e restauração no futuro servidor ainda não foram homologados. Não trate os testes locais como publicação concluída. Retenção/anonimização, incluindo banco de ideias, ainda exige revisão e política corporativa.
 >
 > A empresa não dispõe de servidor. Primeiro avaliamos opções gratuitas; depois pedi alternativas baratas. Foram comparadas Hostinger KVM 1 (preço promocional por período), DigitalOcean Basic 2 GB (US$ 12/mês, backup à parte) e Railway (cobrança por consumo). Nenhuma hospedagem foi escolhida ou contratada. Confira novamente preços e condições antes de recomendar ou preparar uma contratação. Não publique nem contrate serviços sem uma decisão explícita minha.
 >
 > Caso os dados atuais não estejam nesta máquina, não suponha que o Git os trouxe. Configure um ambiente local separado ou conduza uma restauração privada conforme os comandos existentes. Não execute `migrate:fresh` nem seeders sobre dados a preservar. Explique cada parte concluída e atualize `STATUS.md` para meu QA. Use o formato de julgamento da ideia somente quando eu disser “veredito”.
+
+
+Atualização: a alternativa 1 de relatórios foi aprovada e implementada. Leia também `docs/RELATORIO_POR_CICLO.md`. Relatórios abre por ciclo, classificação/decisão/bonificação ficam separadas, com CSV por ciclo; indicadores antigos continuam em área complementar. A rota de auditoria permanece restrita, mas o menu Auditoria foi retirado a pedido do usuário.

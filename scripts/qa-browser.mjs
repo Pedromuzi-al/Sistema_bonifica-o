@@ -288,6 +288,35 @@ try {
     fixtureTime('vote');
     await voterPage.goto(`${base}/ideas/${proposalId}/voting/${cycleId}`);
     await voterPage.getByText('Esta ideia ainda não foi implementada. Avalie o benefício esperado.',{exact:true}).waitFor();
+    for (const dark of [false,true]) {
+        await voterPage.evaluate(dark=>localStorage.setItem('conted-theme',dark?'dark':'light'),dark);
+        await voterPage.reload();
+        assert.equal(await voterPage.locator('.vote-choice input:checked').count(),0,'Nenhuma nota deve vir marcada.');
+        const firstCriterion=voterPage.locator('fieldset').first();
+        const moderate=firstCriterion.locator('input[value="3"]');
+        await moderate.check();
+        const selectedChoice=moderate.locator('..');
+        assert.equal(await selectedChoice.evaluate(element=>getComputedStyle(element).animationName),'vote-choice-confirm');
+        await voterPage.waitForFunction(()=>Array.from(document.querySelectorAll('.vote-field')).every(element=>getComputedStyle(element).opacity==='1'));
+        await voterPage.waitForFunction(dark=>getComputedStyle(document.querySelector('.vote-choice:has(input:checked)')).backgroundColor===(dark?'rgb(12, 74, 110)':'rgb(224, 242, 254)'),dark);
+        assert.equal(await selectedChoice.evaluate(element=>getComputedStyle(element).backgroundColor),dark?'rgb(12, 74, 110)':'rgb(224, 242, 254)');
+        await voterPage.keyboard.press('ArrowRight');
+        assert.equal(await firstCriterion.locator('input[value="4"]').isChecked(),true);
+        assert.equal(await firstCriterion.locator('input[value="4"]').locator('..').evaluate(element=>getComputedStyle(element).outlineWidth),'3px');
+        await voterPage.emulateMedia({reducedMotion:'reduce'});
+        await moderate.check();
+        assert.equal(await selectedChoice.evaluate(element=>getComputedStyle(element).animationName),'none');
+        assert.equal(await selectedChoice.evaluate(element=>getComputedStyle(element).transitionDuration),'0s');
+        assert.equal(await selectedChoice.evaluate(element=>getComputedStyle(element).transform),'none');
+        await voterPage.screenshot({path:join(reports,dark?'votacao-notas-escuro.png':'votacao-notas-claro.png'),fullPage:true});
+        await voterPage.emulateMedia({reducedMotion:'no-preference'});
+    }
+    await voterPage.setViewportSize({width:390,height:844});
+    await voterPage.reload();
+    await voterPage.locator('fieldset').first().locator('input[value="3"]').check();
+    assert.ok(await voterPage.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+    await voterPage.screenshot({path:join(reports,'votacao-notas-celular.png'),fullPage:true});
+    outcomes.push('Notas: destaque e animação uniformes nos dois temas, teclado por setas, nenhuma nota inicial, redução de movimento e layout de celular.');
     for (const field of await voterPage.locator('fieldset').all()) await field.locator('input[value="5"]').check();
     await voterPage.getByRole('button',{name:'Conferir minhas respostas',exact:true}).click();
     await Promise.all([voterPage.waitForNavigation(),voterPage.getByRole('button',{name:'Confirmar meu voto',exact:true}).click()]);
@@ -299,11 +328,13 @@ try {
     assert.ok(await page.locator(`input[name="ideas[]"][value="${proposalId}"]`).isDisabled());
     await page.getByText('Esta ideia aguarda a decisão da equipe no ciclo anterior. Registre a decisão antes de incluí-la novamente.',{exact:true}).waitFor();
     await page.goto(`${base}/cycles/${cycleId}`);
+    await page.locator(`.result-details-link[href="#cycle-entry-${proposalId}"]`).click();
     const decision = page.locator('form[action$="/decision"]');
     await decision.locator('[name=decision]').selectOption('selected');
     await decision.locator('[name=notes]').fill('Ideia viável e recursos disponíveis para iniciar execução.');
     await Promise.all([page.waitForNavigation(),decision.getByRole('button').click()]);
-    await page.getByText('Decisão: Selecionada para avançar',{exact:true}).waitFor();
+    await page.getByText('Selecionada para avançar',{exact:true}).first().waitFor();
+    await page.locator(`.result-details-link[href="#cycle-entry-${proposalId}"]`).click();
     await page.screenshot({path:join(reports,'selecao-antes-implementacao.png'),fullPage:true});
     await page.getByRole('link',{name:'Acompanhar a ideia e definir a execução',exact:true}).click();
     await page.getByRole('heading',{name:'Plano de implementação',exact:true}).waitFor();
@@ -312,11 +343,35 @@ try {
     outcomes.push('Propostas: opção bloqueada durante outra votação e enquanto há decisão pendente; liberada após decisão');
 
     outcomes.push('Seleção: registro rápido sem estimativas, liberação direta sem triagem/notas técnicas, abertura, voto de outra pessoa, apuração e decisão para executar');
+    for (const dark of [false,true]) {
+        await page.evaluate(dark=>localStorage.setItem('conted-theme',dark?'dark':'light'),dark);
+        await page.goto(`${base}/reports?cycle=${cycleId}`);
+        await page.getByRole('heading',{name:'Relatório por ciclo',exact:true}).waitFor();
+        await page.getByRole('heading',{name:'Classificação das ideias',exact:true}).waitFor();
+        await page.getByRole('cell',{name:'100,00/100',exact:false}).waitFor();
+        assert.equal(await page.locator('.app-nav-link').filter({hasText:'Auditoria'}).count(),0);
+        await page.emulateMedia({reducedMotion:'reduce'});
+        assert.equal(await page.locator('.result-score-fill').first().evaluate(element=>getComputedStyle(element).animationName),'none');
+        await page.screenshot({path:join(reports,dark?'relatorio-ciclo-escuro.png':'relatorio-ciclo-claro.png'),fullPage:true});
+        await page.emulateMedia({reducedMotion:'no-preference'});
+        await page.getByRole('link',{name:/Ver detalhes da ideia/}).first().click();
+        await page.waitForFunction(id=>document.getElementById(`cycle-entry-${id}`)?.open,proposalId);
+    }
+    for (const width of [320,390]) {
+        await page.setViewportSize({width,height:844});
+        await page.goto(`${base}/reports?cycle=${cycleId}`);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+        await page.goto(`${base}/cycles/${cycleId}`);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+    }
+    await page.setViewportSize({width:1440,height:1000});
+    outcomes.push('Relatório por ciclo: classificação, decisão e bonificação separadas, detalhes acessíveis, dois temas, movimento reduzido e largura de 320/390 px.');
 
 
 
 
-    await page.goto(`${base}/reports`);
+
+    await page.goto(`${base}/reports?view=general`);
     const chartLine=page.locator('.chart-line').first();
     await page.locator('.metric-chart').first().waitFor();
     await chartLine.waitFor({state:'attached'});

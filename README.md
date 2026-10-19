@@ -279,3 +279,8 @@ Ciclos podem começar e terminar no mesmo dia. O formulário usa `CYCLE_TIMEZONE
 ## Continuar no PC do trabalho
 
 Consulte [o guia de preparação do outro computador](docs/CONTINUAR_EM_OUTRO_PC.md) e [o texto para retomar no Codex](docs/RETOMAR_NO_CODEX.md). O Git transfere código e documentação; banco, anexos privados e `.env` exigem preparação separada.
+
+
+## Relatórios e resultados por ciclo
+
+Relatórios abre a rodada mais recente e permite escolher outro ciclo. Após a apuração, mostra classificação, decisão e bonificação em colunas distintas, com indicadores de participação, barras de pontuação e CSV por ciclo. A mesma classificação aparece no detalhe do ciclo; as propostas completas ficam em detalhes expansíveis. Ranking não é exibido durante votação, e funcionários só veem bonificações divulgadas. Os indicadores históricos e seu CSV permanecem na área complementar Indicadores de execução. Consulte [o guia](docs/RELATORIO_POR_CICLO.md).

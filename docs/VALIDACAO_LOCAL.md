@@ -6,7 +6,7 @@ A versão foi verificada com PHP 8.5, SQLite, Node.js e Google Chrome headless. 
 
 | Conferência | Resultado |
 |---|---|
-| Suíte PHP em SQLite | 220 testes aprovados, com 1.353 verificações |
+| Suíte PHP em SQLite | 226 testes aprovados, com 1.393 verificações |
 | Formulário por etapas em JavaScript | 3 testes aprovados |
 | Formatação PHP | Pint aprovado |
 | Instalação reproduzível de frontend | `npm ci --ignore-scripts --no-audit --no-fund` concluído |
@@ -130,3 +130,15 @@ A suíte completa passou com **220 testes PHP / 1.353 verificações**. Cinco te
 Três testes JavaScript, Pint, compilação e `git diff --check` aprovados. Chrome aprovado em `storage/app/qa-reports/2026-10-19T16-24-49.349Z/`: diálogo em celular claro/escuro, foco, fechamento com Escape e retorno ao botão, seleção, confirmação e retirada da listagem. A captura escura também foi inspecionada visualmente. Os percursos anteriores de cadastro, revisão simples, ciclo, voto e seleção continuaram aprovados.
 
 A migration `2026_10_19_170000_add_soft_deletes_to_ideas.php` está aplicada na base local (batch 8), sem migrations pendentes na conferência. Backup anterior e restauração isolada concluídos antes da alteração. A exclusão continua apenas lógica, com histórico e documentos preservados; nenhuma ideia da base local foi excluída pelo agente.
+
+
+## Animação das notas — 19/10/2026
+
+`npm run test:browser` e compilação aprovados em `storage/app/qa-reports/2026-10-19T20-39-08.342Z/`. O percurso ampliado verifica ausência de notas inicialmente marcadas, animação de seleção, cores nos dois temas, navegação por setas/foco no cartão, redução de movimento (animação e transição desativadas) e layout de celular, seguido de confirmação do voto, apuração e decisão. A captura escura foi inspecionada visualmente. Não foram alteradas regras de votação ou migrations; a suíte PHP não foi repetida para esse ajuste de CSS/markup. A última execução PHP permanece com 220 testes aprovados.
+
+
+## Relatórios e resultados por ciclo — 19/10/2026
+
+Suíte completa: **226 testes PHP / 1.393 verificações** e **três testes JavaScript** aprovados. Os seis cenários novos verificam snapshots, contagem de pessoas/votos, valores financeiros, pontuação zero/insuficiente, troca de ciclo, CSV, permissões, privacidade e ausência de ranking antes da apuração. Os testes de indicadores anteriores continuam validando a área complementar `reports?view=general`.
+
+Chrome e build aprovados em `storage/app/qa-reports/2026-10-19T20-55-49.851Z/`, com classificação, link para detalhes, temas claro/escuro, movimento reduzido e larguras 320/390 px. Capturas dos dois temas inspecionadas. Ajuste final de contraste do selo de situação e borda do resumo, sem alteração funcional. Não houve migration ou alteração da base local nesta etapa. Veja [RELATORIO_POR_CICLO.md](RELATORIO_POR_CICLO.md).

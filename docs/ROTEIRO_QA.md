@@ -282,3 +282,15 @@ O roteiro operacional desta rodada está em [ENTREGA_VOTACAO_SEXTA.md](ENTREGA_V
 6. Como funcionário e avaliador, confira ausência do botão e recusa da rota mesmo conhecendo IDs. Listas vazias, IDs repetidos/inexistentes e pedido sem confirmação/motivo devem ser rejeitados.
 
 A migration `2026_10_19_170000_add_soft_deletes_to_ideas.php` precisa ser aplicada em cada nova instalação antes de usar esta versão. Foi aplicada na base local após backup e restauração em cópia isolada. Nenhuma ideia real foi excluída durante o desenvolvimento: os testes usam banco descartável.
+
+
+## Animação das notas na votação
+
+Abra um ciclo em período de votação com uma conta sem participação na proposta. Confira que nenhuma nota vem selecionada. Marque cada opção: o cartão deve mudar suavemente de cor/borda e dar um breve destaque, com o mesmo tratamento para notas baixas e altas. Trocar uma resposta deve desmarcar a anterior sem mover a posição da pergunta. Com mouse, opções não selecionadas têm hover discreto; no celular, não há levantamento por hover.
+
+Use Tab e setas para alternar notas: o foco deve aparecer no cartão inteiro, sem contornos duplicados na seleção por mouse. Em claro e escuro, confira a legibilidade das opções marcadas e desmarcadas. Ative redução de movimento no sistema/navegador: entrada, destaque de escala, hover com deslocamento e transições devem ficar desativados. Confira o resumo, volte para corrigir, confirme o voto e confira impedimento de duplicação como antes.
+
+
+## Relatório por ciclo e nova classificação
+
+Siga [RELATORIO_POR_CICLO.md](RELATORIO_POR_CICLO.md). Confira ciclo mais recente e troca de rodada; contagem de pessoas distinta da de votos; ranking somente após apuração; zero válido e votos insuficientes; separação entre posição, decisão e bonificação. Abra Ver detalhes e registre uma decisão autorizada. Compare proposta pendente, aprovada, divulgada e recusada, sem somar aprovado e divulgado. Como funcionário, confira que justificativas privadas e bonificações não divulgadas não aparecem. Exporte o CSV da rodada e confira seu escopo. A área Indicadores de execução mantém a exportação anterior. Repita nos dois temas, teclado, celular e com redução de movimento.

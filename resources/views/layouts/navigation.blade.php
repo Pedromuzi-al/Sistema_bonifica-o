@@ -7,7 +7,6 @@
         ['route'=>'evaluation.index','match'=>'evaluation.*','label'=>'Revisão de ideias','icon'=>'check','visible'=>auth()->user()->can('evaluate', new App\Models\Idea)],
         ['route'=>'admin.index','match'=>'admin.*','label'=>'Administração','icon'=>'settings','visible'=>auth()->user()->can('manage-admin')],
         ['route'=>'reports.index','match'=>'reports.*','label'=>'Relatórios','icon'=>'chart','visible'=>auth()->user()->can('manage-admin')],
-        ['route'=>'audit.index','match'=>'audit.*','label'=>'Auditoria','icon'=>'audit','visible'=>auth()->user()->hasSystemPermission('view_audit_logs')],
     ];
 @endphp
 <button x-cloak x-show="mobile && sidebarOpen" @click="closeMenu()" type="button" class="sidebar-overlay" tabindex="-1" aria-label="Fechar menu lateral"></button>

@@ -47,6 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/awards/{award}/approve', [CycleController::class, 'approve'])->name('awards.approve');
     Route::post('/awards/{award}/publish', [CycleController::class, 'publish'])->name('awards.publish');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/cycle-export', [ReportController::class, 'cycleExport'])->name('reports.cycle-export');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/audit', [ReportController::class, 'audit'])->name('audit.index');
     Route::post('/evaluation-criteria', [WorkflowController::class, 'criterion'])->name('criteria.store');

@@ -324,19 +324,58 @@
     }
 }
 
+.vote-choice {
+    position: relative;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
 .vote-choice:has(input:checked) {
     border-color: #0284c7;
     background-color: #e0f2fe;
     color: #075985;
-    box-shadow: 0 0 0 1px #0284c7;
+    box-shadow: inset 0 0 0 1px #0284c7, 0 3px 10px rgb(2 132 199 / 10%);
 }
-.vote-choice:focus-within {
-    outline: 3px solid #38bdf8;
+/* Put the keyboard focus on the whole option instead of drawing two rings. */
+.vote-choice input[type="radio"]:focus {
+    outline: none;
+    box-shadow: none;
+}
+.vote-choice:has(input:focus-visible) {
+    outline: 3px solid #0284c7;
     outline-offset: 3px;
 }
+html.dark .vote-choice:has(input:focus-visible) { outline-color: #7dd3fc; }
 html.dark .vote-choice:has(input:checked) {
     background-color: #0c4a6e;
     color: #f0f9ff;
+    border-color: #38bdf8;
+    box-shadow: inset 0 0 0 1px #38bdf8, 0 3px 12px rgb(0 0 0 / 14%);
+}
+@media (hover: hover) and (pointer: fine) {
+    .vote-choice:not(:has(input:checked)):hover {
+        border-color: #0284c7;
+        box-shadow: 0 4px 12px rgb(2 132 199 / 10%);
+        transform: translateY(-2px);
+    }
+    html.dark .vote-choice:hover { border-color: #7dd3fc; }
+}
+@keyframes vote-choice-confirm {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.015); }
+    100% { transform: scale(1); }
+}
+@keyframes vote-content-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .vote-choice:has(input:checked) { animation: vote-choice-confirm 240ms ease-out; }
+    .vote-field { animation: vote-content-enter 240ms ease-out both; animation-delay: var(--vote-enter-delay, 0ms); }
+    .vote-summary { animation: vote-content-enter 180ms ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .vote-choice { transition: none !important; transform: none !important; }
+    .vote-choice, .vote-field, .vote-summary { animation: none !important; }
 }
 
 /* Keep hover colors consistent with the current theme, including legacy utilities. */
@@ -534,4 +573,39 @@ html.dark .idea-delete-dialog :is(input, textarea) { background-color: #0f172a; 
 }
 html.dark .app-frame .idea-delete-trigger:focus-visible {
     outline-color: #fda4af;
+}
+
+/* Cycle results: separate ranking, decisions and recognition. */
+.cycle-overview { border-top: 3px solid #0ea5e9; }
+.cycle-result-table { min-width: 760px; }
+.cycle-result-table th, .cycle-result-table td { padding: 1rem; vertical-align: middle; }
+.cycle-result-table thead { background: var(--control-bg); color: var(--control-text); }
+.cycle-result-table tbody tr { border-top: 1px solid var(--workspace-line, #e2e8f0); }
+.cycle-result-table tbody th { min-width: 190px; }
+.result-rank { display: inline-flex; min-width: 36px; min-height: 36px; align-items: center; justify-content: center; border-radius: 10px; background: #e0f2fe; color: #075985; font-weight: 700; }
+html.dark .result-rank { background: #0c4a6e; color: #e0f2fe; }
+.result-score-track { width: 110px; height: 6px; margin-top: 8px; border-radius: 999px; overflow: hidden; background: var(--control-bg); }
+.result-score-fill { display: block; height: 100%; border-radius: inherit; background: #0284c7; transform-origin: left; }
+html.dark .result-score-fill { background: #38bdf8; }
+.result-decision { display: inline-flex; border-radius: 8px; padding: 6px 9px; background: var(--control-bg); font-size: 12px; }
+.result-decision[data-state="selected"] { background: #dcfce7; color: #166534; }
+html.dark .result-decision[data-state="selected"] { background: #064e3b; color: #a7f3d0; }
+.result-money { border: 1px solid var(--workspace-line, #e2e8f0); border-radius: 14px; padding: 1rem; }
+.result-money p { font-size: 13px; color: var(--control-text); }
+.result-money strong { display: block; margin-top: 8px; font-size: 24px; }
+.cycle-entry-details { scroll-margin-top: 110px; }
+@keyframes result-bar-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: no-preference) {
+    .cycle-result-row { animation: vote-content-enter 260ms ease-out both; animation-delay: var(--result-delay, 0ms); }
+    .result-score-fill { animation: result-bar-fill 550ms ease-out both; }
+    .cycle-entry-details[open] .cycle-entry-content { animation: vote-content-enter 180ms ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cycle-result-row, .result-score-fill, .cycle-entry-content { animation: none !important; transform: none !important; }
+}
+.app-frame .cycle-overview { border-top-color: #0ea5e9; }
+.app-frame .cycle-overview .apple-pill {
+    background: var(--control-bg);
+    color: var(--control-text);
+    border-color: var(--control-border);
 }

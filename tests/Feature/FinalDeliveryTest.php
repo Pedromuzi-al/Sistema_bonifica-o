@@ -121,7 +121,7 @@ class FinalDeliveryTest extends TestCase
             $idea = Idea::create(['author_id' => $this->author->id, 'origin_sector_id' => $sector->id, 'title' => 'Melhoria', 'problem_description' => 'Problema', 'solution_description' => 'Solução', 'expected_results' => 'Resultado', 'resources_needed' => 'Recursos', 'status' => 'completed']);
             $idea->result()->create(['impact_summary' => 'Redução comprovada', 'validated_at' => now(), 'measurements' => [['indicator' => 'Tempo', 'unit' => 'horas', 'before' => 20, 'after' => 10, 'period_start' => '2026-09-01', 'period_end' => '2026-09-30']]]);
         }
-        $this->actingAs($this->admin)->get(route('reports.index'))->assertOk()->assertViewHas('benefits', fn ($benefits) => count($benefits) === 2 && count(array_unique(array_column($benefits, 'sector'))) === 2)->assertSeeText('Participação por ciclo');
+        $this->actingAs($this->admin)->get(route('reports.index', ['view' => 'general']))->assertOk()->assertViewHas('benefits', fn ($benefits) => count($benefits) === 2 && count(array_unique(array_column($benefits, 'sector'))) === 2)->assertSeeText('Participação por ciclo');
         $csv = $this->get(route('reports.export'))->assertOk()->streamedContent();
         $this->assertStringContainsString('Setor de origem', $csv);
         $this->assertStringContainsString('2026-09-01', $csv);

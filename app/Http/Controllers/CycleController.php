@@ -7,6 +7,7 @@ use App\Models\BonusAward;
 use App\Models\Idea;
 use App\Models\Vote;
 use App\Models\VotingCycle;
+use App\Services\CycleReportService;
 use App\Services\CycleService;
 use App\Services\SelectionCycleService;
 use App\Services\VotingService;
@@ -45,7 +46,7 @@ class CycleController extends Controller
         return redirect()->route('cycles.show', $cycle)->with('success', 'Rascunho criado. Revise a metodologia e selecione as ideias antes da abertura.');
     }
 
-    public function show(Request $request, VotingCycle $cycle, SelectionCycleService $selection): View
+    public function show(Request $request, VotingCycle $cycle, SelectionCycleService $selection, CycleReportService $reports): View
     {
         $canManage = $request->user()->can('manage-admin');
         abort_unless($canManage || ($request->user()->canViewPublicIdeas() && in_array($cycle->status, ['open', 'closed'], true)), 403);
@@ -62,7 +63,9 @@ class CycleController extends Controller
 
         $decisions = DB::table('cycle_idea_decisions')->where('voting_cycle_id', $cycle->id)->get($canManage ? ['idea_id', 'decision', 'notes'] : ['idea_id', 'decision'])->keyBy('idea_id');
 
-        return view('cycles.show', compact('unavailableIdeas', 'decisions', 'reviews', 'cycle', 'entries', 'ideas', 'canManage', 'awards', 'reviewVotes'));
+        $cycleReport = $reports->build($cycle, $canManage);
+
+        return view('cycles.show', compact('cycleReport', 'unavailableIdeas', 'decisions', 'reviews', 'cycle', 'entries', 'ideas', 'canManage', 'awards', 'reviewVotes'));
     }
 
     public function open(Request $request, VotingCycle $cycle, CycleService $service): RedirectResponse

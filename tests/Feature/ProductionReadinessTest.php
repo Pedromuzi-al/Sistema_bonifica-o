@@ -148,6 +148,6 @@ class ProductionReadinessTest extends TestCase
         foreach ([['evaluation', now()->subDays(4)], ['evaluation', now()->subDays(3)], ['approved', now()->subDay()]] as [$stage,$date]) {
             DB::table('idea_status_histories')->insert(['idea_id' => $idea->id, 'to_status' => $stage, 'from_status' => null, 'changed_by_user_id' => $admin->id, 'notes' => 'Histórico', 'created_at' => $date, 'updated_at' => $date]);
         }
-        $this->actingAs($admin)->get(route('reports.index'))->assertOk()->assertViewHas('stageDurations', fn ($durations) => round($durations['evaluation']) === 72.0);
+        $this->actingAs($admin)->get(route('reports.index', ['view' => 'general']))->assertOk()->assertViewHas('stageDurations', fn ($durations) => round($durations['evaluation']) === 72.0);
     }
 }
