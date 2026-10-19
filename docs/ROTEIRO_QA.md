@@ -294,3 +294,22 @@ Use Tab e setas para alternar notas: o foco deve aparecer no cartão inteiro, se
 ## Relatório por ciclo e nova classificação
 
 Siga [RELATORIO_POR_CICLO.md](RELATORIO_POR_CICLO.md). Confira ciclo mais recente e troca de rodada; contagem de pessoas distinta da de votos; ranking somente após apuração; zero válido e votos insuficientes; separação entre posição, decisão e bonificação. Abra Ver detalhes e registre uma decisão autorizada. Compare proposta pendente, aprovada, divulgada e recusada, sem somar aprovado e divulgado. Como funcionário, confira que justificativas privadas e bonificações não divulgadas não aparecem. Exporte o CSV da rodada e confira seu escopo. A área Indicadores de execução mantém a exportação anterior. Repita nos dois temas, teclado, celular e com redução de movimento.
+
+### Indicadores gerais de execução — apresentação
+
+1. Em Relatórios, abra **Indicadores de execução**. Confira os quatro cartões e as seções de distribuição, evolução, participação, tempo por etapa, indicadores validados e propostas.
+2. Aplique período, setor, status e categoria. A tela deve continuar nos indicadores gerais; **Limpar filtros** restaura o recorte completo. Um recorte sem propostas deve mostrar mensagens de ausência de dados.
+3. Confira os números das barras com os textos. Distribuição é percentual do total; tempos são relativos à etapa mais demorada. Minutos e horas não devem aparecer arredondados como “0,0 dias”. Sem execuções concluídas, o tempo médio mostra “—”.
+4. Com apenas um mês de contribuições, confira a coluna e o valor no gráfico. Abra **Consultar valores por mês** com mouse e teclado.
+5. Repita nos temas claro e escuro e no celular. Somente as tabelas podem rolar horizontalmente; o restante deve caber na tela. Ative redução de movimento no dispositivo e confirme que os gráficos continuam completos, sem animação.
+6. Exporte o CSV após filtrar e confira se o recorte corresponde à tela. Autoria e votos individuais continuam fora da exportação.
+
+### Bonificações por ciclo — administração
+
+1. Como administrador, abra **Relatórios → Bonificações por ciclo**. Confira os cartões de totais e os blocos separados de cada ciclo apurado.
+2. Configure mais de uma ideia premiável na rodada, conclua a votação, selecione as propostas e confira todas na tabela do ciclo. Ideias sem prêmio também devem aparecer, com “Sem bonificação”.
+3. Em uma ideia com coautores, confira se cada destinatário tem uma linha e se a soma dos valores corresponde ao prêmio da ideia. Alterações posteriores de participantes não devem modificar a divisão histórica.
+4. Aprove e divulgue bonificações e confira a situação de cada linha. Rejeitadas não entram nos totais aprovado/pendente; divulgado já está incluído no aprovado.
+5. Compare quantidade de votos e pontuação. O destaque por quantidade de votos não precisa ser o primeiro da classificação. Empates na quantidade devem mostrar todas as ideias empatadas.
+6. Filtre por ciclo e período de encerramento; limpe os filtros. Ciclos abertos e rascunhos não devem apresentar resultados nesta página.
+7. Como funcionário e avaliador sem acesso administrativo, tente `/reports/awards` diretamente: deve retornar acesso negado. Verifique temas, teclado e celular.

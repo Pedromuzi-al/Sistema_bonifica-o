@@ -42,3 +42,13 @@ Os indicadores reutilizam os cartões com ícones/cores do painel. A tabela tem 
 Teste uma rodada com duas ideias e uma pessoa votando nas duas: deve haver uma pessoa e dois votos válidos. Confira mínimo de votos, zero válido, decisões pendentes e concluídas e bonificações em proposta/aprovação/divulgação/recusa. Troque o ciclo e confirme que os dados e CSV mudam juntos. Repita com funcionário, verificando ausência de dados privados e de prêmios ainda não divulgados. Confira teclado, dois temas, 320/390 px e movimento reduzido.
 
 A implementação não exige migration nem recalcula votos ou prêmios antigos.
+
+## Bonificações por ciclo — acesso administrativo
+
+Em **Relatórios → Bonificações por ciclo**, a administração consulta todas as rodadas apuradas, com filtros por ciclo e período de encerramento da votação. As datas usam o fuso configurado para os ciclos. O resumo considera todos os ciclos filtrados; a listagem apresenta até dez ciclos por página.
+
+Cada ciclo tem seu próprio bloco com período, totais e destaque para a ideia com mais votos válidos (incluindo empates). A classificação segue a pontuação congelada da metodologia, que pode ser diferente da ordem por quantidade de votos. Todas as ideias da rodada são mostradas, mesmo quando não possuem bonificação.
+
+A tabela apresenta posição, ideia, pontuação, votos, destinatário, valor individual e situação. Uma bonificação coletiva ocupa uma linha por destinatário, usando a divisão gravada em `award_allocations`, sem recalcular a partir dos coautores atuais. Registros antigos sem divisão usam o destinatário da própria bonificação. O total do prêmio não é repetido como valor individual de cada coautor.
+
+Os estados são Proposta, Aprovada, Divulgada e Não aprovada. O total aprovado inclui o já divulgado; valores rejeitados não entram nos totais aprovado/pendente. Esses registros não comprovam transferência bancária. A página exige a permissão administrativa também no acesso direto pela URL; funcionários e avaliadores sem acesso administrativo recebem 403. Não apresenta e-mails ou votos individuais.

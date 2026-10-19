@@ -108,4 +108,58 @@ class CycleReportTest extends TestCase
         DB::table('voting_cycles')->delete();
         $this->actingAs($this->admin)->get(route('reports.index'))->assertOk()->assertSeeText('Seu primeiro relatório começa com um ciclo')->assertDontSeeText('Classificação das ideias');
     }
+
+    public function test_award_report_is_admin_only_even_when_accessing_url_directly(): void
+    {
+        $this->actingAs($this->employee)->get(route('reports.awards'))->assertForbidden();
+        $evaluator = User::where('email', 'avaliador@corp.local')->firstOrFail();
+        $this->actingAs($evaluator)->get(route('reports.awards'))->assertForbidden();
+        $this->actingAs($this->admin)->get(route('reports.index'))->assertSee(route('reports.awards'));
+    }
+
+    public function test_award_report_uses_recorded_allocations_and_preserves_legacy_recipient(): void
+    {
+        $award = $this->award($this->idea, 100, 'approved');
+        DB::table('award_allocations')->insert([
+            ['bonus_award_id' => $award->id, 'user_id' => $this->employee->id, 'amount' => 33.33],
+            ['bonus_award_id' => $award->id, 'user_id' => $this->admin->id, 'amount' => 66.67],
+        ]);
+        // Today's contribution share must not change this round's stored amount.
+        DB::table('idea_contributors')->insert(['idea_id' => $this->idea->id, 'user_id' => $this->employee->id, 'share' => 100]);
+        $this->award($this->entry('Ideia com reconhecimento antigo', 2, 50), 200, 'published');
+        $this->award($this->entry('Ideia não aprovada', 3, 40), 999, 'rejected');
+        $this->actingAs($this->admin)->get(route('reports.awards'))->assertOk()
+            ->assertSeeText('33,33')->assertSeeText('66,67')->assertSeeText($this->employee->name)
+            ->assertSeeText($this->admin->name)->assertSeeText('Título revisado congelado')
+            ->assertDontSeeText($this->employee->email)->assertDontSeeText('Título privado alterado')
+            ->assertViewHas('summary', fn ($summary) => $summary['approved'] == 300 && $summary['pending'] == 0)
+            ->assertViewHas('groups', fn ($groups) => $groups->first()['report']['rows']->count() === 4);
+    }
+
+    public function test_award_report_groups_cycles_and_distinguishes_votes_from_score_including_ties(): void
+    {
+        $popular = $this->entry('Mais votos, menor pontuação', 2, 65);
+        $tie = $this->entry('Outra ideia com os mesmos votos', 3, 60);
+        foreach ([$popular, $tie] as $idea) {
+            $this->cycle->ideas()->updateExistingPivot($idea->id, ['outcome' => json_encode(['rank' => 2, 'final_score' => 65, 'vote_count' => 7])]);
+        }
+        $other = VotingCycle::create(['name' => 'Rodada independente', 'starts_at' => now()->subHours(4), 'ends_at' => now()->subHours(3), 'status' => 'closed']);
+        $other->ideas()->attach($this->idea->id, ['snapshot' => json_encode(['publication' => ['title' => 'Mesma ideia em outra rodada']]), 'outcome' => json_encode(['rank' => 1, 'final_score' => 90, 'vote_count' => 3])]);
+        $response = $this->actingAs($this->admin)->get(route('reports.awards'))->assertOk()->assertSeeText('Rodada independente')->assertSeeText('Empate em votos');
+        $response->assertViewHas('groups', fn ($groups) => $groups->count() === 2 && $groups->first()['report']['most_voted']->pluck('id')->all() === [$popular->id, $tie->id]);
+        $this->get(route('reports.awards', ['cycle' => $other->id]))->assertOk()->assertViewHas('groups', fn ($groups) => $groups->count() === 1 && $groups->first()['cycle']->id === $other->id)
+            ->assertViewHas('summary', fn ($summary) => $summary['cycles'] === 1 && $summary['ideas'] === 1);
+    }
+
+    public function test_award_report_excludes_unclosed_rounds_and_filters_dates_in_company_timezone(): void
+    {
+        $this->cycle->update(['ends_at' => '2026-10-20 01:00:00']); // Still Oct 19 in São Paulo.
+        $this->actingAs($this->admin)->get(route('reports.awards', ['from' => '2026-10-19', 'to' => '2026-10-19']))->assertOk()
+            ->assertViewHas('summary', fn ($summary) => $summary['cycles'] === 1);
+        $this->get(route('reports.awards', ['from' => '2026-10-20']))->assertOk()->assertSeeText('Nenhum ciclo apurado neste recorte');
+        $this->get(route('reports.awards', ['from' => '2026-10-20', 'to' => '2026-10-19']))->assertSessionHasErrors('to');
+        DB::table('voting_cycles')->where('id', $this->cycle->id)->update(['status' => 'open']);
+        $this->get(route('reports.awards', ['cycle' => $this->cycle->id]))->assertOk()
+            ->assertSeeText('Nenhum ciclo apurado neste recorte')->assertDontSeeText('Título revisado congelado');
+    }
 }

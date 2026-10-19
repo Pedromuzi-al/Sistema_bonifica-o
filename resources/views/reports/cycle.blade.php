@@ -7,6 +7,7 @@
             </select></label>
             <button class="apple-button" @disabled($cycles->isEmpty())>Ver relatório</button>
             <a class="apple-button--light" href="{{ route('reports.index',['view'=>'general']) }}">Indicadores de execução</a>
+            <a class="apple-button--light" href="{{ route('reports.awards') }}">Bonificações por ciclo</a>
         </form>
         @php($canManage = true)
         @php($reportMode = true)

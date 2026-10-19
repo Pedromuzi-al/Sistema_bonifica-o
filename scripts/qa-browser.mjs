@@ -188,6 +188,7 @@ try {
     await page.screenshot({ path: join(reports, 'ideia-celular.png'), fullPage: true });
     await page.getByRole('button', { name: 'Abrir menu' }).click();
     assert.ok(await page.locator('#mobile-navigation').isVisible());
+    await page.waitForFunction(()=>document.getElementById('mobile-navigation').contains(document.activeElement));
     await page.keyboard.press('Tab');
     assert.ok(await page.evaluate(() => document.activeElement.tagName !== 'BODY'));
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Rolagem horizontal no celular.');
@@ -371,6 +372,30 @@ try {
 
 
 
+    for (const dark of [false,true]) {
+        await page.evaluate(dark=>localStorage.setItem('conted-theme',dark?'dark':'light'),dark);
+        await page.goto(`${base}/reports/awards?cycle=${cycleId}`);
+        await page.getByRole('heading',{name:'Bonificações por ciclo',exact:true}).waitFor();
+        assert.equal(await page.locator('.award-cycle').count(),1);
+        await page.getByRole('heading',{name:'Maior número de votos válidos',exact:true}).waitFor();
+        assert.equal(await page.locator('.award-table tbody tr').count(),1);
+        await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
+        await page.screenshot({path:join(reports,dark?'bonificacoes-escuro.png':'bonificacoes-claro.png'),fullPage:true});
+        for (const width of [320,390]) {
+            await page.setViewportSize({width,height:844});
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+        }
+        await page.setViewportSize({width:1440,height:1000});
+    }
+    const restrictedReport = await voterPage.goto(`${base}/reports/awards`);
+    assert.equal(restrictedReport.status(),403);
+    await page.locator('input[name="from"]').fill('2099-01-01');
+    await page.getByRole('button',{name:'Aplicar filtros',exact:true}).click();
+    await page.getByRole('heading',{name:'Nenhum ciclo apurado neste recorte',exact:true}).waitFor();
+    await page.getByRole('link',{name:'Limpar filtros',exact:true}).click();
+    await page.locator('.award-cycle').first().waitFor();
+    outcomes.push('Bonificações administrativas: agrupamento por ciclo, classificação e votos, filtros/limpeza, dois temas, 320/390 px e acesso direto negado a funcionário.');
+
     await page.goto(`${base}/reports?view=general`);
     const chartLine=page.locator('.chart-line').first();
     await page.locator('.metric-chart').first().waitFor();
@@ -380,6 +405,30 @@ try {
     assert.equal(await chartLine.evaluate(element=>getComputedStyle(element).strokeDashoffset),'0px');
     await page.emulateMedia({reducedMotion:'no-preference'});
     outcomes.push('Gráficos: desenho desativado e linha completa com redução de movimento');
+    assert.equal(await page.locator('.execution-report progress').count(),0);
+    assert.equal(await page.locator('.execution-report .stat-card').count(),4);
+    for (const theme of ['light','dark']) {
+        await page.evaluate(theme=>document.documentElement.classList.toggle('dark',theme==='dark'),theme);
+        await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
+        await page.screenshot({path:join(reports,`indicadores-gerais-${theme}.png`),fullPage:true});
+        for (const width of [320,390,1440]) {
+            await page.setViewportSize({width,height:900});
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`Indicadores gerais sem overflow: ${theme}/${width}`);
+        }
+    }
+    await page.emulateMedia({reducedMotion:'reduce'});
+    assert.equal(await page.locator('.report-bar-fill').first().evaluate(element=>getComputedStyle(element).animationName),'none');
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.locator('.report-filters input[name="from"]').fill('2099-01-01');
+    await page.getByRole('button',{name:'Aplicar filtros'}).click();
+    await page.waitForURL(url=>url.searchParams.get('from')==='2099-01-01');
+    assert.equal(new URL(page.url()).searchParams.get('view'),'general');
+    await page.getByText('Nenhuma proposta encontrada com estes filtros.',{exact:true}).waitFor();
+    await page.getByRole('link',{name:'Limpar filtros',exact:true}).click();
+    await page.waitForURL(url=>url.searchParams.get('from')===null && url.searchParams.get('view')==='general');
+    await page.locator('.metric-chart').first().waitFor();
+    outcomes.push('Indicadores gerais: cartões e gráficos novos, dois temas, 320/390 px, filtros, estado vazio, limpeza e movimento reduzido.');
+
     await page.goto(`${base}/cycles`);
     await page.getByRole('row').filter({hasText:'Ciclo curto de QA'}).waitFor();
     assert.equal(await page.locator('form[data-cycle-purpose]').count(),0);

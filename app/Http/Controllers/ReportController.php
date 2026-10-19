@@ -8,6 +8,7 @@ use App\Models\Idea;
 use App\Models\Sector;
 use App\Models\Vote;
 use App\Models\VotingCycle;
+use App\Services\AdministrativeAwardReportService;
 use App\Services\CycleReportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -43,6 +44,33 @@ class ReportController extends Controller
         $cycleReport = $cycle ? $reports->build($cycle, true) : null;
 
         return view('reports.cycle', compact('cycles', 'cycle', 'cycleReport'));
+    }
+
+    public function awards(Request $request, AdministrativeAwardReportService $reports): View
+    {
+        $this->authorize('manage-admin');
+        $request->validate([
+            'cycle' => ['nullable', 'integer', 'exists:voting_cycles,id'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
+        ]);
+        $query = VotingCycle::where('status', 'closed')
+            ->when($request->filled('cycle'), fn ($query) => $query->whereKey($request->integer('cycle')))
+            ->when($request->filled('from'), fn ($query) => $query->where('ends_at', '>=', Carbon::parse($request->input('from'), config('innovation.cycle_timezone'))->startOfDay()->utc()))
+            ->when($request->filled('to'), fn ($query) => $query->where('ends_at', '<=', Carbon::parse($request->input('to'), config('innovation.cycle_timezone'))->endOfDay()->utc()));
+        $cycleIds = (clone $query)->select('id');
+        $awards = BonusAward::whereIn('voting_cycle_id', clone $cycleIds);
+        $summary = [
+            'cycles' => (clone $query)->count(),
+            'ideas' => DB::table('idea_voting_cycle')->whereIn('voting_cycle_id', clone $cycleIds)->count(),
+            'approved' => (clone $awards)->whereNotNull('approved_at')->whereNull('rejected_at')->sum('award_amount'),
+            'pending' => (clone $awards)->whereNull('approved_at')->whereNull('rejected_at')->sum('award_amount'),
+        ];
+        $cycles = (clone $query)->latest('ends_at')->orderByDesc('id')->paginate(10)->withQueryString();
+        $groups = $cycles->map(fn ($cycle) => ['cycle' => $cycle, 'report' => $reports->build($cycle)]);
+        $options = VotingCycle::where('status', 'closed')->latest('ends_at')->get(['id', 'name']);
+
+        return view('reports.awards', compact('cycles', 'groups', 'summary', 'options'));
     }
 
     public function cycleExport(Request $request, CycleReportService $reports): StreamedResponse

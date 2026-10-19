@@ -142,3 +142,13 @@ A migration `2026_10_19_170000_add_soft_deletes_to_ideas.php` está aplicada na 
 Suíte completa: **226 testes PHP / 1.393 verificações** e **três testes JavaScript** aprovados. Os seis cenários novos verificam snapshots, contagem de pessoas/votos, valores financeiros, pontuação zero/insuficiente, troca de ciclo, CSV, permissões, privacidade e ausência de ranking antes da apuração. Os testes de indicadores anteriores continuam validando a área complementar `reports?view=general`.
 
 Chrome e build aprovados em `storage/app/qa-reports/2026-10-19T20-55-49.851Z/`, com classificação, link para detalhes, temas claro/escuro, movimento reduzido e larguras 320/390 px. Capturas dos dois temas inspecionadas. Ajuste final de contraste do selo de situação e borda do resumo, sem alteração funcional. Não houve migration ou alteração da base local nesta etapa. Veja [RELATORIO_POR_CICLO.md](RELATORIO_POR_CICLO.md).
+
+### Indicadores de execução — 19/10/2026
+
+A área geral de Relatórios recebeu nova organização visual, cartões de resumo, barras próprias em substituição aos controles nativos, tempos com unidades adaptadas à duração e tabela mensal expansível. O filtro e o CSV mantêm o recorte e as regras anteriores. As tabelas contêm a rolagem horizontal no celular. Verificar também com a preferência de reduzir movimento ativa.
+
+Validação desta alteração: 226 testes PHP (1.393 verificações), três testes JavaScript, build e verificação de estilo aprovados. Chrome validou dois temas, 320/390 px, movimento reduzido, quatro cartões, ausência de barras nativas, filtro sem resultados e limpeza. Banco e arquivos usados no teste de navegador são descartáveis; não houve migration ou alteração dos dados locais.
+
+### Relatório administrativo de bonificações — 19/10/2026
+
+Disponível em **Relatórios → Bonificações por ciclo**. Validação concluída com 230 testes PHP / 1.422 verificações, três testes JavaScript, build, Pint e Chrome. Foram cobertos autorização administrativa, valores individuais congelados, registros antigos, totais e rejeições, ciclos separados, empates, filtros e fuso horário. Chrome conferiu temas claro/escuro, larguras de 320/390 px, estado vazio, limpeza dos filtros e acesso direto negado a funcionário. Evidências: `storage/app/qa-reports/2026-10-19T21-14-09.225Z/`. Sem migration.
