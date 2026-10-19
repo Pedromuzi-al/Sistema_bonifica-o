@@ -274,3 +274,8 @@ Categorias opcionais aceitam mínimos próprios de votos, nota técnica e result
 O catálogo ativo é Material Didático, Sucesso do Cliente, Tecnologia, Produto e Administração. A migration `2026_10_18_180000_update_company_sectors` aplica as correspondências aprovadas: Operações → Produto, Financeiro → Administração, Vendas → Sucesso do Cliente; Tecnologia continua. Pessoas, equipes, origem e setores beneficiados acompanham a troca. Recursos Humanos fica inativo para preservar registros já vinculados. Publicações e snapshots antigos não são reescritos. Por haver consolidação de vínculos, o rollback dessa migration não tenta inventar o setor original de cada registro; para recuperação integral utilize o backup anterior.
 
 Ciclos podem começar e terminar no mesmo dia. O formulário usa `CYCLE_TIMEZONE=America/Sao_Paulo` por padrão, converte os horários para o fuso interno na validação e os exibe novamente no fuso do programa. O início deve continuar no futuro para permitir selecionar as ideias e abrir o rascunho; o fim deve ser posterior ao início. Nenhuma regra exige aguardar até amanhã. Os horários já gravados de ciclos existentes permanecem intactos.
+
+
+## Continuar no PC do trabalho
+
+Consulte [o guia de preparação do outro computador](docs/CONTINUAR_EM_OUTRO_PC.md) e [o texto para retomar no Codex](docs/RETOMAR_NO_CODEX.md). O Git transfere código e documentação; banco, anexos privados e `.env` exigem preparação separada.

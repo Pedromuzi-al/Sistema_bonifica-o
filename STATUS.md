@@ -205,3 +205,15 @@ A infraestrutura interna foi descartada pelo usuário. A candidata que preserva 
 Render Free não foi tratado como produção pronta: o fornecedor orienta uso de teste, o serviço dorme e o disco local é temporário. Neon fornece Postgres gratuito, mas exigiria adaptação/homologação do banco e backup. InfinityFree não oferece shell/Artisan, cron e workers; Quick Tunnel é temporário e destinado a testes. Fontes oficiais e detalhes estão no guia da rodada.
 
 Não foram criadas contas externas, contratados recursos, expostos serviços locais ou publicadas credenciais. Permanecem pendentes MySQL, operação externa, QA humano e política de retenção/anonimização para registros em aberto/banco de ideias. O sistema registra o reconhecimento; o pagamento real acontece fora dele.
+
+
+## Continuidade no PC do trabalho
+
+O usuário pediu a preparação para continuar em outro computador, sem depender de sincronização do histórico do chat. Antes desta etapa, a árvore estava limpa na branch `adm`, commit `e39657f`, alinhada com a referência local `origin/adm`.
+
+Foram acrescentados `docs/CONTINUAR_EM_OUTRO_PC.md`, com atualização da branch, instalação local nova em SQLite, distinção entre dados fictícios e restauração, verificações e proteção das credenciais; e `docs/RETOMAR_NO_CODEX.md`, com um texto pronto para o próximo chat recuperar decisões, prioridades e pendências. A pesquisa posterior passou a considerar hospedagem barata, além de gratuita. Nenhum fornecedor foi escolhido ou contratado.
+
+A preparação desta etapa contém apenas documentação: banco, anexos, `.env` e configurações da máquina não foram transferidos. A referência de 211 testes PHP, três JavaScript e Chrome é da execução anterior; não houve nova mudança de comportamento que exigisse repeti-los. Os arquivos novos foram conferidos quanto a links locais e erros de diff. O resultado do envio ao Git é informado na resposta desta etapa; a sincronização da conversa em outro PC não foi configurada nem comprovada.
+
+
+O envio desta documentação para `origin/adm` foi tentado, mas não concluído: o Git HTTPS não conseguiu obter o usuário por falta de autenticação neste ambiente. O commit permanece local. Foi preparado também um ZIP de código/documentação a partir do commit, fora do repositório, sem arquivos ignorados. Para enviar pelo repositório, autentique o Git pelo gerenciador de credenciais do editor e execute `git push origin adm`; não informe tokens ou senhas no chat.
