@@ -19,20 +19,37 @@
         <p class="px-3 pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Plataforma de ideias</p>
         @foreach($items as $item)
             @if($item['visible'])
-                <a href="{{ route($item['route']) }}" class="app-nav-link sidebar-link" @if(($item['route'] === 'cycles.index' && request()->routeIs('ideas.vote-form')) || (request()->routeIs($item['match']) && !($item['route']==='admin.index' && request()->routeIs('admin.sectors.*','admin.users.*','admin.criteria.*','admin.teams.*','admin.organization')) && !($item['route'] === 'ideas.index' && request()->routeIs('ideas.vote-form')))) aria-current="page" @endif>
-                    <x-sidebar-icon :name="$item['icon']" /><span>{{ $item['label'] }}</span>
-                </a>
-                @if($item['route'] === 'admin.index' && request()->routeIs('admin.*'))
-                    <div class="ml-4 border-l border-slate-200 pl-2" aria-label="Áreas da administração">
-                        @foreach([
-                            ['route'=>'admin.sectors.index','match'=>'admin.sectors.*','label'=>'Setores'],
-                            ['route'=>'admin.users.index','match'=>'admin.users.*','label'=>'Pessoas e acessos'],
-                            ['route'=>'admin.criteria.index','match'=>'admin.criteria.*','label'=>'Critérios técnicos'],
-                            ['route'=>'admin.organization','match'=>'admin.teams.*','label'=>'Equipes'],
-                        ] as $section)
-                            <a href="{{ route($section['route']) }}" class="app-nav-link sidebar-link" @if(request()->routeIs($section['match']) || ($section['route']==='admin.organization' && request()->routeIs('admin.organization'))) aria-current="page" @endif>{{ $section['label'] }}</a>
-                        @endforeach
+                @if($item['route'] === 'admin.index')
+                    <div class="sidebar-group" x-data="{ expanded: @js(request()->routeIs('admin.*')) }">
+                        <button type="button" class="app-nav-link sidebar-link sidebar-group-toggle {{ request()->routeIs('admin.*') ? 'sidebar-group-current' : '' }}"
+                            aria-controls="administration-links" aria-expanded="{{ request()->routeIs('admin.*') ? 'true' : 'false' }}"
+                            :aria-expanded="expanded.toString()" @click="expanded = !expanded">
+                            <x-sidebar-icon :name="$item['icon']" />
+                            <span>{{ $item['label'] }}</span>
+                            <svg class="sidebar-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                        </button>
+                        <div id="administration-links" class="sidebar-submenu" data-expanded="{{ request()->routeIs('admin.*') ? 'true' : 'false' }}"
+                            :data-expanded="expanded.toString()" :inert="!expanded" :aria-hidden="(!expanded).toString()"
+                            @if(!request()->routeIs('admin.*')) inert aria-hidden="true" @endif>
+                            <div class="sidebar-submenu-clip">
+                                <div class="sidebar-submenu-links">
+                                    @foreach([
+                                        ['route'=>'admin.index','match'=>'admin.index','label'=>'Visão geral'],
+                                        ['route'=>'admin.sectors.index','match'=>'admin.sectors.*','label'=>'Setores'],
+                                        ['route'=>'admin.users.index','match'=>'admin.users.*','label'=>'Pessoas e acessos'],
+                                        ['route'=>'admin.criteria.index','match'=>'admin.criteria.*','label'=>'Critérios técnicos'],
+                                        ['route'=>'admin.organization','match'=>'admin.teams.*','label'=>'Equipes'],
+                                    ] as $section)
+                                        <a href="{{ route($section['route']) }}" class="app-nav-link sidebar-link sidebar-submenu-link" @if(request()->routeIs($section['match']) || ($section['route']==='admin.organization' && request()->routeIs('admin.organization'))) aria-current="page" @endif>{{ $section['label'] }}</a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                @else
+                    <a href="{{ route($item['route']) }}" class="app-nav-link sidebar-link" @if(($item['route'] === 'cycles.index' && request()->routeIs('ideas.vote-form')) || (request()->routeIs($item['match']) && !($item['route'] === 'ideas.index' && request()->routeIs('ideas.vote-form')))) aria-current="page" @endif>
+                        <x-sidebar-icon :name="$item['icon']" /><span>{{ $item['label'] }}</span>
+                    </a>
                 @endif
             @endif
         @endforeach

@@ -84,7 +84,7 @@ Alpine.data('layoutSidebar', () => ({
     },
     trapFocus(event) {
         if (!this.mobile || !this.sidebarOpen || event.key !== 'Tab') return;
-        const items = Array.from(this.$refs.sidebar.querySelectorAll('a[href], button:not([disabled])')).filter(item => item.getClientRects().length);
+        const items = Array.from(this.$refs.sidebar.querySelectorAll('a[href], button:not([disabled])')).filter(item => item.getClientRects().length && !item.closest('[inert]'));
         const first = items[0], last = items.at(-1);
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }

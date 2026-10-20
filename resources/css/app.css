@@ -438,6 +438,22 @@ html.dark .notification-card {
 .sidebar-brand { display: flex; align-items: center; gap: 8px; padding: 20px 16px; }
 .sidebar-links { flex: 1; padding: 16px 12px; }
 .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; margin-bottom: 4px; font-size: .875rem; font-weight: 500; }
+.sidebar-group-toggle { width: 100%; text-align: left; cursor: pointer; }
+.sidebar-group-chevron { width: 18px; height: 18px; flex-shrink: 0; margin-left: auto; transition: transform 240ms ease; }
+.sidebar-group-toggle[aria-expanded="true"] .sidebar-group-chevron { transform: rotate(180deg); }
+.sidebar-group-toggle.sidebar-group-current,
+.sidebar-group-toggle[aria-expanded="true"] { background: var(--nav-active-bg); color: var(--nav-active-text); }
+.sidebar-group-toggle:focus-visible,
+.sidebar-submenu-link:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }
+.sidebar-submenu { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows 260ms cubic-bezier(.2,.7,.2,1), opacity 180ms ease, visibility 0s linear 260ms; }
+.sidebar-submenu[data-expanded="true"] { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition-delay: 0s; }
+.sidebar-submenu-clip { min-height: 0; overflow: hidden; }
+.sidebar-submenu-links { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 10px 22px; padding-left: 12px; border-left: 1px solid var(--workspace-line); }
+.sidebar-submenu-link { position: relative; margin-bottom: 0; padding: 10px 12px; font-size: .8125rem; line-height: 1.5; }
+.sidebar-submenu-link[aria-current="page"]::before { content: ""; position: absolute; left: -15px; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: var(--nav-active-text); transform: translateY(-50%); }
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-submenu, .sidebar-group-chevron { transition: none; }
+}
 .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--control-border); }
 .app-content { min-width: 0; margin-left: 260px; }
 .app-topbar { position: sticky; top: 0; z-index: 40; min-height: 76px; margin-left: 260px; padding: 12px 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border-bottom: 1px solid var(--control-border); }
