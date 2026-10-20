@@ -22,21 +22,45 @@
         </section>
         @if (config('innovation.invitation_delivery') === 'manual' && $user->isAvailable())
         <section class="apple-card space-y-4 p-6">
-            <h3 class="text-xl font-bold">{{ $user->invitation_pending ? 'Primeiro acesso' : 'Recuperação de acesso' }}</h3>
-            <p>Confira a identidade da pessoa antes de entregar o link. Ele permite definir uma nova senha, expira em {{ config('auth.passwords.users.expire') }} minutos e pode ser usado uma única vez. Gerar outro invalida o anterior.</p>
-            @if (session('access_link') && (int) session('access_link_user_id') === $user->id)
-                <label class="block font-semibold" for="individual-access-link">Link individual — copie e entregue somente ao titular</label>
-                <textarea id="individual-access-link" class="block w-full rounded-lg" rows="4" readonly spellcheck="false">{{ session('access_link') }}</textarea>
-                <p class="text-sm">O link é exibido somente nesta resposta. Não inclua o link em prints, relatórios ou grupos.</p>
-            @endif
-            @if (time() - (int) session('auth.password_confirmed_at', 0) < config('auth.password_timeout', 10800))
-                <form method="POST" action="{{ route('admin.users.access-link', $user) }}" class="space-y-4">
-                    @csrf
-                    <x-workflow-field name="reason" label="Motivo da geração do link" type="textarea" minlength="10" maxlength="1000" />
-                    <button class="apple-button">{{ $user->invitation_pending ? 'Gerar link de primeiro acesso' : 'Gerar link de recuperação' }}</button>
-                </form>
+            @if ($user->invitation_pending)
+                <h3 class="text-xl font-bold">Primeiro acesso</h3>
+                <p>Confira a identidade da pessoa antes de entregar o link. Ele permite definir uma nova senha, expira em {{ config('auth.passwords.users.expire') }} minutos e pode ser usado uma única vez. Gerar outro invalida o anterior.</p>
+                @if (session('access_link') && (int) session('access_link_user_id') === $user->id)
+                    <label class="block font-semibold" for="individual-access-link">Link individual — copie e entregue somente ao titular</label>
+                    <textarea id="individual-access-link" class="block w-full rounded-lg" rows="4" readonly spellcheck="false">{{ session('access_link') }}</textarea>
+                    <p class="text-sm">O link é exibido somente nesta resposta. Não inclua o link em prints, relatórios ou grupos.</p>
+                @endif
+                @if (time() - (int) session('auth.password_confirmed_at', 0) < config('auth.password_timeout', 10800))
+                    <form method="POST" action="{{ route('admin.users.access-link', $user) }}" class="space-y-4">
+                        @csrf
+                        <x-workflow-field name="reason" label="Motivo da geração do link" type="textarea" minlength="10" maxlength="1000" />
+                        <button class="apple-button">Gerar link de primeiro acesso</button>
+                    </form>
+                @else
+                    <a class="apple-button" href="{{ route('password.confirm', ['return_to' => 'admin_user', 'user_id' => $user->id]) }}">Confirmar minha senha para gerar link</a>
+                @endif
             @else
-                <a class="apple-button" href="{{ route('password.confirm', ['return_to' => 'admin_user', 'user_id' => $user->id]) }}">Confirmar minha senha para gerar link</a>
+                <h3 class="text-xl font-bold">Redefinir senha</h3>
+                <p>A pessoa esqueceu a senha? Confira a identidade dela e defina uma nova senha por aqui.</p>
+                <p class="text-sm text-slate-600">Após salvar, as sessões anteriores serão encerradas. Informe a nova senha diretamente à pessoa para que ela possa entrar novamente.</p>
+                <details class="rounded-xl border p-4" @if($errors->has('password')) open @endif>
+                    <summary class="cursor-pointer font-semibold">Definir nova senha</summary>
+                    <form method="POST" action="{{ route('admin.users.reset-password', $user) }}" class="mt-4 space-y-4" x-data="{ showPasswords: false }">
+                        @csrf
+                        <p class="text-sm text-slate-600">{{ app()->isProduction() ? 'Use pelo menos 12 caracteres, com letras maiúsculas, minúsculas e números.' : 'Use pelo menos 8 caracteres.' }}</p>
+                        <div>
+                            <label for="recovery-password" class="block text-sm font-medium">Nova senha</label>
+                            <input id="recovery-password" name="password" type="password" :type="showPasswords ? 'text' : 'password'" autocomplete="new-password" class="mt-1 block w-full rounded-lg border-slate-300" required>
+                            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                        </div>
+                        <div>
+                            <label for="recovery-password-confirmation" class="block text-sm font-medium">Confirmar nova senha</label>
+                            <input id="recovery-password-confirmation" name="password_confirmation" type="password" :type="showPasswords ? 'text' : 'password'" autocomplete="new-password" class="mt-1 block w-full rounded-lg border-slate-300" required>
+                        </div>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="showPasswords">Mostrar nova senha</label>
+                        <button class="apple-button">Salvar nova senha</button>
+                    </form>
+                </details>
             @endif
         </section>
         @endif

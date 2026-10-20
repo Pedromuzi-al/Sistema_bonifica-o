@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
@@ -119,6 +120,30 @@ class AdminUserController extends Controller
         return back()->with('success', 'Se o e-mail estava pendente, uma nova confirmação foi enviada.');
     }
 
+    public function resetPassword(Request $request, User $user, AdministrationService $administration): RedirectResponse
+    {
+        $this->authorize('manage-admin');
+        abort_unless(config('innovation.invitation_delivery') === 'manual', 404);
+        $data = $request->validate([
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'password.required' => 'Informe a nova senha da pessoa.',
+            'password.confirmed' => 'A confirmação deve ser igual à nova senha.',
+        ]);
+        $administration->resetPassword($request->user(), $user, $data['password']);
+
+        if ($user->id === $request->user()->id) {
+            auth()->guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('status', 'Senha redefinida. Entre novamente com a nova senha.');
+        }
+
+        return redirect()->route('admin.users.edit', $user)
+            ->with('success', 'Senha redefinida. As sessões anteriores foram encerradas. A pessoa já pode entrar com a nova senha.');
+    }
+
     public function accessLink(Request $request, User $user, AdministrationService $administration): RedirectResponse
     {
         $this->authorize('manage-admin');
@@ -129,6 +154,7 @@ class AdminUserController extends Controller
             Gate::forUser(User::findOrFail($request->user()->id))->authorize('manage-admin');
             $current = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
             abort_unless($current->isAvailable(), 422, 'Reative a conta antes de gerar um link de acesso.');
+            abort_unless($current->invitation_pending, 422, 'Use a redefinição de senha para recuperar o acesso desta pessoa.');
             $token = Password::broker()->createToken($current);
             AuditLog::create(['causer_id' => $request->user()->id, 'model_type' => User::class, 'model_id' => $current->id, 'action' => 'manual_access_link_created', 'details' => ['purpose' => $current->invitation_pending ? 'first_access' : 'recovery', 'reason' => $data['reason'], 'expires_in_minutes' => config('auth.passwords.users.expire')]]);
 

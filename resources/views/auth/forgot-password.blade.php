@@ -1,7 +1,7 @@
 <x-guest-layout>
     @if (config('innovation.invitation_delivery') === 'manual')
         <h1 class="mb-4 text-xl font-bold">Recuperar acesso</h1>
-        <p class="mb-4 text-sm text-gray-600">Solicite à administração um link individual para definir uma nova senha. A administração conferirá sua identidade antes de entregar o link. Nesta versão, não há envio automático por e-mail.</p>
+        <p class="mb-4 text-sm text-gray-600">Solicite à administração a redefinição da sua senha. Informe seu nome e o e-mail cadastrado. Após conferir sua identidade, a administração ajudará você a recuperar o acesso.</p>
         <a class="underline" href="{{ route('login') }}">Voltar para entrar</a>
     @else
     <div class="mb-4 text-sm text-gray-600">

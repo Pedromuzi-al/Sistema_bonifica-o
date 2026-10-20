@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/admin/users/{user}', [AdminUserController::class, 'update'])->withTrashed()->name('admin.users.update');
     Route::post('/admin/users/{user}/block', [AdminUserController::class, 'block'])->name('admin.users.block');
     Route::post('/admin/users/{user}/reactivate', [AdminUserController::class, 'reactivate'])->withTrashed()->name('admin.users.reactivate');
+    Route::post('/admin/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->middleware('throttle:6,1')->name('admin.users.reset-password');
     Route::post('/admin/users/{user}/access-link', [AdminUserController::class, 'accessLink'])->middleware(['password.confirm', 'throttle:6,1'])->name('admin.users.access-link');
     Route::post('/admin/users/{user}/verification', [AdminUserController::class, 'resendVerification'])->middleware('throttle:6,1')->name('admin.users.verification');
     Route::get('/admin/organization', [OrganizationController::class, 'index'])->name('admin.organization');

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -81,6 +82,25 @@ class AdministrationService
             $this->assignAccess($target, $data);
             $this->preserveAdministrator($hadAdministrator);
             $this->audit($actor, $target, 'permissions_updated', ['before' => $before, 'after' => $this->userSnapshot($target)]);
+        }, 3);
+    }
+
+    public function resetPassword(User $actor, User $target, string $password): void
+    {
+        DB::transaction(function () use ($actor, $target, $password) {
+            $this->lockAccounts($actor);
+            $this->authorizeAdmin($actor);
+            $target = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
+            abort_unless($target->isAvailable(), 422, 'Reative a conta antes de redefinir a senha.');
+            abort_if($target->invitation_pending, 422, 'Conclua o primeiro acesso antes de recuperar a senha.');
+            $target->forceFill([
+                'password' => Hash::make($password),
+                'remember_token' => Str::random(60),
+                'access_version' => (int) $target->access_version + 1,
+            ])->save();
+            $this->revokeSessions($target);
+            DB::table('password_reset_tokens')->where('email', $target->email)->delete();
+            $this->audit($actor, $target, 'user_password_reset', []);
         }, 3);
     }
 

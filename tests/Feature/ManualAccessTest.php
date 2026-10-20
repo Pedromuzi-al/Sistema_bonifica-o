@@ -129,21 +129,83 @@ class ManualAccessTest extends TestCase
         $this->assertFalse(Password::tokenExists($user, $new));
     }
 
-    public function test_manual_recovery_revokes_sessions_and_does_not_send_email(): void
+    public function test_manual_recovery_sets_password_without_a_link_and_revokes_old_access(): void
     {
         $user = User::where('email', 'funcionario@corp.local')->firstOrFail();
         DB::table('sessions')->insert(['id' => 'old-session', 'user_id' => $user->id, 'payload' => '', 'last_activity' => time()]);
         $version = $user->access_version;
-        $token = $this->token($this->link($user));
-        $this->assertSame('recovery', AuditLog::where('action', 'manual_access_link_created')->firstOrFail()->details['purpose']);
-        $this->app['auth']->forgetGuards();
-        $this->get(route('password.request'))->assertOk()->assertSeeText('Solicite à administração')->assertDontSee('name="email"', false);
-        $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasErrors('email');
-        $this->post(route('password.store'), ['email' => $user->email, 'token' => $token, 'password' => 'NovaSenhaForte123', 'password_confirmation' => 'NovaSenhaForte123'])->assertSessionHasNoErrors();
+        $rememberToken = $user->remember_token;
+        $verifiedAt = $user->email_verified_at;
+        $token = Password::createToken($user);
+        $this->actingAs($this->admin)->get(route('admin.users.edit', $user))
+            ->assertOk()->assertSeeText('Definir nova senha')->assertDontSeeText('Confirmar minha senha para gerar link')
+            ->assertDontSeeText('Motivo da redefinição')->assertDontSeeText('Sua senha de administrador');
+        $this->post(route('admin.users.reset-password', $user), [
+            'password' => 'NovaSenhaForte123',
+            'password_confirmation' => 'NovaSenhaForte123',
+        ])->assertSessionHasNoErrors()->assertSessionMissing('access_link')->assertRedirect(route('admin.users.edit', $user));
+        $current = $user->fresh();
+        $this->assertTrue(Hash::check('NovaSenhaForte123', $current->password));
         $this->assertDatabaseMissing('sessions', ['id' => 'old-session']);
-        $this->assertSame($version + 1, $user->fresh()->access_version);
-        $this->assertTrue($user->fresh()->hasRole('employee'));
+        $this->assertSame($version + 1, $current->access_version);
+        $this->assertNotSame($rememberToken, $current->remember_token);
+        $this->assertFalse(Password::tokenExists($current, $token));
+        $this->assertEquals($verifiedAt, $current->email_verified_at);
+        $this->assertTrue($current->hasRole('employee'));
+        $log = AuditLog::where('action', 'user_password_reset')->firstOrFail();
+        $this->assertSame($this->admin->id, $log->causer_id);
+        $this->assertSame([], $log->details);
+        $this->app['auth']->forgetGuards();
+        $this->get(route('password.request'))->assertOk()->assertSeeText('Solicite à administração a redefinição')->assertDontSee('name="email"', false);
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'NovaSenhaForte123'])->assertSessionHasNoErrors();
+        $this->get(route('dashboard'))->assertOk();
         Notification::assertNothingSent();
+    }
+
+    public function test_direct_recovery_requires_matching_new_passwords(): void
+    {
+        $user = User::where('email', 'funcionario@corp.local')->firstOrFail();
+        $oldPassword = $user->password;
+        $this->actingAs($this->admin)->from(route('admin.users.edit', $user))
+            ->post(route('admin.users.reset-password', $user), [
+                'password' => 'NovaSenhaForte123',
+                'password_confirmation' => 'OutraSenha123',
+            ])->assertSessionHasErrors(['password'])
+            ->assertSessionMissing('_old_input.password')->assertSessionMissing('_old_input.password_confirmation');
+        $this->assertSame($oldPassword, $user->fresh()->password);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'user_password_reset']);
+    }
+
+    public function test_direct_recovery_rejects_guests_employees_and_unavailable_or_pending_accounts(): void
+    {
+        $user = User::where('email', 'funcionario@corp.local')->firstOrFail();
+        $data = ['password' => 'NovaSenhaForte123',
+            'password_confirmation' => 'NovaSenhaForte123'];
+        $this->post(route('admin.users.reset-password', $user), $data)->assertRedirect(route('login'));
+        $this->actingAs($user)->postJson(route('admin.users.reset-password', $user), $data)->assertForbidden();
+        $user->forceFill(['blocked_at' => now()])->save();
+        $this->actingAs($this->admin)->postJson(route('admin.users.reset-password', $user), $data)->assertUnprocessable();
+        $pending = $this->invite();
+        $this->postJson(route('admin.users.reset-password', $pending), $data)->assertUnprocessable();
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'user_password_reset']);
+    }
+
+    public function test_recovery_links_are_no_longer_generated_for_existing_accounts(): void
+    {
+        $user = User::where('email', 'funcionario@corp.local')->firstOrFail();
+        $this->actingAs($this->admin)->withSession(['auth.password_confirmed_at' => time()])
+            ->postJson(route('admin.users.access-link', $user), ['reason' => 'Titular solicitou nova senha.'])->assertUnprocessable();
+        $this->assertDatabaseCount('password_reset_tokens', 0);
+    }
+
+    public function test_admin_resetting_own_password_must_sign_in_again(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.users.reset-password', $this->admin), [
+            'password' => 'NovaSenhaForte123',
+            'password_confirmation' => 'NovaSenhaForte123',
+        ])->assertSessionHasNoErrors()->assertRedirect(route('login'));
+        $this->assertGuest();
+        $this->assertTrue(Hash::check('NovaSenhaForte123', $this->admin->fresh()->password));
     }
 
     public function test_unavailable_accounts_cannot_receive_links_and_pending_admin_does_not_replace_last_admin(): void

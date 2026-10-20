@@ -27,7 +27,7 @@ class PasswordResetLinkController extends Controller
     public function store(Request $request): RedirectResponse
     {
         if (config('innovation.invitation_delivery') === 'manual') {
-            return back()->withErrors(['email' => 'Nesta versão, solicite à administração um link individual de recuperação de acesso.']);
+            return back()->withErrors(['email' => 'Solicite à administração a redefinição da sua senha para recuperar o acesso.']);
         }
         $request->validate([
             'email' => ['required', 'email'],
