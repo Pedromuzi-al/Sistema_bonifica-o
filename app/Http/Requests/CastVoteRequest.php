@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\VotingCycle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -9,7 +10,10 @@ class CastVoteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('vote', $this->route('idea'));
+        $id = filter_var($this->input('voting_cycle_id'), FILTER_VALIDATE_INT);
+        $cycle = $id ? VotingCycle::find($id) : null;
+
+        return $this->user()->can($cycle?->isSelection() ? 'voteInSelection' : 'vote', $this->route('idea'));
     }
 
     protected function failedAuthorization(): void

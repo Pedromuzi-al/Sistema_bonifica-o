@@ -1,3 +1,4 @@
+import ideaWizard from './idea-wizard';
 
 
 import Alpine from 'alpinejs';
@@ -38,41 +39,55 @@ document.addEventListener('click', (event) => {
 
 syncThemeControls();
 
-Alpine.data('ideaWizard', (initialStep = 1) => ({
-    step: initialStep,
-    sectorError: false,
-    move(step) {
-        this.step = step;
-        this.$nextTick(() => this.$el.querySelector(`[data-step="${step}"] legend`)?.focus());
+Alpine.data('ideaWizard', ideaWizard);
+
+Alpine.data('layoutSidebar', () => ({
+    sidebarOpen: false,
+    mobile: window.matchMedia('(max-width: 1023px)').matches,
+    media: null,
+    mediaListener: null,
+    lastFocused: null,
+    init() {
+        this.media = window.matchMedia('(max-width: 1023px)');
+        this.mediaListener = event => {
+            const active = document.activeElement === document.body ? this.lastFocused : document.activeElement;
+            const focusWasInSidebar = this.$refs.sidebar.contains(active);
+            const focusWasOnToggle = active === this.$refs.menuButton;
+            this.mobile = event.matches;
+            this.sidebarOpen = false;
+            document.documentElement.style.overflow = '';
+            this.$nextTick(() => {
+                if (this.mobile && focusWasInSidebar) {
+                    this.$refs.menuButton.focus();
+                } else if (!this.mobile && (focusWasOnToggle || active?.classList.contains('sidebar-close'))) {
+                    (this.$refs.sidebar.querySelector('[aria-current="page"]') ?? this.$refs.sidebar.querySelector('nav a'))?.focus();
+                }
+            });
+        };
+        this.media.addEventListener('change', this.mediaListener);
     },
-    validate(step) {
-        const section = this.$el.querySelector(`[data-step="${step}"]`);
-        if (step === 2) {
-            const choices = [...section.querySelectorAll('input[name="beneficiary_sectors[]"]')];
-            this.sectorError = !choices.some(input => input.checked);
-            choices.forEach(input => input.setCustomValidity(''));
-            if (this.sectorError && choices[0]) {
-                choices[0].setCustomValidity('Marque pelo menos um setor que pode se beneficiar.');
-            }
-        }
-        const invalid = [...section.querySelectorAll('input, textarea, select')].find(input => !input.checkValidity());
-        if (invalid) {
-            this.step = step;
-            this.$nextTick(() => invalid.reportValidity());
-            return false;
-        }
-        return !this.sectorError || step !== 2;
+    destroy() {
+        this.media?.removeEventListener('change', this.mediaListener);
+        document.documentElement.style.overflow = '';
     },
-    next() {
-        if (this.validate(this.step)) this.move(this.step + 1);
+    openMenu() {
+        if (!this.mobile) return;
+        this.sidebarOpen = true;
+        document.documentElement.style.overflow = 'hidden';
+        this.$nextTick(() => this.$refs.sidebar.querySelector('button').focus());
     },
-    submit(event) {
-        for (let step = 1; step <= 3; step++) {
-            if (!this.validate(step)) {
-                event.preventDefault();
-                return;
-            }
-        }
+    closeMenu() {
+        if (!this.sidebarOpen) return;
+        this.sidebarOpen = false;
+        document.documentElement.style.overflow = '';
+        this.$nextTick(() => this.$refs.menuButton.focus());
+    },
+    trapFocus(event) {
+        if (!this.mobile || !this.sidebarOpen || event.key !== 'Tab') return;
+        const items = Array.from(this.$refs.sidebar.querySelectorAll('a[href], button:not([disabled])')).filter(item => item.getClientRects().length && !item.closest('[inert]'));
+        const first = items[0], last = items.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     },
 }));
 

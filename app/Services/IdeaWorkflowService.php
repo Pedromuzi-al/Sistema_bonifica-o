@@ -10,6 +10,7 @@ use App\Models\IdeaStatusHistory;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\VotingCycle;
+use App\Support\ImplementationStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +19,9 @@ use Illuminate\Validation\ValidationException;
 class IdeaWorkflowService
 {
     public const TRANSITIONS = [
+        'ready_for_voting' => ['evaluation'],
+        'archived' => [],
+        'idea_bank' => ['triage', 'evaluation'],
         'submitted' => ['triage'],
         'triage' => ['evaluation', 'awaiting_information', 'rejected'],
         'evaluation' => ['awaiting_information', 'approved', 'rejected'],
@@ -37,6 +41,8 @@ class IdeaWorkflowService
         Gate::forUser($user)->authorize('create', Idea::class);
 
         return DB::transaction(function () use ($user, $data) {
+            $data['expected_results'] = $data['expected_results'] ?? 'Benefícios a detalhar na triagem.';
+            $data['resources_needed'] = $data['resources_needed'] ?? 'Recursos a definir após seleção.';
             $sectors = $data['beneficiary_sectors'];
             unset($data['beneficiary_sectors']);
             $idea = Idea::create([...$data, 'author_id' => $user->id, 'status' => Idea::STATUS_SUBMITTED, 'is_public' => false]);
@@ -60,8 +66,11 @@ class IdeaWorkflowService
             if (! $cycleOperation && in_array($status, ['voting', 'voting_closed', 'finalized'], true)) {
                 throw ValidationException::withMessages(['status' => 'Esta etapa é controlada pelo ciclo de votação.']);
             }
-            if ($status === 'approved' && ! $idea->evaluations()->where('recommendation', 'approve')->exists()) {
+            if ($status === 'approved' && $idea->evaluations()->latest('id')->value('recommendation') !== 'approve') {
                 throw ValidationException::withMessages(['status' => 'Registre uma avaliação técnica favorável antes de aprovar.']);
+            }
+            if ($status === 'implementation' && $idea->evaluations()->latest('id')->value('recommendation') === 'reject') {
+                throw ValidationException::withMessages(['status' => 'Resolva o parecer técnico desfavorável antes de iniciar ou retomar a implementação.']);
             }
             if ($status === 'implementation' && ! $idea->implementationPlan()->exists()) {
                 throw ValidationException::withMessages(['status' => 'Defina o plano, responsável e prazo antes da implementação.']);
@@ -74,7 +83,7 @@ class IdeaWorkflowService
                 $idea->implementationPlan()->update(['status' => 'completed', 'completed_at' => now()]);
             }
             $this->audit($user, $idea, 'status_changed', ['status' => $status, 'notes' => $notes]);
-            $this->notify($idea->author_id, 'Andamento da proposta', Idea::LABELS[$status].': '.$notes, 'status_changed');
+            $this->notifyContributors($idea, 'Andamento da proposta', Idea::LABELS[$status].': '.$notes, 'status_changed');
         });
     }
 
@@ -83,7 +92,9 @@ class IdeaWorkflowService
         DB::transaction(function () use ($user, $idea, $data) {
             $idea = $this->lockIdea($idea->id);
             Gate::forUser($user)->authorize('evaluate', $idea);
-            $this->requireStatus($idea, ['evaluation']);
+            if (! $idea->canRecordTechnicalEvaluation()) {
+                throw ValidationException::withMessages(['status' => 'A avaliação exige a etapa de avaliação ou uma ideia selecionada em ciclo, antes da votação de resultados.']);
+            }
             $criteria = EvaluationCriterion::where('active', true)->get();
             if ($criteria->isEmpty() || array_diff($criteria->modelKeys(), array_keys($data['scores'])) || array_diff(array_keys($data['scores']), $criteria->modelKeys())) {
                 throw ValidationException::withMessages(['scores' => 'Avalie todos os critérios ativos, sem incluir critérios externos.']);
@@ -95,7 +106,7 @@ class IdeaWorkflowService
             $score = $criteria->sum(fn ($criterion) => (($data['scores'][$criterion->id] - 1) / 4 * 100) * $criterion->weight) / $totalWeight;
             $evaluation = $idea->evaluations()->create(['evaluator_id' => $user->id, 'technical_score' => round($score, 2), 'recommendation' => $data['recommendation'], 'notes' => $data['notes'], 'reviewed_at' => now()]);
             foreach ($criteria as $criterion) {
-                $evaluation->scores()->create(['criterion_id' => $criterion->id, 'score' => $data['scores'][$criterion->id], 'notes' => $criterion->name.'; peso '.$criterion->weight]);
+                $evaluation->scores()->create(['criterion_id' => $criterion->id, 'score' => $data['scores'][$criterion->id], 'notes' => $criterion->name.'; peso '.number_format((float) $criterion->weight, 2, '.', '').'; orientação '.$criterion->description]);
             }
             $this->audit($user, $idea, 'evaluated', ['evaluation_id' => $evaluation->id]);
         });
@@ -150,7 +161,7 @@ class IdeaWorkflowService
             }
             $result->update(['validated_by_user_id' => $user->id, 'validated_at' => now()]);
             $this->audit($user, $idea, 'results_validated', ['notes' => $notes]);
-            $this->notify($idea->author_id, 'Resultados validados', $notes, 'results_validated');
+            $this->notifyContributors($idea, 'Resultados validados', $notes, 'results_validated');
         });
     }
 
@@ -163,10 +174,47 @@ class IdeaWorkflowService
             if (! $idea->result?->validated_at) {
                 throw ValidationException::withMessages(['publication' => 'Resultados ainda não validados.']);
             }
-            $idea->update(['publication' => [...$data, 'sectors' => $idea->beneficiarySectors->pluck('name')->all(), 'implementation_completed_at' => $idea->implementationPlan?->completed_at?->toIso8601String()], 'is_public' => true, 'published_by_user_id' => $user->id, 'published_at' => now()]);
+            $idea->update(['publication' => [...$data, 'kind' => 'results', 'sectors' => $idea->beneficiarySectors->pluck('name')->all(), 'implementation_completed_at' => $idea->implementationPlan?->completed_at?->toIso8601String()], 'is_public' => true, 'published_by_user_id' => $user->id, 'published_at' => now()]);
             $this->audit($user, $idea, 'publication_reviewed');
-            $this->notify($idea->author_id, 'Ideia publicada', 'A versão revisada dos resultados está disponível.', 'published');
+            $this->notifyContributors($idea, 'Ideia publicada', 'A versão revisada dos resultados está disponível.', 'published');
         });
+    }
+
+    public function reviewProposal(User $actor, Idea $idea, array $data): void
+    {
+        DB::transaction(function () use ($actor, $idea, $data) {
+            $idea = $this->lockIdea($idea->id);
+            Gate::forUser($actor)->authorize('evaluate', $idea);
+            $this->requireStatus($idea, ['submitted', 'triage', 'evaluation', 'awaiting_information', 'ready_for_voting', 'idea_bank']);
+            if ($reason = app(SelectionCycleService::class)->participationBlocker($idea)) {
+                throw ValidationException::withMessages(['decision' => $reason]);
+            }
+            if ($data['decision'] === 'release') {
+                if ($idea->evaluations()->latest('id')->value('recommendation') === 'reject') {
+                    throw ValidationException::withMessages(['decision' => 'Há um parecer técnico desfavorável. Revise esse parecer antes de liberar a proposta.']);
+                }
+                IdeaStatusHistory::record($idea, 'ready_for_voting', $actor, $data['notes']);
+                $this->publishProposal($actor, $idea, collect($data)->only(['title', 'problem', 'solution', 'results', 'category'])->all());
+            } else {
+                $status = $data['decision'] === 'adjust' ? 'awaiting_information' : 'archived';
+                IdeaStatusHistory::record($idea, $status, $actor, $data['notes']);
+                $idea->update(['is_public' => false, 'published_at' => null]);
+                $this->notifyContributors($idea, Idea::LABELS[$status], $data['notes'], 'proposal_reviewed');
+            }
+            $this->audit($actor, $idea, 'proposal_review_decided', ['decision' => $data['decision'], 'notes' => $data['notes']]);
+        }, 3);
+    }
+
+    public function publishProposal(User $actor, Idea $idea, array $data): void
+    {
+        DB::transaction(function () use ($actor, $idea, $data) {
+            $idea = $this->lockIdea($idea->id);
+            Gate::forUser($actor)->authorize('evaluate', $idea);
+            $this->requireStatus($idea, ['ready_for_voting', 'triage', 'evaluation', 'idea_bank', 'approved', 'implementation']);
+            $idea->update(['publication' => [...$data, 'kind' => 'proposal', 'sectors' => $idea->beneficiarySectors->pluck('name')->all(), 'implementation_status' => ImplementationStatus::forIdea($idea)], 'is_public' => true, 'published_by_user_id' => $actor->id, 'published_at' => now()]);
+            $this->audit($actor, $idea, 'proposal_privacy_reviewed');
+            $this->notifyContributors($idea, 'Proposta revisada para votação', 'Sua ideia pode participar de um ciclo de seleção.', 'proposal_published');
+        }, 3);
     }
 
     public function lockIdea(int $id): Idea
@@ -213,6 +261,13 @@ class IdeaWorkflowService
     public function audit(User $user, Idea $idea, string $action, array $details = []): void
     {
         AuditLog::create(['causer_id' => $user->id, 'model_type' => Idea::class, 'model_id' => $idea->id, 'action' => $action, 'details' => $details]);
+    }
+
+    public function notifyContributors(Idea $idea, string $title, string $message, string $type): void
+    {
+        foreach (array_keys($idea->recognitionShares()) as $userId) {
+            $this->notify((int) $userId, $title, $message, $type);
+        }
     }
 
     public function notify(int $userId, string $title, string $message, string $type): void

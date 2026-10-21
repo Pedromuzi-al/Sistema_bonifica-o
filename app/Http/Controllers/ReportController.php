@@ -6,8 +6,14 @@ use App\Models\AuditLog;
 use App\Models\BonusAward;
 use App\Models\Idea;
 use App\Models\Sector;
+use App\Models\Vote;
+use App\Models\VotingCycle;
+use App\Services\AdministrativeAwardReportService;
+use App\Services\CycleReportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -18,7 +24,7 @@ class ReportController extends Controller
     {
         $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', ...($request->filled('from') ? ['after_or_equal:from'] : [])], 'sector' => ['nullable', 'integer', 'exists:sectors,id'], 'status' => ['nullable', Rule::in(array_keys(Idea::LABELS))], 'category' => ['nullable', 'string', 'max:255']]);
 
-        return Idea::query()->with('result', 'implementationPlan')
+        return Idea::query()->with('result', 'implementationPlan', 'originSector')
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->input('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->input('to')))
             ->when($request->filled('sector'), fn ($q) => $q->where('origin_sector_id', $request->integer('sector')))
@@ -26,7 +32,70 @@ class ReportController extends Controller
             ->when($request->filled('category'), fn ($q) => $q->where('publication->category', $request->input('category')));
     }
 
-    public function index(Request $request): View
+    public function index(Request $request, CycleReportService $reports): View
+    {
+        $this->authorize('manage-admin');
+        $request->validate(['view' => ['nullable', 'in:cycle,general'], 'cycle' => ['nullable', 'integer', 'exists:voting_cycles,id']]);
+        if ($request->input('view') === 'general') {
+            return $this->general($request);
+        }
+        $cycles = VotingCycle::latest('id')->get();
+        $cycle = $request->filled('cycle') ? $cycles->firstWhere('id', $request->integer('cycle')) : $cycles->first();
+        $cycleReport = $cycle ? $reports->build($cycle, true) : null;
+
+        return view('reports.cycle', compact('cycles', 'cycle', 'cycleReport'));
+    }
+
+    public function awards(Request $request, AdministrativeAwardReportService $reports): View
+    {
+        $this->authorize('manage-admin');
+        $request->validate([
+            'cycle' => ['nullable', 'integer', 'exists:voting_cycles,id'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
+        ]);
+        $query = VotingCycle::where('status', 'closed')
+            ->when($request->filled('cycle'), fn ($query) => $query->whereKey($request->integer('cycle')))
+            ->when($request->filled('from'), fn ($query) => $query->where('ends_at', '>=', Carbon::parse($request->input('from'), config('innovation.cycle_timezone'))->startOfDay()->utc()))
+            ->when($request->filled('to'), fn ($query) => $query->where('ends_at', '<=', Carbon::parse($request->input('to'), config('innovation.cycle_timezone'))->endOfDay()->utc()));
+        $cycleIds = (clone $query)->select('id');
+        $awards = BonusAward::whereIn('voting_cycle_id', clone $cycleIds);
+        $summary = [
+            'cycles' => (clone $query)->count(),
+            'ideas' => DB::table('idea_voting_cycle')->whereIn('voting_cycle_id', clone $cycleIds)->count(),
+            'approved' => (clone $awards)->whereNotNull('approved_at')->whereNull('rejected_at')->sum('award_amount'),
+            'pending' => (clone $awards)->whereNull('approved_at')->whereNull('rejected_at')->sum('award_amount'),
+        ];
+        $cycles = (clone $query)->latest('ends_at')->orderByDesc('id')->paginate(10)->withQueryString();
+        $groups = $cycles->map(fn ($cycle) => ['cycle' => $cycle, 'report' => $reports->build($cycle)]);
+        $options = VotingCycle::where('status', 'closed')->latest('ends_at')->get(['id', 'name']);
+
+        return view('reports.awards', compact('cycles', 'groups', 'summary', 'options'));
+    }
+
+    public function cycleExport(Request $request, CycleReportService $reports): StreamedResponse
+    {
+        $this->authorize('manage-admin');
+        $data = $request->validate(['cycle' => ['required', 'integer', 'exists:voting_cycles,id']]);
+        $cycle = VotingCycle::findOrFail($data['cycle']);
+        abort_unless($cycle->status === 'closed', 422, 'Apure o ciclo antes de exportar a classificação.');
+        $report = $reports->build($cycle, true);
+
+        return response()->streamDownload(function () use ($report, $cycle) {
+            $stream = fopen('php://output', 'w');
+            fwrite($stream, "\xEF\xBB\xBF");
+            fputcsv($stream, ['Posição', 'Código', 'Ideia', 'Votos válidos', 'Pontuação (0 a 100)', 'Decisão', 'Pendente de aprovação (R$)', 'Total aprovado, inclui divulgado (R$)', 'Divulgado (R$)'], ';', '"', '');
+            foreach ($report['entries'] as $entry) {
+                $row = [$entry['score'] !== null ? $entry['rank'] : '', $entry['code'], $entry['title'], $entry['votes'], $entry['score'] ?? '', ! $cycle->isSelection() ? 'Reconhecimento por resultados' : match ($entry['decision']) {
+                    'selected' => 'Selecionada', 'bank' => 'No banco de ideias', default => 'Aguardando decisão'
+                }, $entry['pending_amount'], $entry['approved_amount'], $entry['published_amount']];
+                fputcsv($stream, array_map(fn ($value) => preg_match('/^[\s]*[=+@-]/u', (string) $value) ? "'".$value : $value, $row), ';', '"', '');
+            }
+            fclose($stream);
+        }, 'resultado-ciclo-'.$cycle->id.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function general(Request $request): View
     {
         $this->authorize('manage-admin');
         $query = $this->query($request);
@@ -36,10 +105,57 @@ class ReportController extends Controller
         $durations = (clone $query)->whereHas('implementationPlan', fn ($q) => $q->whereNotNull('completed_at'))->get()->map(fn ($idea) => $idea->created_at->diffInDays($idea->implementationPlan->completed_at));
         $ids = (clone $query)->pluck('id');
         $awards = BonusAward::whereIn('idea_id', $ids)->whereNotNull('approved_at')->get();
+        $participation = Vote::whereIn('idea_id', $ids)->where('status', 'cast')->distinct()->count('user_id');
+        $voteCount = Vote::whereIn('idea_id', $ids)->where('status', 'cast')->count();
+        $benefitedSectors = DB::table('idea_beneficiary_sectors')->whereIn('idea_id', $ids)->distinct()->count('sector_id');
+        $monthly = [];
+        $stageDurations = [];
+        $benefits = [];
+        foreach ((clone $query)->with('statusHistory', 'originSector')->lazyById(200) as $item) {
+            $month = $item->created_at->format('Y-m');
+            $monthly[$month] = ($monthly[$month] ?? 0) + 1;
+            $orderedEvents = $item->statusHistory->sortBy('id')->values();
+            $events = $orderedEvents->filter(fn ($event, $index) => $index === 0 || $orderedEvents[$index - 1]->to_status !== $event->to_status)->values();
+            foreach ($events->values() as $position => $event) {
+                $next = $events->values()->get($position + 1);
+                if ($next && $next->to_status !== $event->to_status) {
+                    $stageDurations[$event->to_status][] = $event->created_at->diffInHours($next->created_at);
+                }
+            }
+            if (! $item->result?->validated_at) {
+                continue;
+            }
+            foreach ($item->result->measurements ?? [] as $measurement) {
+                if (! isset($measurement['before'], $measurement['after'], $measurement['period_start'], $measurement['period_end']) || ! is_numeric($measurement['before']) || ! is_numeric($measurement['after'])) {
+                    continue;
+                }
+                $key = json_encode([$item->origin_sector_id, $measurement['indicator'], $measurement['unit'], $measurement['period_start'], $measurement['period_end']]);
+                $benefits[$key] ??= ['sector' => $item->originSector?->name ?? 'Sem setor', 'indicator' => $measurement['indicator'], 'unit' => $measurement['unit'], 'from' => $measurement['period_start'], 'to' => $measurement['period_end'], 'difference' => 0, 'count' => 0];
+                $benefits[$key]['difference'] += $measurement['after'] - $measurement['before'];
+                $benefits[$key]['count']++;
+            }
+        }
+        ksort($monthly);
+        if ($monthly) {
+            $month = Carbon::parse(array_key_first($monthly).'-01');
+            $lastMonth = Carbon::parse(array_key_last($monthly).'-01');
+            while ($month->lessThanOrEqualTo($lastMonth)) {
+                $monthly[$month->format('Y-m')] ??= 0;
+                $month->addMonth();
+            }
+            ksort($monthly);
+        }
+        $stageDurations = collect($stageDurations)->map(fn ($values) => array_sum($values) / count($values));
+        $cycleParticipation = VotingCycle::whereHas('ideas', fn ($query) => $query->whereIn('ideas.id', $ids))
+            ->orderByDesc('id')->get()->map(function ($cycle) use ($ids) {
+                $votes = Vote::where('voting_cycle_id', $cycle->id)->whereIn('idea_id', $ids)->where('status', 'cast');
+
+                return ['name' => $cycle->name, 'status' => $cycle->status, 'votes' => (clone $votes)->count(), 'people' => (clone $votes)->distinct()->count('user_id')];
+            });
         $sectors = Sector::orderBy('name')->get();
         $ideas = $query->latest()->paginate(20)->withQueryString();
 
-        return view('reports.index', compact('total', 'implemented', 'distribution', 'durations', 'awards', 'sectors', 'ideas'));
+        return view('reports.index', compact('cycleParticipation', 'monthly', 'stageDurations', 'benefits', 'participation', 'voteCount', 'benefitedSectors', 'total', 'implemented', 'distribution', 'durations', 'awards', 'sectors', 'ideas'));
     }
 
     public function export(Request $request): StreamedResponse
@@ -50,11 +166,11 @@ class ReportController extends Controller
         return response()->streamDownload(function () use ($query) {
             $stream = fopen('php://output', 'w');
             fwrite($stream, "\xEF\xBB\xBF");
-            fputcsv($stream, ['Código', 'Título revisado', 'Status', 'Data de envio', 'Indicador', 'Antes', 'Depois', 'Unidade', 'Diferença', 'Percentual', 'Data da validação'], ';', '"', '');
+            fputcsv($stream, ['Código', 'Título revisado', 'Status', 'Data de envio', 'Indicador', 'Antes', 'Depois', 'Unidade', 'Diferença', 'Percentual', 'Data da validação', 'Setor de origem', 'Início da medição', 'Fim da medição'], ';', '"', '');
             foreach ($query->lazyById() as $idea) {
                 $measurements = $idea->result?->validated_at ? $idea->result->measurements : [];
                 foreach ($measurements ?: [[]] as $measurement) {
-                    $row = [$idea->idea_code, $idea->publication['title'] ?? 'Publicação pendente', Idea::LABELS[$idea->status] ?? $idea->status, $idea->created_at->format('d/m/Y'), $measurement['indicator'] ?? '', $measurement['before'] ?? '', $measurement['after'] ?? '', $measurement['unit'] ?? '', $measurement['difference'] ?? '', $measurement['percentage'] ?? '', $idea->result?->validated_at?->format('d/m/Y') ?? ''];
+                    $row = [$idea->idea_code, $idea->publication['title'] ?? 'Publicação pendente', Idea::LABELS[$idea->status] ?? $idea->status, $idea->created_at->format('d/m/Y'), $measurement['indicator'] ?? '', $measurement['before'] ?? '', $measurement['after'] ?? '', $measurement['unit'] ?? '', $measurement['difference'] ?? '', $measurement['percentage'] ?? '', $idea->result?->validated_at?->format('d/m/Y') ?? '', $idea->originSector?->name ?? '', $measurement['period_start'] ?? '', $measurement['period_end'] ?? ''];
                     fputcsv($stream, array_map(fn ($value) => preg_match('/^[\s]*[=+@-]/u', (string) $value) ? "'".$value : $value, $row), ';', '"', '');
                 }
             }

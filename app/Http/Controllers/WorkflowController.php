@@ -9,6 +9,7 @@ use App\Models\EvaluationCriterion;
 use App\Models\Idea;
 use App\Models\IdeaStatusHistory;
 use App\Models\Notification;
+use App\Models\User;
 use App\Services\IdeaWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,16 +61,54 @@ class WorkflowController extends Controller
         return back()->with('success', 'Publicação revisada disponibilizada.');
     }
 
+    public function reviewProposal(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
+    {
+        $this->authorize('evaluate', $idea);
+        $rules = ['decision' => ['required', 'in:release,adjust,archive'], 'notes' => ['required', 'string', 'min:10', 'max:10000']];
+        if ($request->input('decision') === 'release') {
+            $rules += ['title' => ['required', 'string', 'max:255'], 'problem' => ['required', 'string', 'max:10000'], 'solution' => ['required', 'string', 'max:10000'], 'results' => ['nullable', 'string', 'max:20000'], 'category' => ['nullable', 'string', 'max:255'], 'privacy_reviewed' => ['accepted']];
+        }
+        $data = $request->validate($rules);
+        if ($data['decision'] === 'release') {
+            $data['results'] = $data['results'] ?? 'Benefícios ainda não estimados. Avalie o potencial da proposta.';
+            $data['category'] = $data['category'] ?? 'Melhoria';
+        }
+        $workflow->reviewProposal($request->user(), $idea, $data);
+
+        return back()->with('success', match ($data['decision']) {
+            'release' => 'Ideia liberada para votação. Inclua em um ciclo; a execução será decidida depois.',
+            'adjust' => 'Pedido de ajuste enviado aos participantes.',
+            default => 'Ideia arquivada com justificativa. O histórico foi preservado.',
+        });
+    }
+
+    public function publishProposal(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
+    {
+        $this->authorize('evaluate', $idea);
+        $data = $request->validate(['title' => ['required', 'string', 'max:255'], 'problem' => ['required', 'string', 'max:10000'], 'solution' => ['required', 'string', 'max:10000'], 'results' => ['required', 'string', 'max:20000'], 'category' => ['required', 'string', 'max:255'], 'privacy_reviewed' => ['accepted']]);
+        unset($data['privacy_reviewed']);
+        $workflow->publishProposal($request->user(), $idea, $data);
+
+        return back()->with('success', 'Proposta revisada e disponível para seleção, sem exigir implementação.');
+    }
+
     public function reply(Request $request, Idea $idea, IdeaWorkflowService $workflow): RedirectResponse
     {
         $this->authorize('view', $idea);
-        abort_unless((int) $idea->author_id === (int) $request->user()->id, 403);
+        abort_unless($idea->isContributor($request->user()), 403);
         $data = $request->validate(['notes' => ['required', 'string', 'max:10000']]);
         DB::transaction(function () use ($request, $idea, $workflow, $data) {
             $idea = $workflow->lockIdea($idea->id);
             $workflow->requireStatus($idea, ['awaiting_information']);
             $workflow->audit($request->user(), $idea, 'clarification_received', ['notes' => $data['notes']]);
+            $reviewers = User::permission('evaluate_ideas')->whereNull('blocked_at')->get();
+            foreach ($reviewers as $reviewer) {
+                if ($reviewer->can('evaluate', $idea)) {
+                    $workflow->notify($reviewer->id, 'Esclarecimento recebido', 'Há nova resposta privada em '.$idea->idea_code.'.', 'clarification_received');
+                }
+            }
             IdeaStatusHistory::create(['idea_id' => $idea->id, 'from_status' => $idea->status, 'to_status' => $idea->status, 'changed_by_user_id' => $request->user()->id, 'notes' => 'Resposta do autor: '.$data['notes']]);
+            IdeaStatusHistory::record($idea, 'submitted', $request->user(), 'Ajuste respondido; aguardando nova revisão.');
         });
 
         return back()->with('success', 'Esclarecimento enviado à equipe de avaliação.');
@@ -100,7 +139,7 @@ class WorkflowController extends Controller
             AuditLog::create(['causer_id' => $request->user()->id, 'model_type' => EvaluationCriterion::class, 'model_id' => $criterion->id, 'action' => 'criterion_created', 'details' => $data]);
         });
 
-        return back()->with('success', 'Critério técnico criado.');
+        return redirect()->route('admin.criteria.index')->with('success', 'Critério técnico criado.');
     }
 
     public function notifications(Request $request): View

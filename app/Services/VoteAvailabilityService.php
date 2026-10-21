@@ -14,7 +14,7 @@ class VoteAvailabilityService
         if ($vote) {
             return $this->unavailable($vote->status === 'cast' ? 'Seu voto já foi registrado. Obrigado por participar!' : 'Seu voto passou por uma revisão administrativa. Consulte suas notificações.', 'registered');
         }
-        if ((int) $idea->author_id === (int) $user->id) {
+        if ($idea->isContributor($user)) {
             return $this->unavailable('Esta ideia é sua. Você pode acompanhar a votação, mas não votar nela.', 'own');
         }
         if ($idea->hasConflict($user)) {
@@ -27,9 +27,9 @@ class VoteAvailabilityService
             return $this->unavailable('Esta votação foi encerrada. Você pode consultar os resultados quando a apuração terminar.', 'closed');
         }
         if (now()->lt($cycle->starts_at)) {
-            return $this->unavailable('Você poderá votar a partir de '.$cycle->starts_at->format('d/m/Y H:i').'.', 'scheduled');
+            return $this->unavailable('Você poderá votar a partir de '.$cycle->local_starts_at->format('d/m/Y H:i').'.', 'scheduled');
         }
-        if (! $cycle->frozen_configuration || ! $user->can('vote', $idea)) {
+        if (! $cycle->frozen_configuration || ! $user->can($cycle->isSelection() ? 'voteInSelection' : 'vote', $idea)) {
             return $this->unavailable('Esta ideia ainda não está disponível para receber votos.', 'unavailable');
         }
 

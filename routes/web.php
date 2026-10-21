@@ -5,10 +5,12 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CycleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\GovernanceController;
 use App\Http\Controllers\IdeaController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TechnicalCriterionController;
 use App\Http\Controllers\WorkflowController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,15 +19,36 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/ideas/{idea}/review', [WorkflowController::class, 'reviewProposal'])->name('ideas.review-decision');
+    Route::post('/ideas/{idea}/proposal-publication', [WorkflowController::class, 'publishProposal'])->name('ideas.publish-proposal');
+    Route::post('/cycles/{cycle}/ideas/{idea}/decision', [CycleController::class, 'decide'])->name('cycles.decision');
+    Route::patch('/evaluation-criteria/{criterion}', [GovernanceController::class, 'criterion'])->name('criteria.update');
+    Route::patch('/cycles/{cycle}/draft', [GovernanceController::class, 'draft'])->name('cycles.draft');
+    Route::post('/cycles/{cycle}/cancel', [GovernanceController::class, 'cancel'])->name('cycles.cancel');
+    Route::post('/cycles/{cycle}/ideas/{idea}/review', [GovernanceController::class, 'review'])->name('cycles.review');
+    Route::post('/cycles/{cycle}/ideas/{idea}/finalize', [GovernanceController::class, 'finalize'])->name('cycles.finalize');
+    Route::put('/ideas/{idea}/contributors', [GovernanceController::class, 'contributors'])->name('ideas.contributors');
+    Route::post('/ideas/{idea}/documents', [GovernanceController::class, 'upload'])->middleware('throttle:10,1')->name('ideas.documents.store');
+    Route::get('/ideas/{idea}/documents/{document}', [GovernanceController::class, 'download'])->whereNumber('document')->middleware('throttle:30,1')->name('ideas.documents.download');
+    Route::patch('/ideas/{idea}/documents/{document}/review', [GovernanceController::class, 'reviewDocument'])->whereNumber('document')->middleware('password.confirm')->name('ideas.documents.review');
+    Route::get('/privacy/export', [GovernanceController::class, 'export'])->middleware(['password.confirm', 'throttle:3,1'])->name('privacy.export');
+    Route::post('/privacy/requests', [GovernanceController::class, 'privacy'])->middleware(['password.confirm', 'throttle:3,1'])->name('privacy.request');
+    Route::get('/admin/privacy', [GovernanceController::class, 'privacyIndex'])->name('admin.privacy');
+    Route::post('/admin/privacy/{privacy}', [GovernanceController::class, 'privacyDecision'])->whereNumber('privacy')->name('admin.privacy.decision');
+
     Route::post('/votes/{vote}/invalidate', [CycleController::class, 'invalidateVote'])->name('votes.invalidate');
     Route::get('/cycles', [CycleController::class, 'index'])->name('cycles.index');
     Route::post('/cycles', [CycleController::class, 'store'])->name('cycles.store');
+    Route::get('/cycles/create', [CycleController::class, 'create'])->name('cycles.create');
     Route::get('/cycles/{cycle}', [CycleController::class, 'show'])->name('cycles.show');
     Route::post('/cycles/{cycle}/open', [CycleController::class, 'open'])->name('cycles.open');
     Route::post('/cycles/{cycle}/close', [CycleController::class, 'close'])->name('cycles.close');
+    Route::post('/awards/{award}/reject', [GovernanceController::class, 'rejectAward'])->name('awards.reject');
     Route::post('/awards/{award}/approve', [CycleController::class, 'approve'])->name('awards.approve');
     Route::post('/awards/{award}/publish', [CycleController::class, 'publish'])->name('awards.publish');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/awards', [ReportController::class, 'awards'])->name('reports.awards');
+    Route::get('/reports/cycle-export', [ReportController::class, 'cycleExport'])->name('reports.cycle-export');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/audit', [ReportController::class, 'audit'])->name('audit.index');
     Route::post('/evaluation-criteria', [WorkflowController::class, 'criterion'])->name('criteria.store');
@@ -42,6 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/ideas', [IdeaController::class, 'index'])->name('ideas.index');
+    Route::delete('/ideas/bulk-delete', [IdeaController::class, 'bulkDestroy'])->middleware('throttle:6,1')->name('ideas.bulk-destroy');
     Route::get('/ideas/create', [IdeaController::class, 'create'])->name('ideas.create');
     Route::post('/ideas', [IdeaController::class, 'store'])->name('ideas.store');
     Route::post('/ideas/review', [IdeaController::class, 'review'])->name('ideas.review');
@@ -58,10 +82,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/admin/users/{user}', [AdminUserController::class, 'update'])->withTrashed()->name('admin.users.update');
     Route::post('/admin/users/{user}/block', [AdminUserController::class, 'block'])->name('admin.users.block');
     Route::post('/admin/users/{user}/reactivate', [AdminUserController::class, 'reactivate'])->withTrashed()->name('admin.users.reactivate');
+    Route::post('/admin/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->middleware('throttle:6,1')->name('admin.users.reset-password');
+    Route::post('/admin/users/{user}/access-link', [AdminUserController::class, 'accessLink'])->middleware(['password.confirm', 'throttle:6,1'])->name('admin.users.access-link');
     Route::post('/admin/users/{user}/verification', [AdminUserController::class, 'resendVerification'])->middleware('throttle:6,1')->name('admin.users.verification');
     Route::get('/admin/organization', [OrganizationController::class, 'index'])->name('admin.organization');
+    Route::get('/admin/sectors', [OrganizationController::class, 'sectors'])->name('admin.sectors.index');
+    Route::get('/admin/criteria', [TechnicalCriterionController::class, 'index'])->name('admin.criteria.index');
+    Route::get('/admin/criteria/create', [TechnicalCriterionController::class, 'create'])->name('admin.criteria.create');
+    Route::get('/admin/criteria/{criterion}/edit', [TechnicalCriterionController::class, 'edit'])->name('admin.criteria.edit');
     Route::get('/admin/sectors/create', [OrganizationController::class, 'sectorForm'])->name('admin.sectors.create');
     Route::get('/admin/sectors/{sector}/edit', [OrganizationController::class, 'sectorForm'])->name('admin.sectors.edit');
+    Route::get('/admin/sectors/{sector}', [OrganizationController::class, 'sectorShow'])->name('admin.sectors.show');
+    Route::patch('/admin/sectors/{sector}/members/{user}', [OrganizationController::class, 'sectorMember'])->name('admin.sectors.members');
     Route::post('/admin/sectors', [OrganizationController::class, 'saveSector'])->name('admin.sectors.store');
     Route::patch('/admin/sectors/{sector}', [OrganizationController::class, 'saveSector'])->name('admin.sectors.update');
     Route::get('/admin/teams/create', [OrganizationController::class, 'teamForm'])->name('admin.teams.create');

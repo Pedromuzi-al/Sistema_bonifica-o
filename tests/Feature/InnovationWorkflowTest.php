@@ -365,7 +365,7 @@ class InnovationWorkflowTest extends TestCase
         $data['starts_at'] = now()->subHour()->format('Y-m-d H:i:s');
 
         $this->actingAs($this->admin)->post(route('cycles.store'), $data)
-            ->assertSessionHasErrors(['starts_at' => 'Escolha uma data e um horário de início futuros. Você precisa de tempo para selecionar as ideias e abrir o ciclo.']);
+            ->assertSessionHasErrors(['starts_at' => 'O início precisa ser depois de agora. Pode ser hoje: escolha um horário futuro e abra o ciclo antes dele.']);
     }
 
     public function test_employee_can_view_cycles_without_admin_setup(): void
@@ -373,15 +373,15 @@ class InnovationWorkflowTest extends TestCase
         $this->actingAs($this->voter)->get(route('cycles.index'))
             ->assertOk()
             ->assertSeeText('Ciclos cadastrados')
-            ->assertDontSeeText('Criar um ciclo')
-            ->assertViewHas('indicatorOptions', fn ($options) => $options->isEmpty());
+            ->assertDontSeeText('Criar ciclo de seleção de ideias')->assertDontSeeText('Criar um ciclo')
+            ->assertDontSeeText('Novo ciclo');
     }
 
     public function test_cycle_setup_suggests_indicators_from_completed_publications(): void
     {
         $this->readyIdea();
         $this->readyIdea();
-        $response = $this->actingAs($this->admin)->get(route('cycles.index'));
+        $response = $this->actingAs($this->admin)->get(route('cycles.create', ['purpose' => 'recognition']));
 
         $response->assertOk()->assertViewHas('indicatorOptions', fn ($options) => $options->all() === [
             ['indicator' => 'Tempo', 'unit' => 'horas'],
@@ -391,7 +391,7 @@ class InnovationWorkflowTest extends TestCase
 
     public function test_new_pages_render_with_appropriate_permissions(): void
     {
-        $this->actingAs($this->admin)->get(route('cycles.index'))->assertOk()->assertSeeText('Criar um ciclo');
+        $this->actingAs($this->admin)->get(route('cycles.create'))->assertOk()->assertSeeText('Criar ciclo de seleção de ideias');
         $response = $this->post(route('cycles.store'), $this->cycleData())->assertSessionHasNoErrors();
         $cycle = VotingCycle::where('name', 'Ciclo controlado')->firstOrFail();
         $response->assertRedirect(route('cycles.show', $cycle));

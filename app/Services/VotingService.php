@@ -20,7 +20,7 @@ class VotingService
             DB::transaction(function () use ($user, $idea, $data) {
                 $cycle = $this->workflow->lockCycle($data['voting_cycle_id']);
                 $idea = $this->workflow->lockIdea($idea->id);
-                Gate::forUser($user)->authorize('vote', $idea);
+                Gate::forUser($user)->authorize($cycle->isSelection() ? 'voteInSelection' : 'vote', $idea);
                 if ($cycle->status !== 'open' || ! $cycle->frozen_configuration || now()->lt($cycle->starts_at) || now()->gte($cycle->ends_at) || ! $cycle->ideas()->where('ideas.id', $idea->id)->exists()) {
                     throw ValidationException::withMessages(['vote' => 'A ideia não está elegível em um ciclo aberto neste período.']);
                 }

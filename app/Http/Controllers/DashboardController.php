@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BonusAward;
 use App\Models\Idea;
 use App\Models\VotingCycle;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -16,7 +17,7 @@ class DashboardController extends Controller
         $ideaStats = Idea::query();
 
         if (! $canReview) {
-            $ideaStats->where('author_id', $user->id);
+            $ideaStats->where(fn ($q) => $q->where('author_id', $user->id)->orWhereIn('id', DB::table('idea_contributors')->where('user_id', $user->id)->select('idea_id')));
         }
 
         $stats = [
@@ -32,10 +33,10 @@ class DashboardController extends Controller
             'open_votes' => VotingCycle::whereNotNull('frozen_configuration')->where('status', 'open')->where('starts_at', '<=', now())->where('ends_at', '>', now())->count(),
         ];
 
-        $recentIdeas = Idea::with('originSector')
+        $recentIdeas = Idea::with('originSector', 'contributors:id')
             ->when(! $canReview, function ($query) use ($user) {
                 $query->where(function ($query) use ($user) {
-                    $query->where('author_id', $user->id);
+                    $query->where(fn ($q) => $q->where('author_id', $user->id)->orWhereIn('id', DB::table('idea_contributors')->where('user_id', $user->id)->select('idea_id')));
                     if ($user->canViewPublicIdeas()) {
                         $query->orWhere('is_public', true);
                     }
@@ -46,7 +47,13 @@ class DashboardController extends Controller
             ->get();
         $notifications = $user ? $user->notifications()->latest()->limit(5)->get() : collect();
 
-        $awards = BonusAward::where('user_id', $user->id)->whereNotNull('published_at')->with('idea')->latest()->get();
+        $awards = BonusAward::where(fn ($q) => $q->where('user_id', $user->id)->orWhereIn('id', DB::table('award_allocations')->where('user_id', $user->id)->select('bonus_award_id')))->whereNotNull('published_at')->with('idea')->latest()->get();
+        $allocations = DB::table('award_allocations')->where('user_id', $user->id)->pluck('amount', 'bonus_award_id');
+        foreach ($awards as $award) {
+            if ($allocations->has($award->id)) {
+                $award->award_amount = $allocations[$award->id];
+            }
+        }
         $participation = $user->votes()->count();
 
         return view('dashboard', compact('stats', 'recentIdeas', 'notifications', 'awards', 'participation'));

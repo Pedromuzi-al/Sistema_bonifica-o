@@ -33,8 +33,8 @@ class StoreIdeaRequest extends FormRequest
             'origin_sector_id' => ['required', 'integer', Rule::exists('sectors', 'id')->where('is_active', true)],
             'beneficiary_sectors' => ['required', 'array', 'min:1'],
             'beneficiary_sectors.*' => ['integer', 'distinct', Rule::exists('sectors', 'id')->where('is_active', true)],
-            'expected_results' => ['required', 'string', 'max:20000'],
-            'resources_needed' => ['required', 'string', 'max:20000'],
+            'expected_results' => ['nullable', 'string', 'max:20000'],
+            'resources_needed' => ['nullable', 'string', 'max:20000'],
             'additional_information' => ['nullable', 'string', 'max:20000'],
         ];
     }

@@ -33,9 +33,11 @@
 
         <button type="submit" class="apple-button w-full">Entrar</button>
 
+        @if(config('innovation.registration_enabled'))
         <div class="pt-2 text-center text-sm text-slate-600">
             Ainda não tem conta?
             <a href="{{ route('register') }}" class="font-semibold text-slate-900 hover:text-sky-600">Criar conta</a>
         </div>
+        @else<p class="pt-2 text-center text-sm text-slate-600">Para obter acesso, procure a administração da empresa.</p>@endif
     </form>
 </x-guest-layout>

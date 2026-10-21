@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class Idea extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\SoftDeletes;
 
     public const STATUS_SUBMITTED = 'submitted';
 
@@ -42,15 +42,15 @@ class Idea extends Model
     public const STATUS_FINALIZED = 'finalized';
 
     public const LABELS = [
-        'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
-        'awaiting_information' => 'Aguardando informações', 'approved' => 'Aprovada',
+        'ready_for_voting' => 'Liberada para votação', 'archived' => 'Arquivada', 'idea_bank' => 'No banco de ideias', 'submitted' => 'Enviada', 'triage' => 'Em triagem', 'evaluation' => 'Em avaliação',
+        'awaiting_information' => 'Precisa de ajuste', 'approved' => 'Aprovada',
         'implementation' => 'Em implementação', 'implemented' => 'Implementada (legado)',
         'validation' => 'Em validação de resultados', 'completed' => 'Concluída',
         'voting' => 'Disponível para votação', 'voting_closed' => 'Votação encerrada',
         'finalized' => 'Finalizada', 'rejected' => 'Rejeitada',
     ];
 
-    protected $hidden = ['author_id', 'author', 'published_by_user_id'];
+    protected $hidden = ['author_id', 'author', 'published_by_user_id', 'contributors'];
 
     protected $fillable = [
         'publication', 'published_by_user_id', 'published_at',
@@ -74,15 +74,36 @@ class Idea extends Model
 
     protected static function booted(): void
     {
-        static::deleting(fn () => throw new \LogicException('Ideias devem ser preservadas pelo procedimento de retenção.'));
+        static::deleting(function (self $idea) {
+            if ($idea->isForceDeleting()) {
+                throw new \LogicException('A exclusão definitiva exige o procedimento de retenção.');
+            }
+        });
         static::creating(function (self $idea) {
             $idea->idea_code ??= 'IDE-'.strtoupper(Str::random(8));
         });
     }
 
+    public function isContributor(User $user): bool
+    {
+        return (int) $this->author_id === (int) $user->id || ($this->relationLoaded('contributors') ? $this->contributors->contains('id', $user->id) : DB::table('idea_contributors')->where('idea_id', $this->id)->where('user_id', $user->id)->exists());
+    }
+
+    public function contributors(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'idea_contributors')->withTrashed()->withPivot('share');
+    }
+
+    public function recognitionShares(): array
+    {
+        $shares = DB::table('idea_contributors')->where('idea_id', $this->id)->orderBy('user_id')->pluck('share', 'user_id')->all();
+
+        return $shares ?: [$this->author_id => 100];
+    }
+
     public function hasConflict(User $user): bool
     {
-        return (int) $this->author_id === (int) $user->id
+        return $this->isContributor($user)
             || DB::table('idea_conflicts')->where('idea_id', $this->id)->where('user_id', $user->id)->exists();
     }
 
@@ -119,6 +140,18 @@ class Idea extends Model
     public function result(): HasOne
     {
         return $this->hasOne(IdeaResult::class);
+    }
+
+    public function canRecordTechnicalEvaluation(): bool
+    {
+        return $this->status === 'evaluation'
+            || (in_array($this->status, ['approved', 'implementation', 'validation', 'completed'], true)
+                && DB::table('cycle_idea_decisions')->where('idea_id', $this->id)->where('decision', 'selected')->exists());
+    }
+
+    public function votingCycles(): BelongsToMany
+    {
+        return $this->belongsToMany(VotingCycle::class, 'idea_voting_cycle')->withPivot('snapshot', 'outcome');
     }
 
     public function votes(): HasMany

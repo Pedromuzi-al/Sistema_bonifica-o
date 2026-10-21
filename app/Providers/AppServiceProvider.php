@@ -10,9 +10,11 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        DB::prohibitDestructiveCommands($this->app->isProduction());
+        Password::defaults(fn () => $this->app->isProduction()
+            ? Password::min(12)->mixedCase()->numbers()
+            : Password::min(8));
+
         ResetPassword::toMailUsing(function ($user, string $token) {
             $url = route('password.reset', ['token' => $token, 'email' => $user->email]);
 

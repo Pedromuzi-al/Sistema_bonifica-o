@@ -30,8 +30,8 @@ class IdeaFlowTest extends TestCase
                 'title' => 'Melhoria do atendimento interno',
                 'problem_description' => 'O atendimento interno demora muito por causa de filas.',
                 'solution_description' => 'Automatizar o encaminhamento com classificação por urgência.',
-                'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
-                'beneficiary_sectors' => [Sector::where('name', 'Operações')->value('id')],
+                'origin_sector_id' => Sector::where('name', 'Produto')->value('id'),
+                'beneficiary_sectors' => [Sector::where('name', 'Produto')->value('id')],
                 'expected_results' => 'Redução de tempo e maior rastreabilidade.',
                 'resources_needed' => 'Um desenvolvedor e uma semana de configuração.',
             ])
@@ -55,7 +55,7 @@ class IdeaFlowTest extends TestCase
                 'title' => 'Melhoria para todos os setores',
                 'problem_description' => 'Os setores precisam de um fluxo compartilhado.',
                 'solution_description' => 'Disponibilizar uma solução comum para todos.',
-                'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+                'origin_sector_id' => Sector::where('name', 'Produto')->value('id'),
                 'beneficiary_sectors' => $sectorIds,
                 'expected_results' => 'Mais integração entre áreas.',
                 'resources_needed' => 'Equipe multidisciplinar.',
@@ -79,7 +79,7 @@ class IdeaFlowTest extends TestCase
         $voter = User::factory()->create(['email' => 'voter@corp.local', 'name' => 'Votante']);
         $voter->assignRole('employee');
 
-        $sector = Sector::where('name', 'Operações')->value('id');
+        $sector = Sector::where('name', 'Produto')->value('id');
         $idea = Idea::create([
             'author_id' => $author->id,
             'origin_sector_id' => $sector,
@@ -123,7 +123,7 @@ class IdeaFlowTest extends TestCase
 
         $idea = Idea::create([
             'author_id' => $author->id,
-            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'origin_sector_id' => Sector::where('name', 'Produto')->value('id'),
             'title' => 'Ideia anonima',
             'problem_description' => 'Descrição',
             'solution_description' => 'Solução',
@@ -151,7 +151,7 @@ class IdeaFlowTest extends TestCase
 
         $idea = Idea::create([
             'author_id' => $author->id,
-            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'origin_sector_id' => Sector::where('name', 'Produto')->value('id'),
             'title' => 'Proposta privada',
             'problem_description' => 'Descrição',
             'solution_description' => 'Solução',
@@ -199,7 +199,7 @@ class IdeaFlowTest extends TestCase
         $employee = User::where('email', 'funcionario@corp.local')->first();
         $idea = Idea::create([
             'author_id' => $employee->id,
-            'origin_sector_id' => Sector::where('name', 'Operações')->value('id'),
+            'origin_sector_id' => Sector::where('name', 'Produto')->value('id'),
             'title' => 'Ideia restrita',
             'problem_description' => 'Descrição',
             'solution_description' => 'Solução',

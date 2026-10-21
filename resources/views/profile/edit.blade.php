@@ -68,6 +68,9 @@
             </section>
 
             @if (! $isAdminViewingAnotherUser)
+                @include('profile.partials.privacy')
+            @endif
+            @if (! $isAdminViewingAnotherUser)
                 <section class="apple-card p-5 sm:p-8">
                     <div class="mb-6">
                         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Segurança</p>
@@ -158,6 +161,7 @@
                     </div>
                 @endif
             </section>
+
 
             @if (! $isAdminViewingAnotherUser)
                 <section class="apple-card border-rose-100 p-5 sm:p-8">

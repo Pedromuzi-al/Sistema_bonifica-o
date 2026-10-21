@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -37,6 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'access_version' => 'integer',
             'invitation_pending' => 'boolean',
             'blocked_at' => 'datetime',
+            'anonymized_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
@@ -58,13 +60,21 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAvailable(): bool
     {
-        return ! $this->trashed() && $this->blocked_at === null;
+        return ! $this->trashed() && $this->anonymized_at === null && $this->blocked_at === null;
     }
 
     public function hasAdministrativeAccess(): bool
     {
-        return $this->isAvailable() && $this->hasVerifiedEmail()
+        return $this->isAvailable() && ! $this->invitation_pending
+            && (! config('innovation.email_verification_required') || $this->hasVerifiedEmail())
             && ($this->hasRole('admin') || $this->hasSystemPermission('manage_admin'));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        if (config('innovation.email_verification_required')) {
+            $this->notify(new VerifyEmail);
+        }
     }
 
     public function sector()

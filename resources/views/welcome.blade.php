@@ -32,7 +32,7 @@
                             @if (Route::has('login'))
                                 <a href="{{ route('login') }}" class="apple-button--light">Entrar</a>
                             @endif
-                            @if (Route::has('register'))
+                            @if (Route::has('register') && config('innovation.registration_enabled'))
                                 <a href="{{ route('register') }}" class="apple-button--primary">Cadastrar</a>
                             @endif
                         @endauth
@@ -54,7 +54,7 @@
                         </div>
 
                         <div class="flex flex-wrap gap-4 hero-animate-delay-2">
-                            @if (Route::has('register'))
+                            @if (Route::has('register') && config('innovation.registration_enabled'))
                                 <a href="{{ route('register') }}" class="apple-button--primary">Começar agora</a>
                             @endif
                             @if (Route::has('login'))

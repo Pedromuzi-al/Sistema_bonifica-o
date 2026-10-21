@@ -15,10 +15,13 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="apple-shell min-h-screen text-slate-900 antialiased">
-        <div class="min-h-screen">
+    <body class="apple-shell app-workspace min-h-screen text-slate-900 antialiased">
+        <a href="#main-content" class="skip-navigation">Pular para o conteúdo</a>
+        <div class="app-frame min-h-screen" x-data="layoutSidebar" @focusin="lastFocused = $event.target" :class="{'sidebar-open': sidebarOpen}" @keydown.escape.window="closeMenu()">
+
             @include('layouts.navigation')
 
+            <div class="app-content" :inert="mobile && sidebarOpen">
             @isset($header)
                 <header class="border-b border-slate-200/80 bg-white/45 backdrop-blur-xl">
                     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -27,16 +30,17 @@
                 </header>
             @endisset
 
-            <main>
+            <main id="main-content" tabindex="-1">
                 <div class="mx-auto max-w-7xl px-4 pt-4" role="status">
                     @if (session('success'))<p class="rounded-lg bg-emerald-50 p-4 text-emerald-800">{{ session('success') }}</p>@endif
                     @if ($errors->any())<ul class="rounded-lg bg-rose-50 p-4 text-rose-800" role="alert">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@endif
                 </div>
                 {{ $slot }}
             </main>
+            </div>
         </div>
 
-        <div id="permission-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+        <div id="permission-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
             <div class="w-full max-w-md rounded-[28px] border border-white/10 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.22)]">
                 <div class="flex items-center gap-3">
                     <div class="flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-xl text-amber-600">!</div>

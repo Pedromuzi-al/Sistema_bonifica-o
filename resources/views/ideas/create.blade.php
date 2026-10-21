@@ -42,8 +42,8 @@
             </fieldset>
             <fieldset data-step="3" x-show="step === 3" class="space-y-5">
                 <legend class="mb-4 text-xl font-bold" tabindex="-1">3. O que pode melhorar com essa ideia?</legend>
-                <x-workflow-field name="expected_results" label="Que benefícios você espera?" type="textarea" placeholder="Ex.: Menos pedidos esquecidos e menos tempo procurando informações. Não precisa calcular valores agora." maxlength="20000" />
-                <x-workflow-field name="resources_needed" label="O que seria necessário para colocar em prática?" type="textarea" placeholder="Ex.: Uma planilha e uma conversa com a equipe. Se ainda não souber, escreva isso aqui." maxlength="20000" />
+                <x-workflow-field name="expected_results" label="Que benefícios você espera? (opcional)" :required="false" type="textarea" placeholder="Ex.: Menos pedidos esquecidos e menos tempo procurando informações. Não precisa calcular valores agora." maxlength="20000" />
+                <x-workflow-field name="resources_needed" label="O que seria necessário para colocar em prática? (opcional)" :required="false" type="textarea" placeholder="Ex.: Uma planilha e uma conversa com a equipe. Se ainda não souber, escreva isso aqui." maxlength="20000" />
                 <details class="rounded-xl border border-slate-200 p-4" @if(old('additional_information')) open @endif>
                     <summary class="cursor-pointer font-medium">Quer acrescentar alguma coisa? (opcional)</summary>
                     <div class="mt-3"><x-workflow-field name="additional_information" label="Exemplos ou observações" type="textarea" :required="false" maxlength="20000" /></div>
