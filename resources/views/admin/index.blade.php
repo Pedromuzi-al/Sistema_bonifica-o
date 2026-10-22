@@ -15,15 +15,14 @@
     @endphp
 
     <div class="py-8 sm:py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-            <section aria-label="Áreas da administração" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="mx-auto max-w-7xl stack-6 px-4 sm:px-6 lg:px-8">
+            <section aria-label="Áreas da administração" class="grid gap-4 sm:grid-cols-3">
                 @foreach([
                     ['title'=>'Setores','icon'=>'home','count'=>$moduleCounts['sectors'],'description'=>'Setores ativos e inativos e seus vínculos.','route'=>'admin.sectors.index'],
                     ['title'=>'Pessoas e acessos','icon'=>'user','count'=>$moduleCounts['users'],'description'=>'Cadastro, perfis, permissões, bloqueio e reativação.','route'=>'admin.users.index'],
-                    ['title'=>'Critérios técnicos','icon'=>'check','count'=>$moduleCounts['criteria'],'description'=>'Critérios de avaliação, pesos e situação.','route'=>'admin.criteria.index'],
                     ['title'=>'Equipes','icon'=>'settings','count'=>$moduleCounts['teams'],'description'=>'Organização das equipes e participantes.','route'=>'admin.organization'],
                 ] as $module)
-                    <a href="{{ route($module['route']) }}" class="apple-card block space-y-3 p-5"><x-sidebar-icon :name="$module['icon']" /><p class="text-3xl font-bold">{{ $module['count'] }}</p><h3 class="font-bold">{{ $module['title'] }}</h3><p class="text-sm text-slate-600">{{ $module['description'] }}</p></a>
+                    <a href="{{ route($module['route']) }}" class="apple-card block stack-3 p-5"><x-sidebar-icon :name="$module['icon']" /><p class="text-3xl font-bold">{{ $module['count'] }}</p><h3 class="font-bold">{{ $module['title'] }}</h3><p class="text-sm text-slate-600">{{ $module['description'] }}</p></a>
                 @endforeach
             </section>
             @if(auth()->user()->hasSystemPermission('view_audit_logs'))<a href="{{ route('admin.privacy') }}" class="apple-button--light">Solicitações de privacidade</a>@endif

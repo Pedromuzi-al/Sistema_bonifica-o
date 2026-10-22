@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">{{ $criterion->exists ? 'Editar critério técnico' : 'Novo critério técnico' }}</h2></x-slot>
-    <div class="mx-auto max-w-3xl space-y-5 px-4 py-8">
+    <div class="mx-auto max-w-3xl stack-5 px-4 py-8">
         <a href="{{ route('admin.criteria.index') }}" class="text-sky-700 underline">← Voltar para critérios técnicos</a>
-        <form class="apple-card space-y-5 p-6" method="POST" action="{{ $criterion->exists ? route('criteria.update',$criterion) : route('criteria.store') }}">@csrf @if($criterion->exists) @method('PATCH') @endif
+        <form class="apple-card stack-5 p-6" method="POST" action="{{ $criterion->exists ? route('criteria.update',$criterion) : route('criteria.store') }}">@csrf @if($criterion->exists) @method('PATCH') @endif
             <x-workflow-field name="name" label="Nome" :value="$criterion->name" maxlength="255" />
             <x-workflow-field name="description" label="Descrição e orientação das notas" type="textarea" :value="$criterion->description" maxlength="1000" />
             <x-workflow-field name="weight" label="Peso relativo" type="number" min="0.01" max="100" step="0.01" :value="$criterion->weight" />

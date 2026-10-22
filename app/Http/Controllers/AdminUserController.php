@@ -66,7 +66,7 @@ class AdminUserController extends Controller
     {
         $user = $administration->createUser($request->user(), $request->validated());
         if (config('innovation.invitation_delivery') === 'manual') {
-            return redirect()->route('admin.users.edit', $user)->with('success', 'Pessoa cadastrada. Gere o link de primeiro acesso para o titular definir a própria senha.');
+            return redirect()->route('admin.users.edit', $user)->with('success', 'Pessoa cadastrada. Use Redefinir senha para definir a senha de primeiro acesso.');
         }
         $this->sendInvitation($user);
 
@@ -123,7 +123,6 @@ class AdminUserController extends Controller
     public function resetPassword(Request $request, User $user, AdministrationService $administration): RedirectResponse
     {
         $this->authorize('manage-admin');
-        abort_unless(config('innovation.invitation_delivery') === 'manual', 404);
         $data = $request->validate([
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], [

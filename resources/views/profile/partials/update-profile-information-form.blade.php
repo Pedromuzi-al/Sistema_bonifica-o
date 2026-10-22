@@ -13,7 +13,7 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update', ['user' => $user->id]) }}" class="mt-6 space-y-6">
+    <form method="post" action="{{ route('profile.update', ['user' => $user->id]) }}" class="mt-6 stack-6">
         @csrf
         @method('patch')
 
@@ -33,7 +33,7 @@
                     <p class="text-sm mt-2 text-gray-800">
                         {{ __('Seu endereço de e-mail ainda não foi verificado.') }}
 
-                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
                             {{ __('Clique aqui para reenviar o e-mail de verificação.') }}
                         </button>
                     </p>
@@ -46,6 +46,15 @@
                 </div>
             @endif
         </div>
+
+        @if($user->id === auth()->id())
+            <div>
+                <x-input-label for="profile-current-password" value="Senha atual (para alterar o e-mail)" />
+                <x-text-input id="profile-current-password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" />
+                <p class="mt-2 text-sm text-gray-600">Preencha somente se estiver alterando seu endereço de e-mail.</p>
+                <x-input-error class="mt-2" :messages="$errors->get('current_password')" />
+            </div>
+        @endif
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Salvar') }}</x-primary-button>

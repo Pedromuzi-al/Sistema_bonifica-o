@@ -1,6 +1,100 @@
 # Status do desenvolvimento local
 
-Atualização: 18/10/2026 (Brasília). Prioridade atual: rodada de ideias, avaliação, votação e bonificação até sexta-feira, 23/10/2026. Primeiro acesso sem e-mail concluído localmente; hospedagem gratuita externa em avaliação. O histórico das etapas anteriores permanece abaixo.
+Atualização: 22/10/2026 (Brasília). Prazo informado: novembro de 2026, ainda sem dia definido. Regras financeiras e seleção de modelos implementadas; Tailwind 4 migrado e auditoria npm sem alertas. Homologação externa e decisões operacionais permanecem pendentes. As datas e decisões anteriores abaixo são histórico.
+
+## 22/10/2026 — Regras financeiras e modelos de avaliação por ciclo
+
+O usuário pediu substituir o bloco “Reconhecimento pela ideia e regras adicionais” por dois seletores e retirar critérios do menu Administração. Após a explicação, escolheu explicitamente um modelo com várias perguntas e pesos.
+
+### Implementado
+
+- Novo grupo lateral **Regras financeiras**, com seta, animação, estado atual e abertura por teclado, seguindo o comportamento de Administração. Submenus: visão geral, Critérios técnicos e Regras de bonificação. Critérios foram retirados dos atalhos/cartões da Administração.
+- **Critérios técnicos:** modelos reutilizáveis com nome, orientação, até vinte perguntas e pesos positivos que somam 100%. O cadastro sugere as três perguntas anteriores; o administrador pode ajustar, adicionar e remover. Busca, filtro de situação, edição, inativação e auditoria. Os critérios individuais usados em pareceres anteriores permanecem acessíveis em seção própria, sem converter ou apagar avaliações.
+- **Regras de bonificação:** nome, descrição, valor por ideia, nota mínima, abstenção e quantidade de votos idênticos para alerta. Valor zero permite seleção sem dinheiro. Busca, filtro, edição, inativação e auditoria. O limite de ideias e o mínimo de votos continuam no ciclo; valores seguem sujeitos à seleção, aprovação e divulgação.
+- **Criar ciclo de seleção:** dois seletores obrigatórios, com prévia das perguntas/pesos e das condições financeiras. Somente registros ativos são aceitos. O servidor usa as configurações cadastradas e ignora tentativas de substituir valor, nota ou perguntas por campos avulsos enviados na requisição. As escolhas são preservadas depois de erro de período.
+- A criação do rascunho copia nomes, descrições, perguntas, pesos e parâmetros financeiros sob transação e bloqueio dos cadastros. A abertura preserva essa cópia; editar/inativar o cadastro não altera o rascunho anterior nem ciclos abertos. Ciclos antigos e o formulário de reconhecimento por resultados comprovados continuam com seu comportamento.
+- Duas tabelas novas, `technical_models` e `bonus_policies`, separadas de `bonus_rules`, que guarda regras históricas associadas a prêmios. As migrations foram aplicadas no MySQL local dedicado após backup em `storage/app/backups/20261022-132633-elxJoWh9`. Nenhum dado de demonstração foi inserido no banco operacional. Os cadastros novos começam vazios para a administração definir suas regras.
+
+### Validação
+
+- SQLite: **254 testes / 1.649 verificações** aprovados.
+- MySQL exclusivo de testes: **254 testes / 1.651 verificações** aprovados.
+- **3 testes JavaScript**, Pint, build e `git diff --check` aprovados.
+- Chrome isolado: cadastro de modelo, adição/remoção de perguntas, cadastro/edição de regra, menu com seta, seletores/prévias, ciclo com voto/apuração/decisão, temas claro/escuro e celular. Sem erros JavaScript ou HTTP 500 monitorados. Evidências: `storage/app/qa-reports/2026-10-22T13-26-52.870Z/resultado.json` e capturas `*-financeiro-*`.
+- Novos testes cobrem permissão administrativa, valores inválidos, soma de pesos, perguntas duplicadas, regra/modelo inativos, campos financeiros forjados, erros de formulário e preservação de regras na abertura após editar/inativar os cadastros.
+
+Não houve alteração de credenciais, commit, push, contratação ou publicação externa nesta entrega. As pendências operacionais de produção permanecem as descritas abaixo.
+
+## 22/10/2026 — migração aprovada para Tailwind 4
+
+O usuário autorizou explicitamente a migração, adaptação do CSS/Vite/PostCSS e validação das telas. As alterações de segurança e acesso da etapa anterior foram preservadas, junto às demais modificações que já estavam na branch `novo`.
+
+### Entrega
+
+- `tailwindcss` e `@tailwindcss/vite` em **4.3.3**, com uma única versão deduplicada na árvore. `@tailwindcss/forms` em **0.5.11**. Removidas as dependências diretas de Autoprefixer/PostCSS que serviam ao pipeline anterior; Vite mantém suas próprias dependências transitivas.
+- Integração Vite ativa em `vite.config.js`. A configuração agora está em `resources/css/app.css`: `@import`, fontes explícitas, plugin de formulários, variante escura e tokens da paleta existente. `postcss.config.js` e `tailwind.config.js` antigos foram removidos.
+- Templates adaptados às classes da versão 4: sombras, contornos acessíveis, raios pequenos, desfoque e transparência de anel. As pilhas verticais existentes usam utilitários próprios `stack-*` para conservar o espaçamento de formulários com tokens ocultos e rótulos em linha, sem sobrescrever o novo comportamento nativo de `space-y-*`.
+- Overrides do tema escuro foram movidos para a camada de utilitários: a comparação visual detectou que a camada de componentes perdia prioridade para as classes geradas na versão 4. O teste de navegador agora verifica também o contraste básico de títulos em superfícies lisas; gradientes e superfícies muito transparentes permanecem para inspeção visual.
+- A paleta da plataforma foi mantida. Variáveis e estados de foco foram conferidos; nenhuma regra de autenticação, permissão, voto, cálculo ou banco foi alterada por esta migração.
+- `npm ci --ignore-scripts` reproduziu a instalação pelo lockfile. `npm audit` completo e `npm audit --omit=dev` retornaram **zero vulnerabilidades**. **QA-08 resolvido nesta verificação**, sem `npm audit fix --force` e sem exceções/overrides para ocultar avisos.
+
+### Validação
+
+- Captura anterior em Tailwind 3: `storage/app/qa-reports/2026-10-22T11-33-01.930Z/`.
+- **248 testes PHP / 1.576 verificações**, **3 testes JavaScript**, Pint, build e conferência de whitespace aprovados.
+- Chrome: login, cadastro e recuperação nos dois temas/desktop/celular, áreas administrativas, primeiro acesso direto, ideias, revisão, voto, apuração, decisão, relatórios, documentos, modais e teclado. Execução final: `storage/app/qa-reports/2026-10-22T11-48-35.024Z/resultado.json`, com lista de erros vazia.
+- Comparativo final: `storage/app/qa-reports/2026-10-22T11-48-35.024Z/migration-comparison.json`. Nos **44 cenários**, foram conferidas **2.826 propriedades de medidas/tipografia** sem diferenças e **942 cores**, sem diferenças estáveis após normalização no Chrome. Três diferenças de borda por captura em instantes diferentes da transição de autofocus estão listadas separadamente. Há **50 verificações básicas de contraste** aprovadas. Raios de cápsulas e serialização de sombras foram inspecionados visualmente. A amostragem não equivale a certificação de acessibilidade ou igualdade de todos os pixels de todas as telas.
+
+### O que ainda falta para a entrega do projeto
+
+Escolher o destino de produção e homologar HTTPS, tarefas agendadas, armazenamento privado, restauração MySQL/arquivos e carga no servidor escolhido; testar SMTP somente se ativado. Confirmar os responsáveis, regras de reconhecimento, retenção e a data específica de novembro com a empresa. Não houve contratação, publicação, alteração do `.env`, migration, exclusão de dados reais, commit ou push nesta migração.
+
+## 21/10/2026 — fechamento das lacunas confirmadas
+
+O prazo urgente de outubro foi substituído por novembro de 2026. Nenhuma data final específica, hospedagem ou contratação foi definida nesta continuidade. A revisão partiu da branch `novo`, limpa, com **234 testes PHP / 1.451 verificações** aprovados.
+
+### Correções implementadas
+
+- **QA-01:** a troca da própria senha usa transação e revalida a senha atual no registro bloqueado. Revoga sessões e links antigos, rotaciona o token persistente e incrementa a versão de acesso. A sessão que realizou a operação recebe novo identificador e nova versão; sessões antigas são recusadas. A auditoria não guarda a senha nem seu hash.
+- **QA-02:** alterar o próprio e-mail exige a senha atual. Alterar somente o nome não exige senha. A regra é repetida dentro da transação para não depender de uma validação feita antes de uma alteração concorrente. O caminho administrativo mantém sua autorização e auditoria. A confirmação do novo endereço continua dependendo da configuração de e-mail; não há alegação de confirmação automática.
+- **QA-03:** confirmação de senha, troca da própria senha e atualização do perfil têm limite de cinco requisições por minuto, por conta, IP e caminho. Funcionários diferentes no mesmo IP não compartilham o limite autenticado. Tipos inválidos nos campos de senha retornam validação, sem erro 500.
+- **QA-04:** autocadastro habilitado atribui somente o perfil `employee`, em transação, ignorando tentativas de obter perfil administrativo. Exige a configuração prévia de acesso pelo `AccessControlSeeder`; se ela estiver ausente, retorna indisponibilidade sem criar uma conta parcial. O autocadastro continua desativado no modelo de produção.
+- **QA-05:** medições não numéricas/não finitas e operações com estouro na diferença ou no percentual retornam 422. Uma entrada inválida não substitui um resultado anterior. Não foram impostos limites monetários ou unidades de negócio arbitrários.
+- **QA-06:** retornar da validação para implementação remove a validação anterior e reabre o plano, preservando os estados anteriores na auditoria. Concluir exige validar novamente os resultados.
+- **QA-07:** recuperação por e-mail usa a mesma mensagem pública para endereço existente, inexistente e token já solicitado, e tem limite por IP. Falhas no transporte são registradas internamente sem mudar essa resposta pública.
+- **Primeiro acesso:** o administrador também pode definir diretamente a primeira senha em Pessoas e acessos. `Redefinir senha` abre Nova senha/Confirmar senha; `Concluir` salva e `Cancelar` limpa os campos. A conta deixa de estar pendente, sem marcar o e-mail como verificado. Contas indisponíveis continuam protegidas. O fluxo opcional de convite por e-mail permanece disponível; a interface manual não depende de gerar links.
+- **Formulários independentes:** um erro na senha não desmarca as equipes/permissões existentes; o formulário de dados ainda preserva opções desmarcadas quando ele próprio contém erros.
+
+Os testes de regressão de segurança estão em `tests/Feature/SecurityHardeningTest.php` e `tests/Feature/ResultIntegrityTest.php`, além das coberturas anteriores atualizadas para o comportamento novo. `docs/qa/AuditFindingsTest.php` permanece como reprodução histórica do estado vulnerável, não como requisito de aceitação.
+
+### Situação do prompt original
+
+| Etapas do plano original | Estado atual |
+|---|---|
+| 1–2: arquitetura, banco, autenticação e administração | Implementados; lacunas de acesso acima corrigidas localmente |
+| 3–8: ideias, avaliação, execução, publicação, votação e reconhecimento | Implementados e exercitados pelos testes; seleção antes da implementação preservada conforme decisão posterior do usuário |
+| 9: painéis, relatórios e notificações | Implementados; relatórios por ciclo e bonificações com permissões e snapshots |
+| 10: auditoria e segurança | QA-01 a QA-07 corrigidos em 21/10; QA-08 resolvido pela migração autorizada de 22/10 |
+| 11: testes | SQLite, MySQL dedicado, JavaScript e navegador conferidos nesta continuidade; ver resultados abaixo |
+| 12: documentação e operação | Instruções de acesso atualizadas; homologação externa e decisões operacionais pendentes |
+
+### Validação desta continuidade
+
+- SQLite: **248 testes / 1.576 verificações**, todos aprovados, incluindo requisições com tipos inválidos nos campos de senha.
+- MySQL dedicado `127.0.0.1:3307/ideias_corp_test`: **248 testes / 1.578 verificações**, todos aprovados na execução final.
+- JavaScript: **3 testes aprovados**.
+- Chrome/Playwright: aprovado, com primeiro acesso direto, cancelamento/limpeza, erro de confirmação e login, mais os percursos de revisão, voto, apuração, decisão, relatórios, privacidade e celular/teclado. Sem erro JavaScript ou HTTP 500 nos percursos monitorados. Evidências em `storage/app/qa-reports/2026-10-21T20-01-43.807Z/resultado.json`.
+- Vite, Pint e `git diff --check`: aprovados.
+- `composer audit` e `npm audit --omit=dev`: sem advisories reportados. A auditoria npm completa continua com os alertas de ferramentas descritos em QA-08.
+
+### Pendências reais para finalizar
+
+1. **QA-08 / build — resolvido em 22/10:** migração para Tailwind 4 autorizada pelo usuário e concluída; auditoria npm completa sem vulnerabilidades. Consulte a atualização acima. A exigência anterior de autorização foi atendida.
+2. **Decisões da empresa:** confirmar data de novembro, responsáveis, regras/valores de reconhecimento e política de retenção/preservação. O sistema permite configurar essas regras; não inventar decisões ou prazos corporativos.
+3. **Destino de produção:** escolher hospedagem, configurar domínio/HTTPS, banco dedicado, arquivos privados e execução agendada; validar SMTP somente se a modalidade por e-mail for ativada. Nenhum serviço foi contratado ou publicado.
+4. **Homologação:** ensaio com contas dos três perfis e os responsáveis, carga no ambiente de destino e restauração real de backup MySQL/arquivos nesse ambiente. As validações locais e a restauração SQLite isolada não comprovam esses itens externos.
+
+Não houve migration nova, alteração do `.env`, seeding no banco operacional, exclusão de dados reais, commit, push ou deploy nesta continuidade.
 
 ## Subtarefas
 

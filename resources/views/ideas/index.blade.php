@@ -7,7 +7,7 @@
                 <button type="button" class="apple-button--light idea-delete-trigger" x-data @click="document.getElementById('idea-delete-dialog').showModal()" aria-haspopup="dialog" aria-controls="idea-delete-dialog">Excluir ideias</button>
             @endcan
             @if (auth()->user()->can('create', App\Models\Idea::class))
-                <a href="{{ route('ideas.create') }}" data-permission="true" data-permission-message="Você não tem permissão para criar ideias." class="rounded-full bg-[#0faddf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-sm shadow-sky-500/20 hover:bg-[#0b96c2]">Nova ideia</a>
+                <a href="{{ route('ideas.create') }}" data-permission="true" data-permission-message="Você não tem permissão para criar ideias." class="rounded-full bg-[#0faddf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-xs shadow-sky-500/20 hover:bg-[#0b96c2]">Nova ideia</a>
             @else
                 <button type="button" data-permission="false" data-permission-message="Você não tem permissão para criar ideias." class="rounded-md bg-slate-300 px-4 py-2 text-sm font-semibold text-slate-600">Nova ideia</button>
             @endif
@@ -26,7 +26,7 @@
             </form>
             <div class="grid gap-6">
                 @forelse ($ideas as $idea)
-                    <div class="bg-white rounded-xl shadow p-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div>
                                 <p class="text-sm text-gray-500">{{ $idea->idea_code }} · {{ (auth()->user()->can('evaluate', $idea) || $idea->isContributor(auth()->user())) ? $idea->originSector?->name : implode(', ', $idea->publication['sectors'] ?? []) }}</p>
@@ -47,7 +47,7 @@
                         </div>
                     </div>
                 @empty
-                    <section class="apple-card space-y-3 p-6"><h3 class="font-bold">Nenhuma ideia por aqui ainda</h3><p>Se você usou filtros, tente mudar a busca. Para enviar uma sugestão, clique em “Nova ideia”.</p></section>
+                    <section class="apple-card stack-3 p-6"><h3 class="font-bold">Nenhuma ideia por aqui ainda</h3><p>Se você usou filtros, tente mudar a busca. Para enviar uma sugestão, clique em “Nova ideia”.</p></section>
                 @endforelse
             </div>
             <div class="mt-6">{{ $ideas->links() }}</div>

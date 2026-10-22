@@ -29,7 +29,7 @@
     @endphp
 
     <div class="py-8 sm:py-10">
-        <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-5xl stack-6 px-4 sm:px-6 lg:px-8">
             <section class="apple-card flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
                 <div class="flex min-w-0 items-center gap-4">
                     <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#0faddf] text-2xl font-bold text-slate-950 shadow-xl shadow-sky-500/20">
@@ -93,7 +93,7 @@
                 </div>
 
                 @if ($canManageRoles)
-                    <form method="POST" action="{{ route('profile.permissions', ['user' => $user->id]) }}" class="max-w-3xl space-y-6">
+                    <form method="POST" action="{{ route('profile.permissions', ['user' => $user->id]) }}" class="max-w-3xl stack-6">
                         @csrf
 
                         <div>
@@ -121,7 +121,7 @@
                             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                                 @foreach ($permissions as $permission)
                                     <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50/60">
-                                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" @checked(in_array($permission->name, old('permissions', session()->hasOldInput() ? [] : $user->getDirectPermissions()->pluck('name')->all())))>
+                                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" class="h-4 w-4 rounded-sm border-slate-300 text-sky-600 focus:ring-sky-500" @checked(in_array($permission->name, old('permissions', session()->hasOldInput() ? [] : $user->getDirectPermissions()->pluck('name')->all())))>
                                         {{ $permissionLabels[$permission->name] ?? $permission->name }}
                                     </label>
                                 @endforeach
@@ -131,7 +131,7 @@
                         <button type="submit" class="apple-button--primary">Salvar permissões</button>
                     </form>
                 @else
-                    <div class="space-y-5">
+                    <div class="stack-5">
                         <div class="flex flex-wrap gap-2">
                             @forelse ($user->roles as $role)
                                 <span class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">

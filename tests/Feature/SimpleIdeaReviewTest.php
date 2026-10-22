@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\BonusPolicy;
 use App\Models\Idea;
 use App\Models\Sector;
+use App\Models\TechnicalModel;
 use App\Models\User;
 use App\Models\VotingCycle;
 use Database\Seeders\DatabaseSeeder;
@@ -43,7 +45,7 @@ class SimpleIdeaReviewTest extends TestCase
         $this->assertTrue($this->idea->fresh()->is_public);
         $this->assertSame('Melhoria', $this->idea->fresh()->publication['category']);
         $this->assertSame(0, $this->idea->evaluations()->count());
-        $this->post(route('cycles.store'), ['purpose' => 'selection', 'name' => 'Ciclo revisão simples', 'starts_at' => now()->addHour()->toDateTimeString(), 'ends_at' => now()->addHours(2)->toDateTimeString(), 'max_selections' => 1, 'minimum_votes' => 1, 'reward_amount' => 100])->assertSessionHasNoErrors();
+        $this->post(route('cycles.store'), ['purpose' => 'selection', 'name' => 'Ciclo revisão simples', 'starts_at' => now()->addHour()->toDateTimeString(), 'ends_at' => now()->addHours(2)->toDateTimeString(), 'max_selections' => 1, 'minimum_votes' => 1, 'technical_model_id' => TechnicalModel::factory()->create()->id, 'bonus_policy_id' => BonusPolicy::factory()->create(['reward_amount' => 100])->id])->assertSessionHasNoErrors();
         $cycle = VotingCycle::latest('id')->firstOrFail();
         $this->post(route('cycles.open', $cycle), ['ideas' => [$this->idea->id]])->assertSessionHasNoErrors();
         $this->post(route('ideas.review-decision', $this->idea), ['decision' => 'archive', 'notes' => 'Tentativa de mudar durante a votação.'])->assertSessionHasErrors('decision');

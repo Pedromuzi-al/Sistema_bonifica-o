@@ -44,18 +44,15 @@ O fluxo principal de seleção antes da implementação tem um roteiro próprio 
 7. Remova todas as seleções e provoque um erro em outro campo. Ao corrigir, as seleções removidas não devem reaparecer.
 8. Entre como funcionário e tente acessar as ações administrativas diretamente pela URL: nenhum cadastro ou alteração deve ocorrer.
 
-## 4. Pessoas, convite e primeiro acesso
+## 4. Pessoas e primeiro acesso
 
-1. Abra Administração → Pessoas e acessos → Cadastrar pessoa.
-2. Informe nome, e-mail, setor, equipes e perfil. Não existe campo de senha inicial.
-3. Salve e confira o convite no serviço de e-mail ou no log local.
-4. Abra o link em uma janela anônima. Defina e confirme sua senha.
-5. Entre com a nova senha: o e-mail estará confirmado e o acesso obedecerá ao perfil atribuído.
-6. Reutilize o link: deve falhar. Um convite vencido também deve falhar; a validade padrão é 60 minutos.
-7. Em Administração → Pessoas e acessos, reenvie um convite pendente. Respeite o intervalo de envio; um novo token invalida o anterior.
-8. Bloqueie uma conta convidada e tente concluir seu convite: deve ser recusado.
-9. Tente enviar uma senha no cadastro administrativo pela requisição: o servidor deve recusar esse campo.
-10. Caso o envio falhe, os dados da pessoa continuam salvos e a mensagem orienta reenviar; não cadastre a mesma pessoa novamente.
+1. No modo manual, abra Administração → Pessoas e acessos → Cadastrar pessoa e informe nome, e-mail, setor/equipes e perfil. Não há senha no formulário de dados/permissões.
+2. Depois de salvar, a conta está pendente. Abra Redefinir senha, preencha Nova senha/Confirmar senha e clique em Concluir. Entre em outra janela com essa senha e o e-mail; o perfil define os acessos e o e-mail não é marcado como verificado.
+3. Cancele uma tentativa antes de salvar: os campos devem ser limpos. Informe senhas diferentes: o erro deve aparecer, sem salvar ou preencher novamente a senha.
+4. Para uma conta já ativa, use o mesmo procedimento. A senha anterior e as sessões anteriores deixam de funcionar; os acessos/permissões não mudam. Não registre senhas em capturas, logs ou evidências.
+5. Tente redefinir a senha de uma conta bloqueada/desativada: a conta precisa ser reativada primeiro. Funcionários não podem redefinir a senha de outras pessoas.
+6. Para testar a modalidade opcional por e-mail, configure entrega por e-mail e seu transporte. Cadastre uma pessoa, abra o convite em janela anônima e defina a senha: o e-mail é confirmado. Links reutilizados/expirados e convites de contas bloqueadas devem falhar. Reenvio invalida o token anterior.
+7. No autocadastro, habilitado somente quando desejado, confirme acesso de Funcionário e ausência de privilégios administrativos, mesmo se uma requisição tentar enviar `role=admin`. Sem configuração prévia de perfis, não deve haver conta parcialmente criada.
 
 ## 5. Permissões, bloqueio, reativação e perfil
 
@@ -65,7 +62,7 @@ O fluxo principal de seleção antes da implementação tem um roteiro próprio 
 4. Desative sua conta pelo próprio perfil em uma conta de teste. Confirme que o histórico é preservado.
 5. Como administrador, revise os dados e permissões da conta desativada antes de reativá-la.
 6. Tente bloquear a própria conta ou retirar o último administrador ativo e verificado: deve ser impedido.
-7. Troque o e-mail de uma conta. A confirmação anterior deixa de valer e as outras sessões são revogadas, inclusive o acesso persistente.
+7. No próprio perfil, tente mudar o e-mail sem a senha atual e com senha errada: deve falhar. Com a senha correta, a confirmação anterior deixa de valer e os acessos antigos são revogados. Alterar somente o nome não exige senha.
 8. Ao corrigir o próprio e-mail pelo perfil, a sessão atual permite acompanhar a nova confirmação.
 9. Teste “Esqueci minha senha”: token válido permite redefinir; token expirado ou reutilizado falha. Sessões anteriores são revogadas.
 10. Uma pessoa sem perfil pode aguardar liberação, mas não deve consultar publicações corporativas ou administrar o sistema.
@@ -265,12 +262,17 @@ O teste de navegador cobre páginas administrativas nos dois temas, hovers, cada
 
 ## Primeira rodada sem confirmação de e-mail
 
-Use `EMAIL_VERIFICATION_REQUIRED=false` e `ACCOUNT_INVITATION_DELIVERY=manual`. Contas já liberadas entram sem validar e-mail; papéis, bloqueios e impedimentos continuam obrigatórios. Cadastre uma pessoa; confira primeiro acesso pendente; confirme a senha do administrador e gere um link com justificativa. Em outra sessão, defina a senha e entre. Confirme que o e-mail não foi marcado como verificado e que não há envio de mensagem. Confira que funcionário não acessa a administração.
+Use `EMAIL_VERIFICATION_REQUIRED=false` e `ACCOUNT_INVITATION_DELIVERY=manual`. Contas liberadas entram sem confirmar e-mail; papéis, bloqueios e impedimentos continuam obrigatórios. Cadastre uma pessoa e use Redefinir senha → Nova senha/Confirmar senha → Concluir. Entre em outra janela, confirme que não houve e-mail nem confirmação artificial do endereço e que o perfil Funcionário não acessa a administração. Confira revogação da senha/sessões anteriores e auditoria sem credenciais.
 
-Gere outro link e confira que o anterior não funciona. Use um link duas vezes e teste sua expiração. Na recuperação, confira que a senha anterior e sessões antigas deixam de funcionar após redefinir. Tente gerar link de conta bloqueada e sem confirmar a senha do administrador. Confira a auditoria sem token e que recarregar a página deixa de exibir o link. Não inclua links individuais nas evidências.
+O roteiro operacional está em [ENTREGA_VOTACAO_SEXTA.md](ENTREGA_VOTACAO_SEXTA.md); o nome conserva o histórico, mas o prazo atual é novembro. Cenários de verificação automática exigem ativar explicitamente confirmação e entrega por e-mail.
 
-O roteiro operacional desta rodada está em [ENTREGA_VOTACAO_SEXTA.md](ENTREGA_VOTACAO_SEXTA.md). Os cenários antigos de verificação automática exigem ativar explicitamente a confirmação e a entrega por e-mail.
+## Regressão das correções de segurança e resultados — 21/10/2026
 
+- Abra duas sessões da mesma conta. Troque a senha em Meu perfil: a atual continua, a outra perde o acesso, e recuperação antiga deixa de funcionar.
+- Em uma conta de teste, faça cinco confirmações de senha erradas no minuto. A tentativa seguinte deve aguardar o limite; outra conta no mesmo IP continua independente.
+- No modo por e-mail, peça recuperação para conta existente, inexistente e repetida: a mensagem pública deve ser a mesma. Não realize esse ensaio com e-mails reais sem combinar com os titulares.
+- Em um resultado de teste, tente usar `1e309`, ou valores que causem estouro no cálculo da diferença/percentual. Deve aparecer validação, sem erro 500 e sem substituir resultados anteriores.
+- Reabra uma implementação que já tinha resultado validado. O plano volta a ficar pendente, a validação anterior é retirada e o histórico é preservado. Concluir sem validar novamente deve falhar.
 
 ## Exclusão administrativa de ideias em lote
 

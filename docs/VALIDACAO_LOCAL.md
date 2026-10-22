@@ -152,3 +152,25 @@ Validação desta alteração: 226 testes PHP (1.393 verificações), três test
 ### Relatório administrativo de bonificações — 19/10/2026
 
 Disponível em **Relatórios → Bonificações por ciclo**. Validação concluída com 230 testes PHP / 1.422 verificações, três testes JavaScript, build, Pint e Chrome. Foram cobertos autorização administrativa, valores individuais congelados, registros antigos, totais e rejeições, ciclos separados, empates, filtros e fuso horário. Chrome conferiu temas claro/escuro, larguras de 320/390 px, estado vazio, limpeza dos filtros e acesso direto negado a funcionário. Evidências: `storage/app/qa-reports/2026-10-19T21-14-09.225Z/`. Sem migration.
+
+
+## Fechamento das lacunas da auditoria e primeiro acesso — 21/10/2026
+
+Novo prazo informado pelo usuário: novembro de 2026, sem dia definido. Detalhes das correções e pendências em `STATUS.md`.
+
+- Suíte PHP completa: **248 testes / 1.576 verificações em SQLite** e **248 testes / 1.578 verificações no MySQL dedicado `ideias_corp_test` da porta 3307**, aprovados. O banco da aplicação e as conexões do trabalho não foram usados como banco de testes.
+- **3 testes JavaScript**, Pint, Vite e `git diff --check` aprovados.
+- Chrome aprovado em `storage/app/qa-reports/2026-10-21T20-01-43.807Z/resultado.json`: primeiro acesso com senha definida diretamente, cancelamento e limpeza, erro de confirmação, login, revisão, voto, apuração, decisão, relatórios, documentos privados e celular/teclado. Sem erros JavaScript ou HTTP 500 registrados nos percursos.
+- Regressões cobrem revogação após troca da própria senha, proteção da alteração do próprio e-mail, limites e tipos inválidos na confirmação, autocadastro mínimo, resposta uniforme na recuperação por e-mail, cálculos não finitos e revalidação após retrabalho.
+- `composer audit` e `npm audit --omit=dev` sem advisories reportados. A auditoria npm completa ainda aponta a cadeia de build do Tailwind 3; proposta de migração para a versão 4 depende de aprovação explícita conforme as regras do projeto. Dependências não foram alteradas.
+
+Sem migration nova, alteração do `.env`, dados operacionais ou publicação. Carga e restauração de backup no destino de produção continuam exigindo homologação externa; a empresa ainda precisa definir retenção e regras operacionais finais.
+
+
+## Migração autorizada para Tailwind 4 — 22/10/2026
+
+Tailwind e sua integração Vite em 4.3.3; formulários em 0.5.11. Configuração CSS nativa, fontes explícitas e variante escura; configs JS/PostCSS anteriores removidas. Regras de negócio e dados preservados. `npm ci --ignore-scripts`, build, auditoria npm completa (zero vulnerabilidades), **248 testes PHP / 1.576 verificações**, três testes JavaScript e Pint aprovados.
+
+O roteiro Chrome foi ampliado para capturar login, cadastro e recuperação nos dois temas e em 390/1440 px, além de medidas/cores de componentes. Compara-se a execução anterior `2026-10-22T11-33-01.930Z` com as capturas finais. A inspeção detectou e corrigiu espaçamento de formulários, alturas de etiquetas e prioridade das cores no modo escuro. As classes `stack-*` conservam o layout existente; o novo teste de contraste verifica títulos em superfícies lisas e suficientemente opacas, sem certificar gradientes ou toda a acessibilidade.
+
+Execução final aprovada em `storage/app/qa-reports/2026-10-22T11-48-35.024Z/`: `resultado.json`, `visual-checks.json` e `migration-comparison.json`. São 44 cenários, 2.826 propriedades de medidas/tipografia sem diferenças, 942 cores sem diferenças estáveis após normalização (três transições de autofocus listadas à parte) e 50 verificações básicas de contraste aprovadas. A suíte MySQL aprovada em 21/10 permanece como validação do backend, que não foi modificado nesta migração; os testes PHP desta etapa usaram SQLite. Nenhuma migration foi necessária.

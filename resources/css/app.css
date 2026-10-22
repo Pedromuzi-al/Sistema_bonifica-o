@@ -1,6 +1,168 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+@source "../views";
+@source "../js";
+@source "../../app";
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views";
+@plugin "@tailwindcss/forms";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Preserve the workspace palette independently of framework defaults. */
+@theme {
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-amber-100: #fef3c7;
+    --color-amber-200: #fde68a;
+    --color-amber-300: #fcd34d;
+    --color-amber-400: #fbbf24;
+    --color-amber-50: #fffbeb;
+    --color-amber-600: #d97706;
+    --color-amber-700: #b45309;
+    --color-amber-800: #92400e;
+    --color-amber-900: #78350f;
+    --color-blue-500: #3b82f6;
+    --color-blue-600: #2563eb;
+    --color-cyan-200: #a5f3fc;
+    --color-cyan-300: #67e8f9;
+    --color-cyan-400: #22d3ee;
+    --color-cyan-50: #ecfeff;
+    --color-cyan-700: #0e7490;
+    --color-emerald-200: #a7f3d0;
+    --color-emerald-300: #6ee7b7;
+    --color-emerald-400: #34d399;
+    --color-emerald-50: #ecfdf5;
+    --color-emerald-600: #059669;
+    --color-emerald-700: #047857;
+    --color-emerald-800: #065f46;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-50: #f9fafb;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
+    --color-green-100: #dcfce7;
+    --color-green-600: #16a34a;
+    --color-green-800: #166534;
+    --color-red-50: #fef2f2;
+    --color-red-500: #ef4444;
+    --color-red-600: #dc2626;
+    --color-red-700: #b91c1c;
+    --color-rose-100: #ffe4e6;
+    --color-rose-200: #fecdd3;
+    --color-rose-300: #fda4af;
+    --color-rose-400: #fb7185;
+    --color-rose-50: #fff1f2;
+    --color-rose-500: #f43f5e;
+    --color-rose-600: #e11d48;
+    --color-rose-700: #be123c;
+    --color-rose-800: #9f1239;
+    --color-sky-100: #e0f2fe;
+    --color-sky-200: #bae6fd;
+    --color-sky-300: #7dd3fc;
+    --color-sky-400: #38bdf8;
+    --color-sky-50: #f0f9ff;
+    --color-sky-500: #0ea5e9;
+    --color-sky-600: #0284c7;
+    --color-sky-700: #0369a1;
+    --color-sky-800: #075985;
+    --color-sky-900: #0c4a6e;
+    --color-slate-100: #f1f5f9;
+    --color-slate-200: #e2e8f0;
+    --color-slate-300: #cbd5e1;
+    --color-slate-400: #94a3b8;
+    --color-slate-50: #f8fafc;
+    --color-slate-500: #64748b;
+    --color-slate-600: #475569;
+    --color-slate-700: #334155;
+    --color-slate-800: #1e293b;
+    --color-slate-900: #0f172a;
+    --color-slate-950: #020617;
+    --color-teal-200: #99f6e4;
+    --color-teal-300: #5eead4;
+    --color-teal-400: #2dd4bf;
+    --color-teal-50: #f0fdfa;
+    --color-teal-700: #0f766e;
+    --color-violet-200: #ddd6fe;
+    --color-violet-300: #c4b5fd;
+    --color-violet-400: #a78bfa;
+    --color-violet-50: #f5f3ff;
+    --color-violet-700: #6d28d9;
+    --color-yellow-100: #fef9c3;
+    --color-yellow-800: #854d0e;
+}
+
+@layer base {
+    *, ::before, ::after, ::backdrop, ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+
+    button:not(:disabled), [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
+
+    dialog {
+        margin: auto;
+    }
+}
+
+
+/* Retain spacing in existing forms with hidden tokens and inline labels. */
+@utility stack-1 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(1) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(1) * var(--tw-space-y-reverse));
+    }
+}
+
+@utility stack-2 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(2) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(2) * var(--tw-space-y-reverse));
+    }
+}
+
+@utility stack-3 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(3) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(3) * var(--tw-space-y-reverse));
+    }
+}
+
+@utility stack-4 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(4) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(4) * var(--tw-space-y-reverse));
+    }
+}
+
+@utility stack-5 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(5) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(5) * var(--tw-space-y-reverse));
+    }
+}
+
+@utility stack-6 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(6) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(6) * var(--tw-space-y-reverse));
+    }
+}
+
+@utility stack-8 {
+    & > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(--spacing(8) * (1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(--spacing(8) * var(--tw-space-y-reverse));
+    }
+}
 
 [x-cloak] {
     display: none !important;
@@ -89,7 +251,7 @@
     }
 
     .apple-input {
-        @apply mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-inner shadow-slate-200/40 transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100;
+        @apply mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 inset-shadow-sm inset-shadow-slate-200/40 transition focus:border-sky-400 focus:outline-hidden focus:ring-4 focus:ring-sky-100;
     }
 
     .apple-grid {
@@ -217,7 +379,8 @@
     }
 }
 
-@layer components {
+/* Theme overrides share the utilities layer so their specificity is preserved. */
+@layer utilities {
     html.dark {
         color-scheme: dark;
         --control-bg: #1e293b;
@@ -473,7 +636,7 @@ html.dark .app-sidebar, html.dark .app-topbar { background: #111827; }
 @media (min-width: 1024px) { .sidebar-overlay { display: none !important; } }
 
 .cycle-list tbody tr + tr { border-color: var(--control-border); }
-.cycle-status { background: var(--control-bg); color: var(--control-text); border-color: var(--control-border); font-size: .75rem; letter-spacing: normal; text-transform: none; }
+.cycle-status { line-height: 1.25rem; background: var(--control-bg); color: var(--control-text); border-color: var(--control-border); font-size: .75rem; letter-spacing: normal; text-transform: none; }
 
 /* Conted workspace: quiet surfaces, clear hierarchy and restrained metric motion. */
 .app-workspace {
@@ -505,6 +668,7 @@ html.dark .app-workspace {
 .app-frame :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { border-radius: 10px; max-width: 100%; }
 .app-workspace .app-sidebar { border-color: var(--workspace-line); }
 .app-workspace .app-topbar { border-color: var(--workspace-line); }
+html.dark .app-workspace .app-topbar { border-color: rgb(51 65 85 / .7); }
 .app-content > header { background: var(--workspace-panel); border-color: var(--workspace-line); }
 .app-workspace .sidebar-link { font-weight: 550; }
 .app-frame .dashboard-welcome { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(115deg, #e6f5ff, #f2faff 60%, #e4f4fa); border-color: #c6e5f5; }

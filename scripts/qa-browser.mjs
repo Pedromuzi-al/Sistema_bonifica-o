@@ -24,6 +24,42 @@ mkdirSync(reports, { recursive: true, mode: 0o700 });
 let server, browser;
 const errors = [];
 const outcomes = [];
+const visualChecks = [];
+async function recordVisualChecks(page, name) {
+    const components = await page.evaluate(() => {
+        const properties = ['display', 'position', 'width', 'height', 'padding', 'gap', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'backgroundColor', 'borderColor', 'borderRadius', 'boxShadow'];
+        return Object.fromEntries(['.app-sidebar', '.app-content', '.app-topbar', '.sidebar-group-toggle', '.apple-card', '.apple-button', '.apple-button--light', '.apple-input', '.stat-card', 'main h2', 'main input:not([type=hidden]):not([type=checkbox])', 'main select', 'main table', '.guest-form-panel', '.guest-form-panel input', '.guest-form-panel button[type=submit]'].flatMap(selector => {
+            const element = document.querySelector(selector);
+            if (!element) return [];
+            const computed = getComputedStyle(element);
+            return [[selector, Object.fromEntries(properties.map(property => [property, computed[property]]))]];
+        }));
+    });
+    const contrast = await page.evaluate(() => {
+        const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+        const context = canvas.getContext('2d', {willReadFrequently:true});
+        const luminance = color => {
+            context.clearRect(0,0,1,1); context.fillStyle = color; context.fillRect(0,0,1,1);
+            const rgb = Array.from(context.getImageData(0,0,1,1).data).slice(0,3).map(value => { const c=value/255; return c <= 0.04045 ? c/12.92 : ((c+0.055)/1.055)**2.4; });
+            return rgb[0]*0.2126 + rgb[1]*0.7152 + rgb[2]*0.0722;
+        };
+        return ['.guest-form-panel h2', '.app-content > header h2', 'main .apple-card h3'].flatMap(selector => {
+            const heading = document.querySelector(selector);
+            const surface = heading?.closest('.guest-form-panel, .apple-card, header');
+            if (!surface) return [];
+            const backgroundStyle = getComputedStyle(surface);
+            if (backgroundStyle.backgroundImage !== 'none') return [];
+            context.clearRect(0,0,1,1); context.fillStyle = backgroundStyle.backgroundColor; context.fillRect(0,0,1,1);
+            if (context.getImageData(0,0,1,1).data[3] < 204) return [];
+            const text = luminance(getComputedStyle(heading).color), background = luminance(backgroundStyle.backgroundColor);
+            return [{selector,ratio:(Math.max(text,background)+0.05)/(Math.min(text,background)+0.05)}];
+        });
+    });
+    for (const check of contrast) assert.ok(check.ratio >= 4.5, `Contraste insuficiente em ${name}: ${check.selector} (${check.ratio.toFixed(2)})`);
+    visualChecks.push({name, viewport:page.viewportSize(), components, contrast});
+    writeFileSync(join(reports, 'visual-checks.json'), JSON.stringify(visualChecks, null, 2));
+}
+
 try {
     for (const command of [['migrate', '--force'], ['db:seed', '--force']]) {
         const result = spawnSync('php', ['artisan', ...command], { env, encoding: 'utf8' });
@@ -41,14 +77,32 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if (response.status() >= 500) errors.push(`${response.status()} ${response.url()}`); });
     await page.goto(`${base}/login`);
+    for (const dark of [false, true]) {
+        await page.evaluate(dark => localStorage.setItem('conted-theme', dark ? 'dark' : 'light'), dark);
+        for (const width of [1440, 390]) {
+            await page.setViewportSize({width,height:1000});
+            for (const route of ['/login', '/register', '/forgot-password']) {
+                assert.equal((await page.goto(base + route)).status(),200);
+                await page.waitForFunction(() => !!window.Alpine);
+                assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Rolagem horizontal: ${route}, ${width}px`);
+                const name = `${route.slice(1)}-${dark ? 'escuro' : 'claro'}-${width}`;
+                await recordVisualChecks(page, name);
+                await page.screenshot({path:join(reports,`${name}.png`),fullPage:true});
+            }
+        }
+    }
+    outcomes.push('Acesso: login, cadastro e recuperação manual nos dois temas, desktop e 390 px, sem rolagem horizontal.');
+    await page.setViewportSize({width:1440,height:1000});
+    await page.goto(`${base}/login`);
     await page.locator('[name=email]').fill('admin@corp.local');
     await page.locator('[name=password]').fill('password');
     await Promise.all([page.waitForURL(url => url.pathname !== '/login'), page.locator('button[type=submit]').click()]);
     for (const dark of [false, true]) {
         await page.evaluate(dark => { localStorage.setItem('conted-theme', dark ? 'dark' : 'light'); }, dark);
-        for (const route of ['/dashboard', '/admin', '/admin/users', '/admin/organization', '/admin/sectors', '/admin/sectors/create', '/admin/criteria', '/admin/criteria/create', '/admin/users/create', '/cycles', '/cycles/create', '/cycles/create?purpose=recognition', '/reports', '/profile', '/admin/privacy', '/audit']) {
+        for (const route of ['/dashboard', '/admin', '/admin/users', '/admin/organization', '/admin/sectors', '/admin/sectors/create', '/admin/criteria', '/admin/criteria/create', '/financial-rules', '/financial-rules/technical', '/financial-rules/technical/create', '/financial-rules/bonuses', '/financial-rules/bonuses/create', '/admin/users/create', '/cycles', '/cycles/create', '/cycles/create?purpose=recognition', '/reports', '/profile', '/admin/privacy', '/audit']) {
             const response = await page.goto(base + route);
             assert.equal(response.status(), 200, route);
+            await recordVisualChecks(page, `${route}-${dark ? 'escuro' : 'claro'}`);
             const card = page.locator('.apple-card').first();
             if (await card.count()) {
                 await card.hover();
@@ -75,7 +129,7 @@ try {
         assert.equal(await submenu.locator('[aria-current="page"]').innerText(), 'Setores');
         await administration.click();
         await page.keyboard.press('Tab');
-        assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), 'Relatórios');
+        assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), 'Regras financeiras');
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await administration.click();
         assert.ok(await submenu.evaluate(element => getComputedStyle(element).transitionDuration.split(',').every(duration => parseFloat(duration) <= 0.001)));
@@ -115,21 +169,26 @@ try {
     await page.locator('main [name=email]').fill('primeiro-acesso@qa.test');
     await Promise.all([page.waitForNavigation(), page.getByRole('button', {name:'Cadastrar pessoa', exact:true}).click()]);
     const invitedUserUrl = page.url();
-    await page.getByRole('link', {name:'Confirmar minha senha para gerar link', exact:true}).click();
-    await page.locator('[name=password]').fill('password');
-    await Promise.all([page.waitForNavigation(), page.getByRole('button', {name:'Confirmar', exact:true}).click()]);
-    assert.equal(page.url(), invitedUserUrl);
-    await page.locator('form[action$="/access-link"] [name=reason]').fill('Titular fictício presente para validar primeiro acesso.');
-    await Promise.all([page.waitForNavigation(), page.getByRole('button', {name:'Gerar link de primeiro acesso', exact:true}).click()]);
-    const individualLink = await page.locator('#individual-access-link').inputValue();
+    await page.locator('summary').filter({hasText:'Redefinir senha'}).click();
+    const passwordForm = page.locator('form[action$="/reset-password"]');
+    await passwordForm.locator('[name=password]').fill('SenhaQAIndividual123');
+    await passwordForm.locator('[name=password_confirmation]').fill('SenhaQAIndividual123');
+    await passwordForm.getByRole('button', {name:'Cancelar',exact:true}).click();
+    await page.locator('summary').filter({hasText:'Redefinir senha'}).click();
+    assert.equal(await passwordForm.locator('[name=password]').inputValue(),'');
+    await passwordForm.locator('[name=password]').fill('SenhaQAIndividual123');
+    await passwordForm.locator('[name=password_confirmation]').fill('OutraSenhaQAIndividual123');
+    await Promise.all([page.waitForNavigation(), passwordForm.getByRole('button',{name:'Concluir',exact:true}).click()]);
+    await passwordForm.waitFor({state:'visible'});
+    await passwordForm.getByText('A confirmação deve ser igual à nova senha.',{exact:true}).waitFor();
+    assert.equal(await passwordForm.locator('[name=password]').inputValue(),'');
+    await passwordForm.locator('[name=password]').fill('SenhaQAIndividual123');
+    await passwordForm.locator('[name=password_confirmation]').fill('SenhaQAIndividual123');
+    await Promise.all([page.waitForNavigation(), passwordForm.getByRole('button',{name:'Concluir',exact:true}).click()]);
     const invitedContext = await browser.newContext();
     const invitedPage = await invitedContext.newPage();
     invitedPage.on('pageerror', error => errors.push(error.message));
-    await invitedPage.goto(individualLink);
-    await invitedPage.locator('[name=password]').fill('SenhaQAIndividual123');
-    await invitedPage.locator('[name=password_confirmation]').fill('SenhaQAIndividual123');
-    await Promise.all([invitedPage.waitForNavigation(), invitedPage.locator('button[type=submit]').click()]);
-    assert.equal(new URL(invitedPage.url()).pathname, '/login');
+    await invitedPage.goto(`${base}/login`);
     await invitedPage.locator('[name=email]').fill('primeiro-acesso@qa.test');
     await invitedPage.locator('[name=password]').fill('SenhaQAIndividual123');
     await Promise.all([invitedPage.waitForNavigation(), invitedPage.locator('button[type=submit]').click()]);
@@ -137,12 +196,11 @@ try {
     await invitedPage.getByText('Passo 1 de 3.', {exact:false}).waitFor();
     assert.equal((await invitedPage.goto(`${base}/admin/users`)).status(), 403);
     await invitedContext.close();
-    // Never save screenshots or logs containing the individual link.
     await page.goto(invitedUserUrl);
     await page.reload();
     assert.equal(await page.locator('#individual-access-link').count(),0);
     await page.getByText('Senha de acesso definida.', {exact:false}).waitFor();
-    outcomes.push('Primeiro acesso manual: cadastro, confirmação do administrador, link privado, definição de senha e login sem e-mail; funcionário sem acesso administrativo.');
+    outcomes.push('Primeiro acesso direto: cadastro, cancelar/limpar, validar confirmação, definir senha e login sem e-mail ou link; funcionário sem acesso administrativo.');
     // Start a fresh admin session so document review still exercises its own password confirmation.
     await page.context().clearCookies();
     await page.goto(`${base}/login`);
@@ -188,6 +246,48 @@ try {
     await page.getByRole('row').filter({hasText:'Critério QA da administração'}).waitFor();
     await page.screenshot({path:join(reports,'criterios-listagem.png'),fullPage:true});
     outcomes.push('Administração: áreas separadas, setor com vínculos/remoção/inativação, critério com criação/edição/inativação');
+    await page.goto(`${base}/financial-rules`);
+    assert.equal(await page.locator('#administration-links a').filter({hasText:'Critérios técnicos'}).count(),0);
+    await page.getByRole('button',{name:'Regras financeiras',exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'Regras financeiras',exact:true}).getAttribute('aria-expanded'),'false');
+    await page.getByRole('button',{name:'Regras financeiras',exact:true}).click();
+    await page.locator('#financial-links').getByRole('link',{name:'Critérios técnicos',exact:true}).click();
+    await page.getByRole('link',{name:'Novo modelo de critérios',exact:true}).click();
+    await page.locator('main [name=name]').fill('Modelo QA de melhorias');
+    await page.locator('main [name=description]').fill('Perguntas para avaliar o benefício esperado das propostas.');
+    assert.equal(await page.locator('main fieldset').count(),3);
+    await page.getByRole('button',{name:'Adicionar pergunta',exact:true}).click();
+    assert.equal(await page.locator('main fieldset').count(),4);
+    await page.getByRole('button',{name:'Remover pergunta',exact:true}).last().click();
+    await Promise.all([page.waitForNavigation(),page.getByRole('button',{name:'Cadastrar modelo',exact:true}).click()]);
+    await page.getByRole('row').filter({hasText:'Modelo QA de melhorias'}).waitFor();
+    await page.goto(`${base}/financial-rules/bonuses/create`);
+    for(const [name,value] of Object.entries({name:'Regra QA sem dinheiro',description:'Seleção sem prêmio em dinheiro; depende de decisão da equipe.',reward_amount:'0',minimum_score:'0',anomaly_threshold:'5'})) await page.locator(`main [name="${name}"]`).fill(value);
+    await Promise.all([page.waitForNavigation(),page.getByRole('button',{name:'Cadastrar regra',exact:true}).click()]);
+    await page.getByRole('row').filter({hasText:'Regra QA sem dinheiro'}).getByRole('link',{name:/Editar regra/}).click();
+    await page.locator('main [name=description]').fill('Regra sem dinheiro, revisada para a rodada de QA.');
+    await Promise.all([page.waitForNavigation(),page.getByRole('button',{name:'Salvar regra',exact:true}).click()]);
+    for(const dark of [false,true]) {
+        await page.evaluate(dark=>localStorage.setItem('conted-theme',dark?'dark':'light'),dark);
+        for(const width of [1440,390]) {
+            await page.setViewportSize({width,height:1000});
+            for(const route of ['/financial-rules','/financial-rules/technical','/financial-rules/technical/create','/financial-rules/bonuses','/financial-rules/bonuses/create','/cycles/create']) {
+                await page.goto(base+route);
+                if(route==='/cycles/create') {
+                    await page.locator('[name=technical_model_id]').selectOption({label:'Modelo QA de melhorias · 3 pergunta(s)'});
+                    await page.locator('[name=bonus_policy_id]').selectOption({label:'Regra QA sem dinheiro · R$ 0,00 por ideia'});
+                    await page.getByText('Regra sem dinheiro, revisada para a rodada de QA.',{exact:true}).waitFor();
+                    assert.equal(await page.locator('main [name=reward_amount]').count(),0);
+                }
+                await page.waitForFunction(()=>document.documentElement.scrollWidth<=window.innerWidth);
+                await recordVisualChecks(page,`${route}-financeiro-${dark}-${width}`);
+                await page.screenshot({path:join(reports,`${route.slice(1).replaceAll('/','-')}-financeiro-${dark?'escuro':'claro'}-${width}.png`),fullPage:true});
+            }
+        }
+    }
+    await page.setViewportSize({width:1440,height:1000});
+    outcomes.push('Regras financeiras: menu com seta, modelo de perguntas/pesos, regra de bonificação, edição, seletores e prévia nos dois temas e celular');
+
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${base}/dashboard`);
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Painel com rolagem horizontal no celular.');
@@ -285,6 +385,8 @@ try {
     const start = localTime(Date.now() + 5 * 60 * 1000);
     const end = localTime(Date.now() + 10 * 60 * 1000);
     const cycleForm = page.locator('form[data-cycle-purpose=selection]');
+    await cycleForm.locator('[name=technical_model_id]').selectOption({label:'Modelo QA de melhorias · 3 pergunta(s)'});
+    await cycleForm.locator('[name=bonus_policy_id]').selectOption({label:'Regra QA sem dinheiro · R$ 0,00 por ideia'});
     for (const [name, value] of Object.entries({name: 'Ciclo curto de QA', starts_at: start, ends_at: end})) await cycleForm.locator(`[name="${name}"]`).fill(value);
     await Promise.all([page.waitForNavigation(), cycleForm.getByRole('button', {name: 'Continuar para escolher as propostas', exact: true}).click()]);
     assert.match(page.url(), /\/cycles\/\d+$/);
@@ -297,6 +399,8 @@ try {
     await Promise.all([page.waitForNavigation(),page.getByRole('button',{name:'Confirmar e programar votação',exact:true}).click()]);
     await page.goto(`${base}/cycles/create`);
     const anotherForm=page.locator('form[data-cycle-purpose=selection]');
+    await anotherForm.locator('[name=technical_model_id]').selectOption({label:'Modelo QA de melhorias · 3 pergunta(s)'});
+    await anotherForm.locator('[name=bonus_policy_id]').selectOption({label:'Regra QA sem dinheiro · R$ 0,00 por ideia'});
     for(const [name,value] of Object.entries({name:'Ciclo concorrente de QA',starts_at:start,ends_at:end})) await anotherForm.locator(`[name="${name}"]`).fill(value);
     await Promise.all([page.waitForNavigation(),anotherForm.getByRole('button',{name:'Continuar para escolher as propostas',exact:true}).click()]);
     const otherCycleUrl=page.url();
@@ -471,7 +575,7 @@ try {
         await mobileAdministration.click();
         assert.equal(await mobileAdministration.getAttribute('aria-expanded'), 'false');
         await page.keyboard.press('Tab');
-        assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), 'Relatórios');
+        assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), 'Regras financeiras');
         await mobileAdministration.click();
         assert.equal(await mobileAdministration.getAttribute('aria-expanded'), 'true');
         await page.screenshot({path:join(reports,`menu-celular-${width}.png`),fullPage:true});
@@ -503,6 +607,8 @@ try {
     outcomes.push('Menu: fundo indisponível, fechamento pelo fundo e foco preservado ao alternar entre 1023 e 1024 px');
     await page.goto(`${base}/cycles/create`);
     const invalidForm=page.locator('form[data-cycle-purpose=selection]');
+    await invalidForm.locator('[name=technical_model_id]').selectOption({label:'Modelo QA de melhorias · 3 pergunta(s)'});
+    await invalidForm.locator('[name=bonus_policy_id]').selectOption({label:'Regra QA sem dinheiro · R$ 0,00 por ideia'});
     const invalidStart=localTime(Date.now()+15*60*1000), invalidEnd=localTime(Date.now()+10*60*1000);
     for(const [name,value] of Object.entries({name:'QA correção de período',starts_at:invalidStart,ends_at:invalidEnd})) await invalidForm.locator(`[name="${name}"]`).fill(value);
     await Promise.all([page.waitForNavigation(),invalidForm.getByRole('button',{name:'Continuar para escolher as propostas',exact:true}).click()]);
@@ -510,6 +616,8 @@ try {
     assert.equal(await page.locator('[name=name]').inputValue(),'QA correção de período');
     assert.equal(await page.locator('[name=starts_at]').inputValue(),invalidStart);
     assert.equal(await page.locator('[name=ends_at]').inputValue(),invalidEnd);
+    assert.notEqual(await page.locator('[name=technical_model_id]').inputValue(),'');
+    assert.notEqual(await page.locator('[name=bonus_policy_id]').inputValue(),'');
     assert.ok(await page.locator('[role=alert]').first().isVisible());
     await page.getByRole('link',{name:'← Voltar para os ciclos',exact:true}).click();
     assert.equal(new URL(page.url()).pathname,'/cycles');

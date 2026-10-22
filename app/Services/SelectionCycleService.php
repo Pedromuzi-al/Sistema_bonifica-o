@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\BonusAward;
+use App\Models\BonusPolicy;
 use App\Models\BonusRule;
 use App\Models\Idea;
 use App\Models\IdeaStatusHistory;
 use App\Models\Notification;
+use App\Models\TechnicalModel;
 use App\Models\User;
 use App\Models\VotingCycle;
 use App\Support\ImplementationStatus;
@@ -24,17 +26,30 @@ class SelectionCycleService
     public function create(User $actor, array $data): VotingCycle
     {
         Gate::forUser($actor)->authorize('manage-admin');
-        $criteria = $data['criteria'] ?? [
-            ['name' => 'Utilidade', 'description' => 'Quanto esta ideia pode ajudar no trabalho?', 'weight' => 34],
-            ['name' => 'Relevância', 'description' => 'Qual a importância do problema que esta ideia resolve?', 'weight' => 33],
-            ['name' => 'Benefício esperado', 'description' => 'Qual o potencial de melhoria apresentado pela proposta?', 'weight' => 33],
-        ];
-        if (! $criteria || abs(array_sum(array_column($criteria, 'weight')) - 100) > 0.001 || count(array_unique(array_column($criteria, 'name'))) !== count($criteria)) {
-            throw ValidationException::withMessages(['criteria' => 'Use critérios distintos com pesos que somem 100%.']);
-        }
 
-        return DB::transaction(function () use ($actor, $data, $criteria) {
-            $config = ['purpose' => 'selection', 'minimum_votes' => (int) ($data['minimum_votes'] ?? 1), 'allow_abstention' => (bool) ($data['allow_abstention'] ?? false), 'max_selections' => (int) ($data['max_selections'] ?? 5), 'minimum_score' => (float) ($data['minimum_score'] ?? 0), 'reward_amount' => (float) ($data['reward_amount'] ?? 0), 'category' => 'Ideia selecionada', 'anomaly_threshold' => (int) ($data['anomaly_threshold'] ?? 5)];
+        return DB::transaction(function () use ($actor, $data) {
+            $templates = [];
+            if (isset($data['technical_model_id']) || isset($data['bonus_policy_id'])) {
+                $model = TechnicalModel::whereKey($data['technical_model_id'] ?? null)->lockForUpdate()->first();
+                $policy = BonusPolicy::whereKey($data['bonus_policy_id'] ?? null)->lockForUpdate()->first();
+                if (! $model?->active) {
+                    throw ValidationException::withMessages(['technical_model_id' => 'Escolha um modelo de critérios ativo.']);
+                }
+                if (! $policy?->active) {
+                    throw ValidationException::withMessages(['bonus_policy_id' => 'Escolha uma regra de bonificação ativa.']);
+                }
+                $data = [...$data, ...$policy->only(['minimum_score', 'reward_amount', 'allow_abstention', 'anomaly_threshold']), 'criteria' => $model->criteria];
+                $templates = ['technical_model' => $model->only(['id', 'name', 'description']), 'bonus_policy' => $policy->only(['id', 'name', 'description'])];
+            }
+            $criteria = $data['criteria'] ?? [
+                ['name' => 'Utilidade', 'description' => 'Quanto esta ideia pode ajudar no trabalho?', 'weight' => 34],
+                ['name' => 'Relevância', 'description' => 'Qual a importância do problema que esta ideia resolve?', 'weight' => 33],
+                ['name' => 'Benefício esperado', 'description' => 'Qual o potencial de melhoria apresentado pela proposta?', 'weight' => 33],
+            ];
+            if (! $criteria || abs(array_sum(array_column($criteria, 'weight')) - 100) > 0.001 || count(array_unique(array_column($criteria, 'name'))) !== count($criteria)) {
+                throw ValidationException::withMessages(['criteria' => 'Use critérios distintos com pesos que somem 100%.']);
+            }
+            $config = ['purpose' => 'selection', 'minimum_votes' => (int) ($data['minimum_votes'] ?? 1), 'allow_abstention' => (bool) ($data['allow_abstention'] ?? false), 'max_selections' => (int) ($data['max_selections'] ?? 5), 'minimum_score' => (float) ($data['minimum_score'] ?? 0), 'reward_amount' => (float) ($data['reward_amount'] ?? 0), 'category' => 'Ideia selecionada', 'anomaly_threshold' => (int) ($data['anomaly_threshold'] ?? 5), ...$templates];
             $cycle = VotingCycle::create(['name' => $data['name'], 'starts_at' => $data['starts_at'], 'ends_at' => $data['ends_at'], 'status' => 'draft', 'weight_configuration' => $config]);
             $cycle->criteria()->createMany($criteria);
             $this->audit($actor, $cycle, 'selection_cycle_created');

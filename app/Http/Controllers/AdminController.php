@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EvaluationCriterion;
 use App\Models\Idea;
 use App\Models\Sector;
 use App\Models\Team;
@@ -29,7 +28,7 @@ class AdminController extends Controller
 
         $ideas = Idea::with('author', 'originSector', 'beneficiarySectors')->latest()->limit(10)->get();
         $sectors = Sector::withCount('ideasAsOrigin')->get();
-        $moduleCounts = ['sectors' => Sector::count(), 'users' => User::withTrashed()->count(), 'criteria' => EvaluationCriterion::count(), 'teams' => Team::count()];
+        $moduleCounts = ['sectors' => Sector::count(), 'users' => User::withTrashed()->count(), 'teams' => Team::count()];
 
         return view('admin.index', compact('stats', 'ideas', 'sectors', 'moduleCounts'));
     }

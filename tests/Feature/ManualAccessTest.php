@@ -76,7 +76,7 @@ class ManualAccessTest extends TestCase
         $this->assertTrue($user->invitation_pending);
         $this->assertFalse($user->hasVerifiedEmail());
         Notification::assertNothingSent();
-        $this->get(route('admin.users.edit', $user))->assertOk()->assertSeeText('Confirmar minha senha para gerar link');
+        $this->get(route('admin.users.edit', $user))->assertOk()->assertSeeText('Redefinir senha');
         $this->actingAs($user)->getJson(route('dashboard'))->assertUnauthorized();
         $this->assertGuest();
     }
@@ -103,7 +103,7 @@ class ManualAccessTest extends TestCase
         $log = AuditLog::where('action', 'manual_access_link_created')->firstOrFail();
         $this->assertSame('first_access', $log->details['purpose']);
         $this->assertStringNotContainsString($token, json_encode($log->details));
-        $this->get(route('admin.users.edit', $user))->assertOk()->assertSee($url)->assertHeader('Cache-Control', 'no-store, private');
+        $this->get(route('admin.users.edit', $user))->assertOk()->assertDontSee($url)->assertHeader('Cache-Control', 'no-store, private');
         $this->get(route('admin.users.edit', $user))->assertOk()->assertDontSee($url);
         $this->app['auth']->forgetGuards();
         $this->post(route('password.store'), ['email' => $user->email, 'token' => $token, 'password' => 'NovaSenhaForte123', 'password_confirmation' => 'NovaSenhaForte123'])->assertSessionHasNoErrors()->assertRedirect(route('login'));
@@ -138,7 +138,7 @@ class ManualAccessTest extends TestCase
         $verifiedAt = $user->email_verified_at;
         $token = Password::createToken($user);
         $this->actingAs($this->admin)->get(route('admin.users.edit', $user))
-            ->assertOk()->assertSeeText('Definir nova senha')->assertDontSeeText('Confirmar minha senha para gerar link')
+            ->assertOk()->assertSeeText('Redefinir senha')->assertDontSeeText('Confirmar minha senha para gerar link')
             ->assertDontSeeText('Motivo da redefinição')->assertDontSeeText('Sua senha de administrador');
         $this->post(route('admin.users.reset-password', $user), [
             'password' => 'NovaSenhaForte123',
@@ -176,7 +176,7 @@ class ManualAccessTest extends TestCase
         $this->assertDatabaseMissing('audit_logs', ['action' => 'user_password_reset']);
     }
 
-    public function test_direct_recovery_rejects_guests_employees_and_unavailable_or_pending_accounts(): void
+    public function test_direct_recovery_rejects_guests_employees_and_unavailable_accounts(): void
     {
         $user = User::where('email', 'funcionario@corp.local')->firstOrFail();
         $data = ['password' => 'NovaSenhaForte123',
@@ -185,8 +185,6 @@ class ManualAccessTest extends TestCase
         $this->actingAs($user)->postJson(route('admin.users.reset-password', $user), $data)->assertForbidden();
         $user->forceFill(['blocked_at' => now()])->save();
         $this->actingAs($this->admin)->postJson(route('admin.users.reset-password', $user), $data)->assertUnprocessable();
-        $pending = $this->invite();
-        $this->postJson(route('admin.users.reset-password', $pending), $data)->assertUnprocessable();
         $this->assertDatabaseMissing('audit_logs', ['action' => 'user_password_reset']);
     }
 
@@ -196,6 +194,20 @@ class ManualAccessTest extends TestCase
         $this->actingAs($this->admin)->withSession(['auth.password_confirmed_at' => time()])
             ->postJson(route('admin.users.access-link', $user), ['reason' => 'Titular solicitou nova senha.'])->assertUnprocessable();
         $this->assertDatabaseCount('password_reset_tokens', 0);
+    }
+
+    public function test_admin_can_define_first_password_without_a_link_or_email_verification(): void
+    {
+        $user = $this->invite();
+        $this->actingAs($this->admin)->post(route('admin.users.reset-password', $user), [
+            'password' => 'NovaSenhaForte123', 'password_confirmation' => 'NovaSenhaForte123',
+        ])->assertSessionHasNoErrors()->assertRedirect(route('admin.users.edit', $user));
+        $this->assertFalse($user->fresh()->invitation_pending);
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+        $this->post(route('logout'));
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'NovaSenhaForte123'])->assertSessionHasNoErrors();
+        $this->get(route('dashboard'))->assertOk();
+        Notification::assertNothingSent();
     }
 
     public function test_admin_resetting_own_password_must_sign_in_again(): void

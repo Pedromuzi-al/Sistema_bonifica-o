@@ -40,7 +40,7 @@
             </div>
         </div>
 
-        <div id="permission-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+        <div id="permission-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/55 p-4 backdrop-blur-xs">
             <div class="w-full max-w-md rounded-[28px] border border-white/10 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.22)]">
                 <div class="flex items-center gap-3">
                     <div class="flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-xl text-amber-600">!</div>

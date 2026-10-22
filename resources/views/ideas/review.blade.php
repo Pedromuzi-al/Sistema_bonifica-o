@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">Está tudo certo com sua ideia?</h2><p class="mt-2 text-slate-600">Confira o que escreveu. Sua ideia só será enviada quando você confirmar abaixo.</p></x-slot>
-    <div class="mx-auto max-w-3xl space-y-5 px-4 py-8">
-        <section class="apple-card space-y-5 p-6">
+    <div class="mx-auto max-w-3xl stack-5 px-4 py-8">
+        <section class="apple-card stack-5 p-6">
             <h3 class="text-2xl font-bold">{{ $data['title'] }}</h3>
             @foreach (['problem_description' => 'O que acontece hoje', 'solution_description' => 'Sua sugestão', 'expected_results' => 'Benefícios esperados', 'resources_needed' => 'O que seria necessário', 'additional_information' => 'Observações'] as $field => $label)
                 @if (!empty($data[$field]))<div><h4 class="font-semibold">{{ $label }}</h4><p class="whitespace-pre-line text-slate-600">{{ $data[$field] }}</p></div>@endif
@@ -9,7 +9,7 @@
             <p><strong>Setor do problema:</strong> {{ $originSector->name }}</p>
             <p><strong>Setores beneficiados:</strong> {{ $beneficiarySectors->pluck('name')->join(', ') }}</p>
         </section>
-        <form method="POST" action="{{ route('ideas.store') }}" class="apple-card space-y-4 p-6" x-data="{ sending: false }" @submit="if (sending) { $event.preventDefault(); } else { sending = true; }">
+        <form method="POST" action="{{ route('ideas.store') }}" class="apple-card stack-4 p-6" x-data="{ sending: false }" @submit="if (sending) { $event.preventDefault(); } else { sending = true; }">
             @csrf
             @foreach ($data as $field => $value)
                 @if (is_array($value))

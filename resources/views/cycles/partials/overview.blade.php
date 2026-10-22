@@ -1,4 +1,4 @@
-<section class="cycle-overview apple-card space-y-4 p-6" aria-label="Resumo do ciclo">
+<section class="cycle-overview apple-card stack-4 p-6" aria-label="Resumo do ciclo">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div><p class="text-sm text-slate-500">{{ $cycle->isSelection() ? 'Seleção de ideias' : 'Reconhecimento por resultados' }}</p><h3 class="mt-1 text-2xl font-bold">{{ $cycle->name }}</h3></div>
         <span class="apple-pill">{{ match($cycle->status) { 'closed'=>'Apurado', 'draft'=>'Rascunho', 'cancelled'=>'Cancelado', default => now()->lt($cycle->starts_at) ? 'Programado' : (now()->gte($cycle->ends_at) ? 'Aguardando apuração' : 'Em votação') } }}</span>

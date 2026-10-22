@@ -22,12 +22,12 @@
                     <div class="guest-brand-panel hidden flex-col justify-between bg-[radial-gradient(circle_at_top_left,_rgba(15,173,223,0.22),transparent_34%),linear-gradient(135deg,#f6f7f8_0%,#ffffff_55%,#e9f6fa_100%)] p-10 text-slate-800 lg:flex">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <img src="{{ asset('images/conted-tech-logo-visible.png') }}" alt="Conted Tech — tecnologia educacional" class="brand-logo h-auto w-72 max-w-full rounded-2xl border border-slate-200/80 bg-white px-4 py-3 object-contain shadow-sm shadow-slate-900/5">
+                                <img src="{{ asset('images/conted-tech-logo-visible.png') }}" alt="Conted Tech — tecnologia educacional" class="brand-logo h-auto w-72 max-w-full rounded-2xl border border-slate-200/80 bg-white px-4 py-3 object-contain shadow-xs shadow-slate-900/5">
                             </div>
                             <a href="/" class="rounded-full border border-slate-300 bg-white/70 px-3 py-1.5 text-xs uppercase tracking-[0.2em] text-slate-600 hover:bg-white">Início</a>
                         </div>
 
-                        <div class="space-y-6">
+                        <div class="stack-6">
                             <span class="apple-pill border-sky-200 bg-white/70 text-sky-700">Inovação corporativa</span>
                             <h1 class="max-w-md text-5xl font-black tracking-[-0.06em] text-slate-900">A forma mais elegante de transformar ideias em ação.</h1>
                             <p class="max-w-md text-base leading-7 text-slate-600">
@@ -35,7 +35,7 @@
                             </p>
                         </div>
 
-                        <div class="rounded-[28px] border border-slate-200 bg-white/65 p-4 shadow-sm backdrop-blur-sm">
+                        <div class="rounded-[28px] border border-slate-200 bg-white/65 p-4 shadow-xs backdrop-blur-xs">
                             <div class="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-500">
                                 <span>Fluxo</span>
                                 <span>Digital</span>
@@ -65,7 +65,7 @@
                                     <h2 class="mt-2 text-3xl font-black tracking-[-0.05em] text-slate-900">Bem-vindo</h2>
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-sky-100">
+                                    <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 focus:outline-hidden focus:ring-4 focus:ring-sky-100">
                                         <svg data-theme-icon="moon" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z" /></svg>
                                         <svg data-theme-icon="sun" class="hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
                                         <span data-theme-label class="hidden sm:inline">Modo escuro</span>

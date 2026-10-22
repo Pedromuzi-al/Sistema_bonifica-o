@@ -6,9 +6,9 @@
         $answers = collect($criteria)->mapWithKeys(fn ($criterion) => [(string) $criterion['id'] => (string) old('scores.'.$criterion['id'], '')]);
         $labels = [1 => 'Muito baixo', 2 => 'Baixo', 3 => 'Moderado', 4 => 'Alto', 5 => 'Muito alto'];
     @endphp
-    <div class="mx-auto max-w-3xl space-y-5 px-4 py-8">
+    <div class="mx-auto max-w-3xl stack-5 px-4 py-8">
         <a href="{{ route('cycles.show', $cycle) }}" class="inline-block text-sm text-sky-700 underline">Voltar para as ideias desta votação</a>
-        <section class="apple-card space-y-5 p-6">
+        <section class="apple-card stack-5 p-6">
             <p class="text-sm text-slate-500">{{ $idea->idea_code }} · {{ $cycle->name }}</p>
             <h3 class="text-2xl font-bold">{{ $publication['title'] }}</h3>
             <x-implementation-status :snapshot="$snapshot" />
@@ -18,15 +18,15 @@
             <p class="rounded-xl bg-sky-50 p-3 text-sm text-sky-900">A autoria fica protegida. Avalie os benefícios apresentados, e não quem você imagina que enviou a ideia.</p>
         </section>
         @if ($voteState['canVote'])
-            <form method="POST" action="{{ route('ideas.vote', $idea) }}" class="apple-card space-y-6 p-5 sm:p-8"
+            <form method="POST" action="{{ route('ideas.vote', $idea) }}" class="apple-card stack-6 p-5 sm:p-8"
                 x-data="{ answers: @js($answers), reviewing: false, emptyError: false, sending: false, labels: @js($labels) }"
                 @submit="if (sending) { $event.preventDefault(); } else if (!Object.values(answers).some(value => value !== '')) { $event.preventDefault(); emptyError = true; } else if (!reviewing) { $event.preventDefault(); reviewing = true; $nextTick(() => $refs.summary.focus()); } else { sending = true; }">
                 @csrf
                 <input type="hidden" name="voting_cycle_id" value="{{ $cycle->id }}">
-                <div x-show="!reviewing" class="space-y-6">
+                <div x-show="!reviewing" class="stack-6">
                     <div><h3 class="text-xl font-bold">Como você avalia esta ideia?</h3><p class="mt-2 text-sm text-slate-600">Escolha uma resposta em cada pergunta. Nenhuma nota vem marcada.</p><p class="mt-1 text-sm text-slate-500">Você pode votar até {{ $cycle->local_ends_at->format('d/m/Y H:i') }}.</p></div>
                     @foreach ($criteria as $criterion)
-                        <fieldset class="vote-field space-y-3 border-t border-slate-200 pt-4" style="--vote-enter-delay: {{ min($loop->index * 45, 180) }}ms">
+                        <fieldset class="vote-field stack-3 border-t border-slate-200 pt-4" style="--vote-enter-delay: {{ min($loop->index * 45, 180) }}ms">
                             <legend class="font-bold">{{ $loop->iteration }}. {{ $criterion['name'] }}</legend>
                             <p id="criterion-help-{{ $criterion['id'] }}" class="text-sm text-slate-600">{{ $criterion['description'] }}</p>
                             <div class="grid grid-cols-1 gap-2 sm:grid-cols-5">
@@ -42,7 +42,7 @@
                         </fieldset>
                     @endforeach
                 </div>
-                <section x-cloak x-show="reviewing" class="vote-summary space-y-4">
+                <section x-cloak x-show="reviewing" class="vote-summary stack-4">
                     <h3 x-ref="summary" tabindex="-1" class="text-xl font-bold">Confira suas respostas</h3>
                     @foreach ($criteria as $criterion)<p><strong>{{ $criterion['name'] }}:</strong> <span x-text="answers['{{ $criterion['id'] }}'] === '' ? 'Não tenho informação suficiente' : answers['{{ $criterion['id'] }}'] + ' — ' + labels[answers['{{ $criterion['id'] }}']]"></span></p>@endforeach
                     <p class="text-sm text-slate-600">Depois de confirmar, o voto não poderá ser alterado. Suas respostas individuais não aparecem para outros funcionários.</p>
@@ -52,8 +52,8 @@
                 <button type="submit" class="apple-button" :aria-disabled="sending" x-text="sending ? 'Enviando…' : (reviewing ? 'Confirmar meu voto' : 'Conferir minhas respostas')">Enviar meu voto</button>
             </form>
         @else
-            <section class="apple-card space-y-3 p-6" role="status"><h3 class="text-xl font-bold">{{ $voteState['state'] === 'registered' ? 'Sua participação' : 'Sobre esta votação' }}</h3><p>{{ $voteState['message'] }}</p><a class="text-sky-700 underline" href="{{ route('cycles.index') }}">Ver outras votações</a></section>
+            <section class="apple-card stack-3 p-6" role="status"><h3 class="text-xl font-bold">{{ $voteState['state'] === 'registered' ? 'Sua participação' : 'Sobre esta votação' }}</h3><p>{{ $voteState['message'] }}</p><a class="text-sky-700 underline" href="{{ route('cycles.index') }}">Ver outras votações</a></section>
         @endif
-        <section class="apple-card space-y-3 p-5" aria-labelledby="vote-explanation-title"><h3 id="vote-explanation-title" class="font-semibold">Como os votos ajudam no reconhecimento?</h3><p class="text-sm">{{ $cycle->isSelection() ? 'Sua avaliação ajuda a priorizar as propostas. A equipe decide quais ideias avançam, considerando viabilidade e recursos. A votação não garante implementação ou bonificação.' : 'Sua avaliação contribui para a decisão sobre o reconhecimento da ideia. A apuração segue as regras deste ciclo e o reconhecimento passa pela aprovação da equipe responsável.' }}</p><a class="text-sm text-sky-700 underline" href="{{ route('cycles.show', $cycle) }}">Consultar as regras desta votação</a></section>
+        <section class="apple-card stack-3 p-5" aria-labelledby="vote-explanation-title"><h3 id="vote-explanation-title" class="font-semibold">Como os votos ajudam no reconhecimento?</h3><p class="text-sm">{{ $cycle->isSelection() ? 'Sua avaliação ajuda a priorizar as propostas. A equipe decide quais ideias avançam, considerando viabilidade e recursos. A votação não garante implementação ou bonificação.' : 'Sua avaliação contribui para a decisão sobre o reconhecimento da ideia. A apuração segue as regras deste ciclo e o reconhecimento passa pela aprovação da equipe responsável.' }}</p><a class="text-sm text-sky-700 underline" href="{{ route('cycles.show', $cycle) }}">Consultar as regras desta votação</a></section>
     </div>
 </x-app-layout>

@@ -16,12 +16,12 @@
         <div class="min-h-screen">
             <header class="site-header sticky top-0 z-50 border-b border-white/60 bg-white/35 backdrop-blur-2xl">
                 <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-                    <div class="brand-logo rounded-2xl border border-slate-200/80 bg-white px-4 py-2 shadow-sm shadow-slate-900/5">
+                    <div class="brand-logo rounded-2xl border border-slate-200/80 bg-white px-4 py-2 shadow-xs shadow-slate-900/5">
                         <img src="{{ asset('images/conted-tech-logo-visible.png') }}" alt="Conted Tech — tecnologia educacional" class="h-auto w-60 object-contain sm:w-72">
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100">
+                        <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-white focus:outline-hidden focus:ring-4 focus:ring-sky-100">
                             <svg data-theme-icon="moon" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z" /></svg>
                             <svg data-theme-icon="sun" class="hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
                             <span data-theme-label class="hidden sm:inline">Modo escuro</span>
@@ -42,9 +42,9 @@
 
             <main class="mx-auto max-w-6xl px-6 pb-20 pt-12 lg:pt-20">
                 <section class="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-                    <div class="space-y-8 hero-animate">
+                    <div class="stack-8 hero-animate">
                         <span class="apple-pill shimmer">Plataforma corporativa</span>
-                        <div class="space-y-6 hero-animate-delay-1">
+                        <div class="stack-6 hero-animate-delay-1">
                             <h1 class="text-5xl font-black tracking-[-0.06em] text-slate-900 sm:text-6xl lg:text-7xl">
                                 Transforme ideias em ganhos concretos.
                             </h1>

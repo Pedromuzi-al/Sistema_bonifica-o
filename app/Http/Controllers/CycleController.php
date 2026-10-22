@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CycleRequest;
 use App\Models\BonusAward;
+use App\Models\BonusPolicy;
 use App\Models\Idea;
+use App\Models\TechnicalModel;
 use App\Models\Vote;
 use App\Models\VotingCycle;
 use App\Services\CycleReportService;
@@ -36,7 +38,10 @@ class CycleController extends Controller
             ->map(fn ($measurement) => ['indicator' => $measurement['indicator'], 'unit' => $measurement['unit']]))
             ->unique(fn ($measurement) => $measurement['indicator'].'|'.$measurement['unit'])->values();
 
-        return view('cycles.create', compact('canManage', 'indicatorOptions'));
+        $technicalModels = TechnicalModel::where('active', true)->orderBy('name')->get();
+        $bonusPolicies = BonusPolicy::where('active', true)->orderBy('name')->get();
+
+        return view('cycles.create', compact('canManage', 'indicatorOptions', 'technicalModels', 'bonusPolicies'));
     }
 
     public function store(CycleRequest $request, CycleService $service): RedirectResponse

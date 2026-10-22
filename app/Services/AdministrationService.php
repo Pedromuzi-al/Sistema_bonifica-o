@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -50,6 +51,9 @@ class AdministrationService
             $oldEmail = $target->email;
             $target->fill(collect($data)->only($profileOnly ? ['name', 'email'] : ['name', 'email', 'sector_id'])->all());
             if ($target->isDirty('email')) {
+                if ($profileOnly && $actor->id === $target->id && ! Hash::check($data['current_password'] ?? '', $target->password)) {
+                    throw ValidationException::withMessages(['current_password' => 'Confirme sua senha atual para alterar o e-mail.']);
+                }
                 $target->email_verified_at = null;
                 $target->remember_token = Str::random(60);
                 $target->access_version = (int) $target->access_version + 1;
@@ -85,6 +89,27 @@ class AdministrationService
         }, 3);
     }
 
+    public function changeOwnPassword(User $actor, string $currentPassword, string $newPassword): User
+    {
+        return DB::transaction(function () use ($actor, $currentPassword, $newPassword) {
+            $this->lockAccounts($actor);
+            $user = User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
+            if (! Hash::check($currentPassword, $user->password)) {
+                throw ValidationException::withMessages(['current_password' => 'A senha atual está incorreta.'])->errorBag('updatePassword');
+            }
+            $user->forceFill([
+                'password' => Hash::make($newPassword),
+                'remember_token' => Str::random(60),
+                'access_version' => (int) $user->access_version + 1,
+            ])->save();
+            Password::broker()->deleteToken($user);
+            $this->revokeSessions($user);
+            $this->audit($user, $user, 'password_updated', []);
+
+            return $user;
+        }, 3);
+    }
+
     public function resetPassword(User $actor, User $target, string $password): void
     {
         DB::transaction(function () use ($actor, $target, $password) {
@@ -92,9 +117,9 @@ class AdministrationService
             $this->authorizeAdmin($actor);
             $target = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
             abort_unless($target->isAvailable(), 422, 'Reative a conta antes de redefinir a senha.');
-            abort_if($target->invitation_pending, 422, 'Conclua o primeiro acesso antes de recuperar a senha.');
             $target->forceFill([
                 'password' => Hash::make($password),
+                'invitation_pending' => false,
                 'remember_token' => Str::random(60),
                 'access_version' => (int) $target->access_version + 1,
             ])->save();

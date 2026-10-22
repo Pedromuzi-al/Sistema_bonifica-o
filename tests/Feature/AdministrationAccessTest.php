@@ -192,7 +192,7 @@ class AdministrationAccessTest extends TestCase
         Notification::assertSentTo($user, VerifyEmail::class);
         $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
         $this->get(route('verification.notice'))->assertOk()->assertSeeText('Corrigir meu e-mail');
-        $this->patch(route('profile.update'), ['name' => 'Cadastro', 'email' => 'corrigido@corp.local'])->assertSessionHasNoErrors();
+        $this->patch(route('profile.update'), ['name' => 'Cadastro', 'email' => 'corrigido@corp.local', 'current_password' => 'password'])->assertSessionHasNoErrors();
         $this->assertSame('corrigido@corp.local', $user->fresh()->email);
         Notification::assertSentTo($user->fresh(), VerifyEmail::class);
     }

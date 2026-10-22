@@ -10,7 +10,7 @@
 @endphp
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">Indicadores de execução</h2></x-slot>
-    <div class="execution-report mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <div class="execution-report mx-auto max-w-7xl stack-6 px-4 py-8">
         <div class="report-intro">
             <div><p class="report-eyebrow">Visão consolidada</p><h3>Acompanhe o caminho das ideias</h3><p class="report-muted">Contribuições, participação e resultados no período selecionado.</p></div>
             <a class="apple-button--light" href="{{ route('reports.index') }}">Ver relatório por ciclo →</a>

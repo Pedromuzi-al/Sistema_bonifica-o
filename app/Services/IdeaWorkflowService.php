@@ -78,6 +78,11 @@ class IdeaWorkflowService
             if ($status === 'completed' && ! $idea->result()->whereNotNull('validated_at')->exists()) {
                 throw ValidationException::withMessages(['status' => 'Valide os resultados antes de concluir.']);
             }
+            if ($idea->status === 'validation' && $status === 'implementation') {
+                $this->audit($user, $idea, 'implementation_reopened', ['previous_result' => $idea->result?->toArray(), 'previous_plan' => $idea->implementationPlan?->toArray(), 'notes' => $notes]);
+                $idea->result()->update(['validated_at' => null, 'validated_by_user_id' => null]);
+                $idea->implementationPlan()->update(['status' => 'planned', 'completed_at' => null]);
+            }
             IdeaStatusHistory::record($idea, $status, $user, $notes);
             if ($status === 'validation') {
                 $idea->implementationPlan()->update(['status' => 'completed', 'completed_at' => now()]);
@@ -134,14 +139,24 @@ class IdeaWorkflowService
                 throw ValidationException::withMessages(['measurements' => 'Não repita o mesmo indicador e unidade.']);
             }
             $previous = $idea->result?->toArray();
-            foreach ($data['measurements'] as &$measurement) {
+            foreach ($data['measurements'] as $index => &$measurement) {
                 $before = $measurement['before'] ?? null;
                 $after = $measurement['after'] ?? null;
+                foreach (['before' => $before, 'after' => $after] as $field => $value) {
+                    if ($value !== null && (! is_numeric($value) || ! is_finite((float) $value))) {
+                        throw ValidationException::withMessages(['measurements.'.$index.'.'.$field => 'Informe um número finito dentro da capacidade de cálculo.']);
+                    }
+                }
                 if (($before === null || $after === null) && empty($measurement['qualitative']) && empty($data['limitations'])) {
                     throw ValidationException::withMessages(['measurements' => 'Informe valores medidos, uma descrição qualitativa ou a limitação dos dados.']);
                 }
                 $measurement['difference'] = $before !== null && $after !== null ? (float) $after - (float) $before : null;
                 $measurement['percentage'] = $before !== null && (float) $before != 0 && $measurement['difference'] !== null ? round($measurement['difference'] / abs((float) $before) * 100, 2) : null;
+                foreach (['difference', 'percentage'] as $field) {
+                    if ($measurement[$field] !== null && ! is_finite($measurement[$field])) {
+                        throw ValidationException::withMessages(['measurements.'.$index => 'Esses valores excedem a capacidade de cálculo. Revise a escala ou unidade do indicador.']);
+                    }
+                }
             }
             unset($measurement);
             $idea->result()->updateOrCreate(['idea_id' => $idea->id], [...$data, 'measured_at' => now(), 'validated_at' => null, 'validated_by_user_id' => null]);

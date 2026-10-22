@@ -2,17 +2,17 @@
     x-data="{ selected: @js(array_map('strval', is_array(old('ids')) ? array_filter(old('ids'), 'is_scalar') : [])), confirming: false, acknowledged: false }"
     @close="selected = []; confirming = false; acknowledged = false"
     @if($errors->has('ids') || $errors->has('ids.*') || $errors->has('deletion_reason') || $errors->has('confirm_deletion')) x-init="$el.showModal()" @endif>
-    <div class="space-y-5 p-5 sm:p-7">
+    <div class="stack-5 p-5 sm:p-7">
         <div class="flex items-center justify-between gap-4">
             <h2 id="delete-ideas-title" class="text-xl font-bold">Excluir ideias</h2>
             <button type="button" class="apple-button--light" autofocus @click="$el.closest('dialog').close()" aria-label="Fechar seleção de ideias">Fechar</button>
         </div>
         <p id="delete-ideas-description">As ideias serão retiradas das listagens. O histórico e os documentos privados serão preservados; esta ação não apaga definitivamente os dados.</p>
-        <form method="POST" action="{{ route('ideas.bulk-destroy') }}" class="space-y-5" @submit="if (!confirming) { $event.preventDefault(); confirming = true; $nextTick(() => $refs.reason.focus()); }">
+        <form method="POST" action="{{ route('ideas.bulk-destroy') }}" class="stack-5" @submit="if (!confirming) { $event.preventDefault(); confirming = true; $nextTick(() => $refs.reason.focus()); }">
             @csrf @method('DELETE')
-            <div x-show="!confirming" class="space-y-3">
+            <div x-show="!confirming" class="stack-3">
                 <p class="text-sm">Selecione entre as ideias desta página. Para localizar outras, feche e use os filtros ou a paginação da listagem.</p>
-                <div class="max-h-72 space-y-2 overflow-y-auto">
+                <div class="max-h-72 stack-2 overflow-y-auto">
                     @forelse($ideas as $candidate)
                         @php($blocker = $deletionBlockers[$candidate->id] ?? null)
                         <label class="block rounded-xl border border-slate-300 p-3">
@@ -23,7 +23,7 @@
                 </div>
                 <p aria-live="polite"><span x-text="selected.length">0</span> ideia(s) selecionada(s).</p>
             </div>
-            <div x-show="confirming" x-cloak class="space-y-4">
+            <div x-show="confirming" x-cloak class="stack-4">
                 <p class="font-semibold">Confirmar a exclusão de <span x-text="selected.length"></span> ideia(s)?</p>
                 <p>As ideias marcadas sairão das listagens e não poderão mais ser abertas pelos participantes.</p>
                 <label class="block" for="deletion-reason">Motivo da exclusão (mínimo de 10 caracteres)</label>

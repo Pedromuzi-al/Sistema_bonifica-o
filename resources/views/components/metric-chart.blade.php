@@ -6,7 +6,7 @@
     $titleId = 'chart-'.\Illuminate\Support\Str::uuid();
 @endphp
 @if($chartValues->isNotEmpty())
-<figure class="space-y-3">
+<figure class="stack-3">
     <svg viewBox="0 0 640 210" class="metric-chart block w-full" role="img" aria-labelledby="{{ $titleId }}">
         <title id="{{ $titleId }}">{{ $label }}. {{ $chartValues->map(fn ($value, $key) => $key.': '.number_format($value,1,',','.').' '.$unit)->join('; ') }}</title>
         <path d="M30 25 V165 H610" fill="none" stroke="currentColor" opacity="0.4" />

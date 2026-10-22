@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">Novo ciclo</h2></x-slot>
-    <div class="mx-auto max-w-5xl space-y-6 px-4 py-8">
+    <div class="mx-auto max-w-5xl stack-6 px-4 py-8">
         <a class="text-sm text-sky-700 underline" href="{{ route('cycles.index') }}">← Voltar para os ciclos</a>
         @if ($canManage)
             @if(old('purpose', request('purpose', 'selection')) !== 'recognition')
@@ -19,7 +19,7 @@
                 ];
                 $indicators = old('result_indicators', [['indicator' => '', 'unit' => '', 'direction' => 'decrease', 'target' => '']]);
             @endphp
-            <form data-cycle-purpose="recognition" method="POST" action="{{ route('cycles.store') }}" class="space-y-5"
+            <form data-cycle-purpose="recognition" method="POST" action="{{ route('cycles.store') }}" class="stack-5"
                 x-on:invalid.capture="$event.target.closest('details')?.setAttribute('open', '')"
                 x-data="{ indicators: @js($indicators), options: @js($indicatorOptions), weights: @js(old('weights', ['real_results' => 50, 'technical' => 30, 'votes' => 20])), criteria: @js(old('criteria', $defaults)),
                     get weightTotal() { return Object.values(this.weights).reduce((sum, value) => sum + Number(value || 0), 0) },
@@ -32,7 +32,7 @@
                     <h3 class="text-2xl font-bold">Criar um ciclo</h3>
                     <p class="mt-2 text-sm text-slate-600">Defina o período, a meta e o reconhecimento. As regras de avaliação já vêm preenchidas.</p>
                 </div>
-                <section class="apple-card space-y-4 p-6">
+                <section class="apple-card stack-4 p-6">
                     <h4 class="text-lg font-semibold">1. Quando acontece?</h4>
                     <x-workflow-field name="name" label="Nome do ciclo" placeholder="Ex.: Reconhecimento de outubro" />
                     <div class="grid gap-4 sm:grid-cols-2">
@@ -43,11 +43,11 @@
                     @error('ends_at')<p class="text-sm text-rose-700" role="alert">{{ $message }}</p>@enderror
                     <p class="text-sm text-slate-500">Horários em {{ config('innovation.cycle_timezone') }}. Pode começar e terminar hoje. Escolha um início alguns minutos à frente e selecione as ideias antes desse horário.</p>
                 </section>
-                <section class="apple-card space-y-4 p-6">
+                <section class="apple-card stack-4 p-6">
                     <h4 class="text-lg font-semibold">2. Qual resultado será reconhecido?</h4>
                     <p class="text-sm text-slate-600">Escolha um indicador já registrado nas ideias ou informe um novo. A meta é o ganho esperado, na mesma unidade.</p>
                     <template x-for="(row, index) in indicators" :key="index">
-                        <div class="space-y-4 rounded-2xl border border-slate-200 p-4">
+                        <div class="stack-4 rounded-2xl border border-slate-200 p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-sm font-semibold" x-text="'Resultado ' + (index + 1)"></span>
                                 <button type="button" x-show="indicators.length > 1" @click="indicators.splice(index, 1)" class="text-sm text-rose-600">Remover</button>
@@ -71,7 +71,7 @@
                     <button type="button" class="apple-button--light" @click="indicators.push({ indicator: '', unit: '', direction: 'decrease', target: '' })" :disabled="indicators.length >= 20">Adicionar outro resultado</button>
                     <p class="text-sm text-slate-500">O nome e a unidade devem corresponder aos resultados da ideia. Ao abrir o ciclo, cada ideia precisa ter pelo menos um indicador compatível.</p>
                 </section>
-                <section class="apple-card space-y-4 p-6">
+                <section class="apple-card stack-4 p-6">
                     <h4 class="text-lg font-semibold">3. Como será o reconhecimento?</h4>
                     <x-workflow-field name="category" label="Nome do reconhecimento" value="Destaque em inovação" />
                     <div class="grid gap-4 sm:grid-cols-2">
@@ -82,8 +82,8 @@
                 </section>
                 <details class="rounded-2xl border border-slate-200 bg-white/70 p-6" @if ($errors->any()) open @endif>
                     <summary class="cursor-pointer font-semibold">Ajustar regras de avaliação <span class="text-sm font-normal text-slate-500">(opcional)</span></summary>
-                    <div class="mt-5 space-y-6">
-                        <fieldset class="space-y-3">
+                    <div class="mt-5 stack-6">
+                        <fieldset class="stack-3">
                             <legend class="font-semibold">Composição da nota final</legend>
                             <div class="grid gap-4 sm:grid-cols-3">
                                 @foreach (['real_results' => 'Resultados reais', 'technical' => 'Avaliação técnica', 'votes' => 'Votação'] as $field => $label)
@@ -92,7 +92,7 @@
                             </div>
                             <p class="text-sm" :class="Math.abs(weightTotal - 100) < 0.001 ? 'text-emerald-700' : 'text-rose-600'" x-text="'Total: ' + weightTotal + '% — deve somar 100%'"></p>
                         </fieldset>
-                        <fieldset class="space-y-3">
+                        <fieldset class="stack-3">
                             <legend class="font-semibold">O que os funcionários avaliam</legend>
                             <p class="text-sm text-slate-600">Cada critério recebe uma nota de 1 a 5. As orientações já estão prontas para usar.</p>
                             <template x-for="(criterion, index) in criteria" :key="index">
@@ -111,8 +111,8 @@
                         <label class="block text-sm font-medium">Permitir deixar critérios sem nota?<select name="allow_abstention" class="mt-1 block w-full rounded-lg border-slate-300"><option value="0" @selected(!old('allow_abstention', false))>Não, responder todos</option><option value="1" @selected(old('allow_abstention', false))>Sim, responder pelo menos um</option></select></label>
                     </div>
                 </details>
-                <details class="apple-card space-y-4 p-6" x-data="{ bands: @js(old('categories', [])) }"><summary class="cursor-pointer font-semibold">Categorias e faixas de reconhecimento (opcional)</summary><p class="text-sm">Sem faixas, vale o reconhecimento principal acima. Com faixas, cada ideia recebe no máximo uma categoria, na ordem definida. Use intervalos sem sobreposição e informe valores por ideia, divididos entre os participantes. Os requisitos opcionais de votos, notas e categoria da publicação são cumulativos; o mínimo de votos do ciclo sempre vale. Eles ficam fixos na abertura.</p><template x-for="(band,index) in bands" :key="index"><div class="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"><label>Categoria<input required x-model="band.name" :name="`categories[${index}][name]`" class="block w-full rounded-lg"></label><label>Nota mínima<input required type="number" min="0" max="100" step="0.01" x-model="band.minimum_score" :name="`categories[${index}][minimum_score]`" class="block w-full rounded-lg"></label><label>Nota máxima<input required type="number" min="0" max="100" step="0.01" x-model="band.maximum_score" :name="`categories[${index}][maximum_score]`" class="block w-full rounded-lg"></label><label>Valor por ideia (R$)<input required type="number" min="0" step="0.01" x-model="band.reward_amount" :name="`categories[${index}][reward_amount]`" class="block w-full rounded-lg"></label><label>Limite de ideias premiadas<input required type="number" min="1" max="1000" x-model="band.max_awards" :name="`categories[${index}][max_awards]`" class="block w-full rounded-lg"></label><label>Mínimo de votos nesta categoria (opcional)<input type="number" min="1" max="100000" x-model="band.minimum_votes" :name="`categories[${index}][minimum_votes]`" class="block w-full rounded-lg"></label><label>Nota técnica mínima (opcional)<input type="number" min="0" max="100" step="0.01" x-model="band.minimum_technical" :name="`categories[${index}][minimum_technical]`" class="block w-full rounded-lg"></label><label>Nota mínima de resultados (opcional)<input type="number" min="0" max="100" step="0.01" x-model="band.minimum_results" :name="`categories[${index}][minimum_results]`" class="block w-full rounded-lg"></label><label>Categoria da publicação elegível (opcional)<input maxlength="255" x-model="band.idea_category" :name="`categories[${index}][idea_category]`" class="block w-full rounded-lg" placeholder="Vazio: todas as categorias"></label><button type="button" @click="bands.splice(index,1)" class="text-rose-700">Remover categoria</button></div></template><button type="button" class="apple-button--light" @click="bands.push({name:'',minimum_score:70,maximum_score:100,reward_amount:0,max_awards:1,minimum_votes:'',minimum_technical:'',minimum_results:'',idea_category:''})" :disabled="bands.length >= 20">Adicionar categoria</button></details>
-                <details class="apple-card space-y-4 p-6"><summary class="font-semibold">Desempate e alertas (opcional)</summary><p class="text-sm">Após a nota final, aplique as três dimensões na ordem escolhida, sem repetir. Persistindo empate, vale o código da ideia em ordem crescente.</p>@foreach(['real_results'=>'Resultados reais','technical'=>'Avaliação técnica','votes'=>'Votação'] as $default=>$label)<label class="block">{{ $loop->iteration }}º desempate<select name="tie_break_order[]" class="block w-full rounded-lg">@foreach(['real_results'=>'Resultados reais','technical'=>'Avaliação técnica','votes'=>'Votação'] as $key=>$text)<option value="{{ $key }}" @selected(old('tie_break_order.'.$loop->parent->index, $default) === $key)>{{ $text }}</option>@endforeach</select></label>@endforeach<x-workflow-field name="anomaly_threshold" label="Quantidade de votos idênticos para gerar alerta" type="number" value="5" min="2" max="100000" /></details>
+                <details class="apple-card stack-4 p-6" x-data="{ bands: @js(old('categories', [])) }"><summary class="cursor-pointer font-semibold">Categorias e faixas de reconhecimento (opcional)</summary><p class="text-sm">Sem faixas, vale o reconhecimento principal acima. Com faixas, cada ideia recebe no máximo uma categoria, na ordem definida. Use intervalos sem sobreposição e informe valores por ideia, divididos entre os participantes. Os requisitos opcionais de votos, notas e categoria da publicação são cumulativos; o mínimo de votos do ciclo sempre vale. Eles ficam fixos na abertura.</p><template x-for="(band,index) in bands" :key="index"><div class="grid gap-3 rounded-xl border p-4 sm:grid-cols-2"><label>Categoria<input required x-model="band.name" :name="`categories[${index}][name]`" class="block w-full rounded-lg"></label><label>Nota mínima<input required type="number" min="0" max="100" step="0.01" x-model="band.minimum_score" :name="`categories[${index}][minimum_score]`" class="block w-full rounded-lg"></label><label>Nota máxima<input required type="number" min="0" max="100" step="0.01" x-model="band.maximum_score" :name="`categories[${index}][maximum_score]`" class="block w-full rounded-lg"></label><label>Valor por ideia (R$)<input required type="number" min="0" step="0.01" x-model="band.reward_amount" :name="`categories[${index}][reward_amount]`" class="block w-full rounded-lg"></label><label>Limite de ideias premiadas<input required type="number" min="1" max="1000" x-model="band.max_awards" :name="`categories[${index}][max_awards]`" class="block w-full rounded-lg"></label><label>Mínimo de votos nesta categoria (opcional)<input type="number" min="1" max="100000" x-model="band.minimum_votes" :name="`categories[${index}][minimum_votes]`" class="block w-full rounded-lg"></label><label>Nota técnica mínima (opcional)<input type="number" min="0" max="100" step="0.01" x-model="band.minimum_technical" :name="`categories[${index}][minimum_technical]`" class="block w-full rounded-lg"></label><label>Nota mínima de resultados (opcional)<input type="number" min="0" max="100" step="0.01" x-model="band.minimum_results" :name="`categories[${index}][minimum_results]`" class="block w-full rounded-lg"></label><label>Categoria da publicação elegível (opcional)<input maxlength="255" x-model="band.idea_category" :name="`categories[${index}][idea_category]`" class="block w-full rounded-lg" placeholder="Vazio: todas as categorias"></label><button type="button" @click="bands.splice(index,1)" class="text-rose-700">Remover categoria</button></div></template><button type="button" class="apple-button--light" @click="bands.push({name:'',minimum_score:70,maximum_score:100,reward_amount:0,max_awards:1,minimum_votes:'',minimum_technical:'',minimum_results:'',idea_category:''})" :disabled="bands.length >= 20">Adicionar categoria</button></details>
+                <details class="apple-card stack-4 p-6"><summary class="font-semibold">Desempate e alertas (opcional)</summary><p class="text-sm">Após a nota final, aplique as três dimensões na ordem escolhida, sem repetir. Persistindo empate, vale o código da ideia em ordem crescente.</p>@foreach(['real_results'=>'Resultados reais','technical'=>'Avaliação técnica','votes'=>'Votação'] as $default=>$label)<label class="block">{{ $loop->iteration }}º desempate<select name="tie_break_order[]" class="block w-full rounded-lg">@foreach(['real_results'=>'Resultados reais','technical'=>'Avaliação técnica','votes'=>'Votação'] as $key=>$text)<option value="{{ $key }}" @selected(old('tie_break_order.'.$loop->parent->index, $default) === $key)>{{ $text }}</option>@endforeach</select></label>@endforeach<x-workflow-field name="anomaly_threshold" label="Quantidade de votos idênticos para gerar alerta" type="number" value="5" min="2" max="100000" /></details>
                 <div class="rounded-2xl bg-sky-50 p-4 text-sm text-sky-900">
                     <p class="font-semibold">Regras que serão usadas</p>
                     <p class="mt-1"><span x-text="weights.real_results"></span>% resultados · <span x-text="weights.technical"></span>% avaliação técnica · <span x-text="weights.votes"></span>% votação. Confira as demais condições em “Ajustar regras de avaliação”.</p>

@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">Bonificações por ciclo</h2></x-slot>
-    <div class="execution-report award-report mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <div class="execution-report award-report mx-auto max-w-7xl stack-6 px-4 py-8">
         <div class="report-intro"><div><p class="report-eyebrow">Exclusivo da administração</p><h3>Ideias, pessoas e reconhecimentos</h3><p class="report-muted">Confira a classificação e a destinação dos valores, com cada rodada separada.</p></div><a class="apple-button--light" href="{{ route('reports.index') }}">Voltar aos relatórios</a></div>
         <div class="report-stats">
             <x-stat-card label="Ciclos apurados" :value="$summary['cycles']" icon="vote" tone="brand" description="No recorte selecionado" />

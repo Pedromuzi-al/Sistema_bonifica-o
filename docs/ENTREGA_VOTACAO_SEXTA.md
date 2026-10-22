@@ -1,5 +1,8 @@
 # Rodada de ideias até sexta-feira, 23/10/2026
 
+> Atualização de 21/10/2026: a entrega foi adiada pelo usuário para novembro de 2026, sem dia definido. Este arquivo conserva o nome histórico. O fluxo manual vigente usa definição direta de senha; os trechos históricos sobre a rodada de outubro não definem o prazo atual. Consulte `STATUS.md` para as pendências e validações recentes.
+
+
 ## Escopo acordado
 
 A rodada premia a ideia selecionada, mesmo antes da implementação. Na criação do ciclo de seleção, a administração configura o valor por ideia e o limite de ideias selecionadas. O valor zero mantém a seleção sem prêmio financeiro. A apuração ordena os votos; a decisão humana de selecionar exige justificativa. Aprovar e divulgar o reconhecimento são ações separadas. O sistema registra a bonificação e sua divisão; não realiza transferência bancária.
@@ -20,12 +23,12 @@ Depois de alterar configuração no ambiente, execute `php artisan config:clear`
 
 1. Prepare o administrador inicial com `php artisan app:create-administrator EMAIL_REAL --name="NOME_REAL"`. O comando pede a senha sem mostrá-la. Não use o seeder de demonstração em produção.
 2. Entre em Administração → Pessoas e acessos → Cadastrar pessoa. Informe nome, e-mail de identificação, perfil e setor/equipes quando aplicável. A senha inicial é aleatória e não é compartilhada.
-3. Abra Gerenciar acesso. Confirme sua própria senha e informe o motivo para gerar o link de primeiro acesso.
-4. Confira a identidade e entregue o link exclusivamente ao titular por um canal individual. Ele aparece somente na resposta da geração; não o copie para grupos, capturas ou documentos de suporte.
-5. O titular abre o link, define sua senha e entra no sistema. Enquanto isso, a conta continua com primeiro acesso pendente.
-6. Para recuperar uma conta, siga o mesmo procedimento em Gerenciar acesso → Recuperação de acesso. Não há envio automático na tela Esqueci minha senha.
+3. Abra Gerenciar acesso e clique em Redefinir senha.
+4. Confira a identidade da pessoa, preencha Nova senha e Confirmar senha e clique em Concluir. Isso libera também a conta que ainda aguarda o primeiro acesso.
+5. Entregue a senha exclusivamente ao titular, por canal privado. A pessoa entra com seu e-mail e a nova senha; depois pode alterá-la em Meu perfil.
+6. Para recuperar uma conta, use o mesmo botão. Não há envio automático na tela Esqueci minha senha no modo manual.
 
-O prazo do link segue `auth.passwords.users.expire` (60 minutos por padrão). É de uso único; gerar outro invalida o anterior. Ao definir nova senha, sessões anteriores são revogadas. O registro de auditoria contém autor, titular, finalidade e motivo, sem o token. Contas bloqueadas/desativadas não recebem link enquanto não forem reativadas. O administrador confirma a própria senha e a geração tem limite de requisições.
+A senha é armazenada somente com hash. A operação invalida sessões e tokens anteriores, incrementa a versão de acesso e registra quem realizou a alteração, sem registrar a senha ou seu hash na auditoria. Não confirma artificialmente o e-mail. Contas bloqueadas/desativadas exigem reativação antes dessa operação. Cancelar limpa os campos sem salvar.
 
 ## Sequência operacional
 
@@ -37,7 +40,7 @@ O prazo do link segue `auth.passwords.users.expire` (60 minutos por padrão). É
 6. Conferir valores e divisão entre autor/coautores; aprovar e divulgar os reconhecimentos. Registrar o pagamento na operação financeira da empresa, fora do sistema.
 7. Guardar exportações e backup do fechamento; acompanhar as ideias escolhidas com responsável e prazo.
 
-Execute também o roteiro de QA com pessoas reais antes da rodada oficial. Permanecem pendentes: teste MySQL, validação externa e política corporativa de retenção/anonimização, incluindo propostas guardadas no banco de ideias. A suíte local não comprova disponibilidade da internet ou capacidade para o número real de funcionários.
+Execute também o roteiro de QA com pessoas reais antes da rodada oficial. Permanecem pendentes: validação no MySQL do futuro servidor e validação externa e política corporativa de retenção/anonimização, incluindo propostas guardadas no banco de ideias. A suíte local não comprova disponibilidade da internet ou capacidade para o número real de funcionários.
 
 ## Hospedagem sem mensalidade: pesquisa de alternativas
 

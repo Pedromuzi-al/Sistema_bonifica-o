@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-bold">Votações e reconhecimentos</h2></x-slot>
-    <div class="mx-auto max-w-7xl space-y-6 px-4 py-8">
+    <div class="mx-auto max-w-7xl stack-6 px-4 py-8">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div><h3 class="text-xl font-bold">Ciclos cadastrados</h3><p class="mt-1 text-sm text-slate-600">Acompanhe os períodos de votação, as propostas e os resultados.</p></div>
             @if($canManage)<a class="apple-button gap-2" href="{{ route('cycles.create') }}"><span aria-hidden="true">＋</span> Novo ciclo</a>@endif
         </div>
         @if($cycles->isEmpty())
-            <section class="apple-card space-y-3 p-8 text-center">
+            <section class="apple-card stack-3 p-8 text-center">
                 <h4 class="text-lg font-semibold">{{ $canManage ? 'Nenhum ciclo cadastrado ainda.' : 'Nenhum ciclo disponível no momento.' }}</h4>
                 <p class="text-sm text-slate-600">{{ $canManage ? 'Clique em Novo ciclo para criar o primeiro período de votação.' : 'Os ciclos aparecerão aqui quando forem abertos pela administração.' }}</p>
             </section>

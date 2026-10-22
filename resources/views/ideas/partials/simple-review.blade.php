@@ -1,7 +1,7 @@
-<section class="apple-card space-y-4 p-6" id="revisao-da-ideia">
+<section class="apple-card stack-4 p-6" id="revisao-da-ideia">
     <h3 class="text-xl font-bold">Revisar ideia</h3>
     <p>Confira se a ideia é compreensível, se já existe uma semelhante e se o texto pode ser divulgado. Libere para votação, peça ajuste ou arquive com justificativa. Liberar não aprova a execução nem concede prêmio.</p>
-    <form method="POST" action="{{ route('ideas.review-decision', $idea) }}" class="space-y-4">@csrf
+    <form method="POST" action="{{ route('ideas.review-decision', $idea) }}" class="stack-4">@csrf
         <p class="text-sm">O texto já vem preenchido. Altere somente o que precisar para os funcionários entenderem a proposta.</p>
         @foreach(['title'=>'Título público','problem'=>'Problema','solution'=>'Solução proposta','results'=>'Benefícios esperados (opcional)','category'=>'Categoria (opcional)'] as $field=>$label)
             <x-workflow-field :name="$field" :label="$label" :type="in_array($field,['title','category']) ? 'text' : 'textarea'" :required="false" :value="$idea->publication[$field] ?? match($field) { 'title'=>$idea->title, 'problem'=>$idea->problem_description, 'solution'=>$idea->solution_description, 'results'=>$idea->expected_results, default=>'' }" />

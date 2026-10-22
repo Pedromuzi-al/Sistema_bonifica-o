@@ -1,7 +1,7 @@
 <x-guest-layout>
     <x-auth-session-status class="mb-5" :status="session('status')" />
 
-    <form method="POST" action="{{ route('login') }}" class="space-y-5">
+    <form method="POST" action="{{ route('login') }}" class="stack-5">
         @csrf
 
         <div>
@@ -22,7 +22,7 @@
 
         <div class="flex items-center justify-between gap-4 pt-2">
             <label for="remember_me" class="inline-flex items-center gap-2 text-sm text-slate-600">
-                <input id="remember_me" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" name="remember">
+                <input id="remember_me" type="checkbox" class="h-4 w-4 rounded-sm border-slate-300 text-sky-600 focus:ring-sky-500" name="remember">
                 Lembrar-me
             </label>
 

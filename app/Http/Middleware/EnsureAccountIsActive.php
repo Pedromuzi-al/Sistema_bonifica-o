@@ -15,7 +15,7 @@ class EnsureAccountIsActive
         $authenticated = $request->user();
         $user = $authenticated ? User::withTrashed()->find($authenticated->id) : null;
         if ($authenticated && (! $user || ! $user->isAvailable() || $user->invitation_pending || (int) $request->session()->get('access_version', 0) !== (int) $user->access_version)) {
-            $message = $user?->invitation_pending ? 'Conclua a definição da senha pelo link de primeiro acesso.' : ($user?->isAvailable() ? 'Sua sessão expirou. Entre novamente.' : 'Sua conta está bloqueada. Fale com o administrador.');
+            $message = $user?->invitation_pending ? 'Solicite à administração a definição da sua senha de primeiro acesso.' : ($user?->isAvailable() ? 'Sua sessão expirou. Entre novamente.' : 'Sua conta está bloqueada. Fale com o administrador.');
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

@@ -9,14 +9,14 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-            @unless(auth()->user()->canViewPublicIdeas())<section class="apple-card space-y-2 p-5"><h3 class="font-bold">Sua conta aguarda liberação</h3><p>Peça ao administrador para liberar seu acesso. Depois disso, você poderá enviar ideias e participar das votações.</p></section>@endunless
+        <div class="mx-auto max-w-7xl stack-6 px-4 sm:px-6 lg:px-8">
+            @unless(auth()->user()->canViewPublicIdeas())<section class="apple-card stack-2 p-5"><h3 class="font-bold">Sua conta aguarda liberação</h3><p>Peça ao administrador para liberar seu acesso. Depois disso, você poderá enviar ideias e participar das votações.</p></section>@endunless
             <section class="apple-card dashboard-welcome p-6 sm:p-8">
-                <div class="max-w-3xl space-y-4">
+                <div class="max-w-3xl stack-4">
                     <p class="welcome-eyebrow">Olá, {{ Str::before(auth()->user()->name, ' ') }}</p>
                     <h3 class="text-2xl font-bold tracking-tight sm:text-3xl">Boas ideias merecem sair do papel.</h3>
                     <p class="welcome-description">Registre uma oportunidade, participe das votações e acompanhe as contribuições da equipe.</p>
-                    <div class="space-y-3 pt-2"><p class="text-sm font-semibold">Por onde começar?</p><div class="flex flex-wrap gap-3">@can('create', App\Models\Idea::class)<a class="apple-button" href="{{ route('ideas.create') }}">Tenho uma ideia <span class="ml-2" aria-hidden="true">→</span></a>@endcan<a class="apple-button--light" href="{{ route('ideas.index', ['mine'=>1]) }}">Acompanhar minhas ideias</a>@if(auth()->user()->canViewPublicIdeas())<a class="apple-button--light" href="{{ route('cycles.index') }}">Participar das votações</a>@endif</div></div>
+                    <div class="stack-3 pt-2"><p class="text-sm font-semibold">Por onde começar?</p><div class="flex flex-wrap gap-3">@can('create', App\Models\Idea::class)<a class="apple-button" href="{{ route('ideas.create') }}">Tenho uma ideia <span class="ml-2" aria-hidden="true">→</span></a>@endcan<a class="apple-button--light" href="{{ route('ideas.index', ['mine'=>1]) }}">Acompanhar minhas ideias</a>@if(auth()->user()->canViewPublicIdeas())<a class="apple-button--light" href="{{ route('cycles.index') }}">Participar das votações</a>@endif</div></div>
                 </div>
                 <span class="welcome-decoration" aria-hidden="true"><x-sidebar-icon name="idea" /></span>
             </section>
@@ -39,7 +39,7 @@
                         <a href="{{ route('ideas.index') }}" class="text-sm font-medium text-sky-600 hover:text-sky-700">Ver todas</a>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="stack-4">
                         @forelse ($recentIdeas as $idea)
                             <div class="idea-preview rounded-2xl border border-slate-200 p-4">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -59,7 +59,7 @@
 
                 <div class="apple-card p-6">
                     <h3 class="text-xl font-bold tracking-[-0.04em] text-slate-900">Seus avisos</h3><a class="text-sm text-sky-700 underline" href="{{ route('notifications.index') }}">Ver todos os avisos</a>
-                    <div class="mt-5 space-y-3">
+                    <div class="mt-5 stack-3">
                         @forelse ($notifications as $notification)
                             <div class="notification-card rounded-[18px] border border-slate-200 p-4">
                                 <p class="text-sm font-semibold text-slate-800">{{ $notification->title }}</p>
@@ -73,7 +73,7 @@
                 </div>
             </div>
 
-            <section class="apple-card space-y-3 p-6"><h3 class="text-xl font-bold">Minha participação e reconhecimentos</h3><p>Votos registrados: {{ $participation }} · Ideias concluídas: {{ $stats['completed'] }}</p>@forelse ($awards as $award)<p>{{ $award->idea->idea_code }} — {{ $award->category }}: R$ {{ number_format($award->award_amount,2,',','.') }}</p>@empty<p>Nenhum reconhecimento divulgado.</p>@endforelse</section>
+            <section class="apple-card stack-3 p-6"><h3 class="text-xl font-bold">Minha participação e reconhecimentos</h3><p>Votos registrados: {{ $participation }} · Ideias concluídas: {{ $stats['completed'] }}</p>@forelse ($awards as $award)<p>{{ $award->idea->idea_code }} — {{ $award->category }}: R$ {{ number_format($award->award_amount,2,',','.') }}</p>@empty<p>Nenhum reconhecimento divulgado.</p>@endforelse</section>
 
         </div>
     </div>

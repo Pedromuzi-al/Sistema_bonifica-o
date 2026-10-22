@@ -1,5 +1,8 @@
 # Auditoria local de QA e segurança — 19/10/2026
 
+> Atualização de 21/10/2026: QA-01 a QA-07 foram corrigidos e receberam testes de aceitação/regressão na suíte habitual. QA-08 (cadeia de build/Tailwind 3) foi resolvido em 22/10/2026 pela migração autorizada para Tailwind 4.3.3, com auditoria npm completa sem vulnerabilidades. As reproduções em `docs/qa/AuditFindingsTest.php` e os resultados abaixo descrevem o estado histórico anterior, e não devem ser usados como aprovação do código atual. Leia a atualização de 21/10/2026 de `STATUS.md`.
+
+
 Foram encontrados sete problemas reproduzidos em testes isolados e um conjunto de alertas de dependências. A auditoria não alterou regras da aplicação nem corrigiu os achados. As modificações que já existiam no workspace foram preservadas.
 
 ## Verificação executada

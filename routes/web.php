@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CycleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\FinancialRulesController;
 use App\Http\Controllers\GovernanceController;
 use App\Http\Controllers\IdeaController;
 use App\Http\Controllers\OrganizationController;
@@ -87,6 +88,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/users/{user}/verification', [AdminUserController::class, 'resendVerification'])->middleware('throttle:6,1')->name('admin.users.verification');
     Route::get('/admin/organization', [OrganizationController::class, 'index'])->name('admin.organization');
     Route::get('/admin/sectors', [OrganizationController::class, 'sectors'])->name('admin.sectors.index');
+    Route::get('/financial-rules', [FinancialRulesController::class, 'index'])->name('financial.index');
+    Route::get('/financial-rules/technical', [FinancialRulesController::class, 'technicalModels'])->name('financial.technical.index');
+    Route::get('/financial-rules/technical/create', [FinancialRulesController::class, 'createTechnicalModel'])->name('financial.technical.create');
+    Route::post('/financial-rules/technical', [FinancialRulesController::class, 'storeTechnicalModel'])->name('financial.technical.store');
+    Route::get('/financial-rules/technical/{model}/edit', [FinancialRulesController::class, 'editTechnicalModel'])->name('financial.technical.edit');
+    Route::patch('/financial-rules/technical/{model}', [FinancialRulesController::class, 'updateTechnicalModel'])->name('financial.technical.update');
+    Route::get('/financial-rules/bonuses', [FinancialRulesController::class, 'policies'])->name('financial.policies.index');
+    Route::get('/financial-rules/bonuses/create', [FinancialRulesController::class, 'create'])->name('financial.policies.create');
+    Route::post('/financial-rules/bonuses', [FinancialRulesController::class, 'store'])->name('financial.policies.store');
+    Route::get('/financial-rules/bonuses/{policy}/edit', [FinancialRulesController::class, 'edit'])->name('financial.policies.edit');
+    Route::patch('/financial-rules/bonuses/{policy}', [FinancialRulesController::class, 'update'])->name('financial.policies.update');
     Route::get('/admin/criteria', [TechnicalCriterionController::class, 'index'])->name('admin.criteria.index');
     Route::get('/admin/criteria/create', [TechnicalCriterionController::class, 'create'])->name('admin.criteria.create');
     Route::get('/admin/criteria/{criterion}/edit', [TechnicalCriterionController::class, 'edit'])->name('admin.criteria.edit');
@@ -106,7 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile/{user?}', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile/{user?}', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/{user?}', [ProfileController::class, 'update'])->middleware('throttle:sensitive-password')->name('profile.update');
     Route::post('/profile/permissions/{user?}', [ProfileController::class, 'updatePermissions'])->name('profile.permissions');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

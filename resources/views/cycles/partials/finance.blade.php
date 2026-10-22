@@ -1,4 +1,4 @@
-<section class="apple-card space-y-4 p-6" aria-labelledby="cycle-finance-title">
+<section class="apple-card stack-4 p-6" aria-labelledby="cycle-finance-title">
     <div><h3 id="cycle-finance-title" class="text-xl font-bold">Bonificações do ciclo</h3><p class="mt-2 text-sm text-slate-600">{{ $canManage ? 'Valores em reais. O total aprovado inclui o que já foi divulgado; não some as duas colunas.' : 'Somente bonificações já divulgadas são apresentadas.' }} O pagamento é realizado pela empresa fora do sistema.</p></div>
     <div class="grid gap-4 sm:grid-cols-3">
         @if($canManage)

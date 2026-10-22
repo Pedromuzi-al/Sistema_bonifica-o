@@ -27,6 +27,7 @@ class ProfileUpdateRequest extends FormRequest
         $profileUser = $profileUser instanceof User ? $profileUser : $this->user();
 
         return [
+            'current_password' => ['bail', Rule::requiredIf($profileUser->id === $this->user()->id && $this->input('email') !== $profileUser->email), 'nullable', 'string', 'current_password'],
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',

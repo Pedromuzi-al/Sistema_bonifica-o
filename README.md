@@ -1,6 +1,17 @@
 # Plataforma Corporativa de Ideias
 
+> Estado atual (22/10/2026): prazo transferido para novembro; migração autorizada para Tailwind 4.3.3 concluída, com auditoria npm sem vulnerabilidades. No modo manual, o administrador define/redefine a senha em Pessoas e acessos, inclusive para o primeiro acesso, com dois campos e Concluir. Trocar o próprio e-mail exige a senha atual; trocar a própria senha revoga acessos antigos. Consulte a atualização mais recente de `STATUS.md` para validações e pendências reais antes da publicação.
+
+
 Aplicação Laravel para registrar propostas de melhoria, priorizar ideias antes da implementação, acompanhar a execução e reconhecer contribuições e resultados. A autoria é privada para os demais funcionários; usuários autorizados da equipe de avaliação e administração podem consultá-la.
+
+## Regras financeiras e criação de ciclos
+
+No menu **Regras financeiras**, cadastre modelos de critérios técnicos (perguntas, orientações e pesos que somam 100%) e regras de bonificação (valor por ideia, nota mínima, abstenção e limite de votos idênticos para revisão). Ambos podem ser editados ou inativados; o acesso é administrativo. Os critérios individuais dos pareceres anteriores continuam acessíveis na área de critérios, em seção própria.
+
+Em **Votações → Novo ciclo**, escolha o modelo e a regra nos dois seletores. As prévias mostram o que será aplicado. Somente cadastros ativos são aceitos, e o servidor usa os valores cadastrados. Uma regra com valor zero permite seleção sem dinheiro. O mínimo de votos e o limite de ideias continuam no ciclo. A configuração é copiada para o rascunho e preservada na abertura, de modo que futuras edições não mudam os ciclos existentes. Reconhecimento por resultados comprovados mantém seu formulário próprio.
+
+As migrations de 22/10 acrescentam `technical_models` e `bonus_policies`, separadas dos registros históricos de bonificação. Atualize o esquema com `php artisan migrate` após o backup; não use seed de demonstração para preencher o banco operacional. Na base local, as duas migrations já foram aplicadas nesta entrega.
 
 ## Arquitetura
 
@@ -121,7 +132,7 @@ O bootstrap exige um nome terminado em `_test`, rejeita o banco da aplicação e
 
 ## Administração de acesso (branch adm)
 
-Na Administração, use **Pessoas e acessos** para cadastrar e editar pessoas, definir setor, equipes, perfil e permissões adicionais. Há filtros por nome/e-mail, contas bloqueadas ou desativadas, primeiro acesso pendente e pessoas sem perfil. O filtro de e-mail pendente aparece quando a verificação está exigida. O titular define sua senha pelo convite de primeiro acesso; alterações de perfil não substituem a senha. E-mails já utilizados por contas desativadas continuam reservados para permitir reativação sem perder o histórico.
+Na Administração, use **Pessoas e acessos** para cadastrar e editar pessoas, definir setor, equipes, perfil e permissões adicionais. Há filtros por nome/e-mail, contas bloqueadas ou desativadas, primeiro acesso pendente e pessoas sem perfil. O filtro de e-mail pendente aparece quando a verificação está exigida. No modo manual, o administrador define a primeira senha pelo botão Redefinir senha; no modo por e-mail, o titular recebe convite. Salvar dados/permissões não substitui a senha. E-mails já utilizados por contas desativadas continuam reservados para permitir reativação sem perder o histórico.
 
 O bloqueio exige justificativa, revoga sessões e acesso lembrado e preserva ideias, votos e avaliações. A reativação também exige justificativa e obriga novo login. Contas desativadas pelo titular podem ser reativadas pelo administrador, preservando associações. O último administrador ativo e com primeiro acesso concluído não pode perder o acesso. Quando a verificação é exigida, também precisa ter e-mail confirmado.
 
@@ -133,13 +144,13 @@ Após atualizar esta branch, execute `php artisan migrate` para adicionar equipe
 
 ## Administração e primeiro acesso
 
-Na administração, cadastre a pessoa com e-mail, setor, equipes e perfil de acesso. O sistema gera uma senha aleatória desconhecida. Com `ACCOUNT_INVITATION_DELIVERY=manual`, o administrador confirma a própria senha e gera um link individual de primeiro acesso, com justificativa auditada. Confira a identidade e entregue o link somente ao titular. A pessoa define sua própria senha, sem envio de mensagem ou confirmação de e-mail. Enquanto não definir a senha, a conta permanece com primeiro acesso pendente.
+Na administração, cadastre a pessoa com e-mail, setor, equipes e perfil de acesso. A senha inicial é aleatória e a conta fica pendente. No modo manual, abra Gerenciar acesso → Redefinir senha, preencha Nova senha/Confirmar senha e clique em Concluir. Isso libera também o primeiro acesso. Entregue a senha somente ao titular, por canal privado. Cancelar limpa os campos. A pessoa pode alterar sua senha depois em Meu perfil.
 
-O link usa o token de recuperação, expira conforme `auth.passwords.users.expire` (60 minutos por padrão) e só pode ser usado uma vez. Gerar outro invalida o anterior. A recuperação de acesso usa o mesmo procedimento na gestão da pessoa. A tela Esqueci minha senha orienta a procurar a administração. Contas bloqueadas/desativadas precisam ser reativadas antes de receber um link.
+A operação revoga sessões, acesso persistente e tokens anteriores, sem alterar permissões ou marcar o e-mail como confirmado. A auditoria registra responsável e conta afetada, sem senha ou hash. Contas bloqueadas/desativadas precisam ser reativadas antes. Em Meu perfil, alterar o próprio e-mail exige a senha atual; mudar somente o nome não exige. Trocar a própria senha encerra os acessos antigos e renova a sessão atual.
 
-Trocar o e-mail invalida sessões, acesso persistente e tokens anteriores. Redefinir a senha também revoga sessões anteriores. O último administrador liberado é preservado. Com `ACCOUNT_INVITATION_DELIVERY=email`, os convites voltam a ser enviados ao endereço e sua utilização confirma o e-mail; valide SMTP antes de habilitar esse modo.
+Com `ACCOUNT_INVITATION_DELIVERY=email`, o convite continua sendo enviado ao endereço e sua utilização confirma o e-mail. Valide SMTP antes de habilitar. A recuperação por e-mail não revela publicamente se o endereço existe. O autocadastro opcional atribui somente o perfil Funcionário e exige que `AccessControlSeeder` tenha preparado os perfis; o modelo de produção mantém o cadastro público desligado.
 
-A operação da rodada até sexta-feira está em [docs/ENTREGA_VOTACAO_SEXTA.md](docs/ENTREGA_VOTACAO_SEXTA.md), incluindo o primeiro administrador, contas individuais e pendências de hospedagem.
+O guia operacional está em [docs/ENTREGA_VOTACAO_SEXTA.md](docs/ENTREGA_VOTACAO_SEXTA.md), cujo nome é histórico. O prazo atual é novembro de 2026. Acompanhe pendências em [STATUS.md](STATUS.md).
 
 ## Conclusão do fluxo e reconhecimento
 
@@ -212,7 +223,7 @@ Execute a verificação no ambiente de destino:
 php artisan app:production-check
 ```
 
-Ela retorna erro enquanto houver configuração insegura, migrations pendentes, contas demonstrativas ou falta de administrador liberado (verificado quando exigido). Não valida DNS/TLS externo, entrega SMTP, disponibilidade, restauração externa ou navegação. Teste login, primeiro acesso/recuperação por link individual, confirmação de e-mail quando habilitada, criação de ideia, avaliação, resultados, publicação, voto e reconhecimento com contas de cada perfil. Valide computador/celular, teclado e leitores de tela. Monitore `/up`, erros HTTP, espaço em disco, logs e falhas do scheduler, sem publicar dados de acesso em logs externos.
+Ela retorna erro enquanto houver configuração insegura, migrations pendentes, contas demonstrativas ou falta de administrador liberado (verificado quando exigido). Não valida DNS/TLS externo, entrega SMTP, disponibilidade, restauração externa ou navegação. Teste login, primeiro acesso/recuperação direta pelo administrador (ou convite por e-mail, quando configurado), confirmação de e-mail quando habilitada, criação de ideia, avaliação, resultados, publicação, voto e reconhecimento com contas de cada perfil. Valide computador/celular, teclado e leitores de tela. Monitore `/up`, erros HTTP, espaço em disco, logs e falhas do scheduler, sem publicar dados de acesso em logs externos.
 
 ### Atualizações e backups
 
@@ -248,14 +259,15 @@ Se algum passo falhar, mantenha a manutenção e investigue. Não use `migrate:f
 No desenvolvimento, a suíte MySQL continua usando exclusivamente `ideias_corp_test`, protegida pelo bootstrap de testes. Nunca rode testes automatizados apontando para o banco publicado.
 
 
-### Auditoria das ferramentas de compilação
+### Tailwind 4 e auditoria das ferramentas de compilação
 
-Na verificação desta entrega, `composer audit` e `npm audit --omit=dev` não apontaram vulnerabilidades. A auditoria completa npm apontou sete alertas em dependências de desenvolvimento ligadas ao Tailwind 3: cinco altos e dois moderados. Há dois avisos de origem, propagados pela árvore: [recursão em braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), sem versão corrigida informada no aviso, e [complexidade de análise em postcss-selector-parser](https://github.com/advisories/GHSA-rj75-hqrm-r3gf). Não se trata de sete falhas independentes no código da aplicação.
+Migração autorizada pelo usuário e concluída em 22/10/2026: Tailwind **4.3.3**, plugin Vite **4.3.3** e plugin de formulários **0.5.11**. Use `npm ci --ignore-scripts` e `npm run build`; para desenvolvimento, `npm run dev`. A configuração está em `resources/css/app.css` e `vite.config.js`, com fontes explícitas para os templates, JavaScript, classes da aplicação e paginação do Laravel. Não recrie os arquivos antigos `tailwind.config.js`/`postcss.config.js` nem siga instruções antigas de inicialização da versão 3.
 
-A geração do pacote usa somente código/configuração confiáveis do repositório. Não compile CSS, templates ou padrões enviados pelos usuários e não exponha o compilador como serviço. O pacote publicado contém CSS/JS estáticos, sem essas ferramentas. A correção automática sugerida pelo npm envolve Tailwind 4 e exige migração e revisão da interface; não execute `npm audit fix --force` sem essa revisão. Reavalie os avisos em cada atualização de dependências.
+Os utilitários próprios `stack-1`, `stack-2`, `stack-3`, `stack-4`, `stack-5`, `stack-6` e `stack-8` preservam as pilhas verticais anteriores; telas novas devem preferir flex/grid com `gap`. A variante escura é controlada pela classe `dark` no elemento raiz. A paleta e as bordas/focos da plataforma foram mantidos; o teste de navegador inclui os dois temas e verificações básicas de contraste para títulos em superfícies lisas.
 
+A auditoria npm completa e a auditoria sem dependências de desenvolvimento retornaram **zero vulnerabilidades** após a migração e instalação pelo lockfile. Os sete alertas da cadeia anterior do Tailwind 3 foram removidos da árvore, sem ignorar avisos ou forçar uma atualização automática. A auditoria PHP anterior também não reportou advisories; avisos futuros devem ser avaliados novamente.
 
-A validação atual está registrada em [docs/VALIDACAO_LOCAL.md](docs/VALIDACAO_LOCAL.md), com resultados da suíte, navegação e restauração local. Isso não substitui a validação de SMTP, TLS e acessibilidade completa na hospedagem de destino.
+A versão 4 exige navegadores modernos: Safari 16.4+, Chrome 111+ ou Firefox 128+, conforme o [guia oficial de migração](https://tailwindcss.com/docs/upgrade-guide). A validação automatizada desta entrega usa Chrome; não certifica todas as versões desses navegadores. Referência de integração: [Tailwind com Vite](https://tailwindcss.com/docs/installation/using-vite).
 
 ## QA e revisão final local
 

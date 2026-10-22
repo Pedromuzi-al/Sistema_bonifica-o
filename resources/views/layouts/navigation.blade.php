@@ -6,6 +6,7 @@
         ['route'=>'notifications.index','match'=>'notifications.*','label'=>'Avisos','icon'=>'bell','visible'=>true],
         ['route'=>'evaluation.index','match'=>'evaluation.*','label'=>'Revisão de ideias','icon'=>'check','visible'=>auth()->user()->can('evaluate', new App\Models\Idea)],
         ['route'=>'admin.index','match'=>'admin.*','label'=>'Administração','icon'=>'settings','visible'=>auth()->user()->can('manage-admin')],
+        ['route'=>'financial.index','match'=>'financial.*','label'=>'Regras financeiras','icon'=>'chart','visible'=>auth()->user()->can('manage-admin')],
         ['route'=>'reports.index','match'=>'reports.*','label'=>'Relatórios','icon'=>'chart','visible'=>auth()->user()->can('manage-admin')],
     ];
 @endphp
@@ -19,28 +20,37 @@
         <p class="px-3 pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Plataforma de ideias</p>
         @foreach($items as $item)
             @if($item['visible'])
-                @if($item['route'] === 'admin.index')
-                    <div class="sidebar-group" x-data="{ expanded: @js(request()->routeIs('admin.*')) }">
-                        <button type="button" class="app-nav-link sidebar-link sidebar-group-toggle {{ request()->routeIs('admin.*') ? 'sidebar-group-current' : '' }}"
-                            aria-controls="administration-links" aria-expanded="{{ request()->routeIs('admin.*') ? 'true' : 'false' }}"
+                @if(in_array($item['route'], ['admin.index', 'financial.index']))
+                    @php
+                        $financial = $item['route'] === 'financial.index';
+                        $groupCurrent = $financial ? request()->routeIs('financial.*', 'admin.criteria.*') : (request()->routeIs('admin.*') && !request()->routeIs('admin.criteria.*'));
+                        $groupId = $financial ? 'financial-links' : 'administration-links';
+                        $sections = $financial ? [
+                            ['route'=>'financial.index','match'=>'financial.index','label'=>'Visão geral'],
+                            ['route'=>'financial.technical.index','match'=>'financial.technical.*','label'=>'Critérios técnicos'],
+                            ['route'=>'financial.policies.index','match'=>'financial.policies.*','label'=>'Regras de bonificação'],
+                        ] : [
+                            ['route'=>'admin.index','match'=>'admin.index','label'=>'Visão geral'],
+                            ['route'=>'admin.sectors.index','match'=>'admin.sectors.*','label'=>'Setores'],
+                            ['route'=>'admin.users.index','match'=>'admin.users.*','label'=>'Pessoas e acessos'],
+                            ['route'=>'admin.organization','match'=>'admin.teams.*','label'=>'Equipes'],
+                        ];
+                    @endphp
+                    <div class="sidebar-group" x-data="{ expanded: @js($groupCurrent) }">
+                        <button type="button" class="app-nav-link sidebar-link sidebar-group-toggle {{ $groupCurrent ? 'sidebar-group-current' : '' }}"
+                            aria-controls="{{ $groupId }}" aria-expanded="{{ $groupCurrent ? 'true' : 'false' }}"
                             :aria-expanded="expanded.toString()" @click="expanded = !expanded">
                             <x-sidebar-icon :name="$item['icon']" />
                             <span>{{ $item['label'] }}</span>
                             <svg class="sidebar-group-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round" /></svg>
                         </button>
-                        <div id="administration-links" class="sidebar-submenu" data-expanded="{{ request()->routeIs('admin.*') ? 'true' : 'false' }}"
+                        <div id="{{ $groupId }}" class="sidebar-submenu" data-expanded="{{ $groupCurrent ? 'true' : 'false' }}"
                             :data-expanded="expanded.toString()" :inert="!expanded" :aria-hidden="(!expanded).toString()"
-                            @if(!request()->routeIs('admin.*')) inert aria-hidden="true" @endif>
+                            @if(!$groupCurrent) inert aria-hidden="true" @endif>
                             <div class="sidebar-submenu-clip">
                                 <div class="sidebar-submenu-links">
-                                    @foreach([
-                                        ['route'=>'admin.index','match'=>'admin.index','label'=>'Visão geral'],
-                                        ['route'=>'admin.sectors.index','match'=>'admin.sectors.*','label'=>'Setores'],
-                                        ['route'=>'admin.users.index','match'=>'admin.users.*','label'=>'Pessoas e acessos'],
-                                        ['route'=>'admin.criteria.index','match'=>'admin.criteria.*','label'=>'Critérios técnicos'],
-                                        ['route'=>'admin.organization','match'=>'admin.teams.*','label'=>'Equipes'],
-                                    ] as $section)
-                                        <a href="{{ route($section['route']) }}" class="app-nav-link sidebar-link sidebar-submenu-link" @if(request()->routeIs($section['match']) || ($section['route']==='admin.organization' && request()->routeIs('admin.organization'))) aria-current="page" @endif>{{ $section['label'] }}</a>
+                                    @foreach($sections as $section)
+                                        <a href="{{ route($section['route']) }}" class="app-nav-link sidebar-link sidebar-submenu-link" @if(request()->routeIs($section['match']) || ($section['route']==='financial.technical.index' && request()->routeIs('admin.criteria.*')) || ($section['route']==='admin.organization' && request()->routeIs('admin.organization'))) aria-current="page" @endif>{{ $section['label'] }}</a>
                                     @endforeach
                                 </div>
                             </div>
@@ -54,7 +64,7 @@
             @endif
         @endforeach
     </nav>
-    <div class="sidebar-footer space-y-2">
+    <div class="sidebar-footer stack-2">
         <a href="{{ route('profile.edit') }}" class="app-nav-link sidebar-link" @if(request()->routeIs('profile.*')) aria-current="page" @endif><x-sidebar-icon name="user" /><span>Meu perfil</span></a>
         <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="app-nav-link sidebar-link w-full text-left"><x-sidebar-icon name="logout" /><span>Sair</span></button></form>
         <p class="px-3 pt-3 text-xs text-slate-500">Conted Tech · Ideias que fazem a diferença</p>
@@ -66,7 +76,7 @@
         <span class="truncate text-sm font-medium text-slate-600">Plataforma de ideias</span>
     </div>
     <div class="flex shrink-0 items-center gap-3">
-                <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100">
+                <button type="button" data-theme-toggle aria-label="Ativar modo escuro" title="Ativar modo escuro" aria-pressed="false" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-white focus:outline-hidden focus:ring-4 focus:ring-sky-100">
                     <svg data-theme-icon="moon" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z" /></svg>
                     <svg data-theme-icon="sun" class="hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
                     <span data-theme-label class="hidden sm:inline">Modo escuro</span>

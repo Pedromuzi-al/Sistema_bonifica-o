@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\BonusAward;
+use App\Models\BonusPolicy;
 use App\Models\EvaluationCriterion;
 use App\Models\Idea;
 use App\Models\Sector;
+use App\Models\TechnicalModel;
 use App\Models\User;
 use App\Models\VotingCycle;
 use App\Services\CycleService;
@@ -40,6 +42,9 @@ class SelectionCycleTest extends TestCase
 
     private function cycle(array $overrides = []): VotingCycle
     {
+        $model = TechnicalModel::factory()->create();
+        $policy = BonusPolicy::factory()->create(array_intersect_key($overrides, array_flip(['reward_amount', 'minimum_score', 'anomaly_threshold', 'allow_abstention'])));
+        $overrides = [...$overrides, 'technical_model_id' => $model->id, 'bonus_policy_id' => $policy->id];
         $this->actingAs($this->admin)->post(route('cycles.store'), [...['purpose' => 'selection', 'name' => 'Seleção de propostas', 'starts_at' => now()->addHour()->toDateTimeString(), 'ends_at' => now()->addHours(2)->toDateTimeString(), 'max_selections' => 1], ...$overrides])->assertSessionHasNoErrors();
 
         return VotingCycle::latest('id')->firstOrFail();

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class CycleRequest extends CycleScheduleRequest
 {
@@ -27,6 +28,8 @@ class CycleRequest extends CycleScheduleRequest
             'name' => 'nome do ciclo',
             'starts_at' => 'início da votação',
             'ends_at' => 'fim da votação',
+            'technical_model_id' => 'modelo de critérios técnicos',
+            'bonus_policy_id' => 'regra de bonificação',
         ];
     }
 
@@ -37,16 +40,9 @@ class CycleRequest extends CycleScheduleRequest
                 ...parent::rules(),
                 'purpose' => ['required', 'in:selection'],
                 'minimum_votes' => ['sometimes', 'integer', 'between:1,100000'],
-                'minimum_score' => ['sometimes', 'numeric', 'between:0,100'],
                 'max_selections' => ['sometimes', 'integer', 'between:1,1000'],
-                'reward_amount' => ['sometimes', 'numeric', 'min:0', 'max:9999999999'],
-                'allow_abstention' => ['sometimes', 'boolean'],
-                'anomaly_threshold' => ['sometimes', 'integer', 'between:2,100000'],
-                'criteria' => ['sometimes', 'array', 'min:1', 'max:20'],
-                'criteria.*' => ['array:name,description,weight'],
-                'criteria.*.name' => ['required', 'string', 'max:255', 'distinct'],
-                'criteria.*.description' => ['required', 'string', 'max:1000'],
-                'criteria.*.weight' => ['required', 'numeric', 'gt:0', 'max:100'],
+                'technical_model_id' => ['required', 'integer', Rule::exists('technical_models', 'id')->where('active', true)],
+                'bonus_policy_id' => ['required', 'integer', Rule::exists('bonus_policies', 'id')->where('active', true)],
             ];
         }
 

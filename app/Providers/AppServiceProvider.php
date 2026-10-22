@@ -9,10 +9,13 @@ use App\Policies\IdeaPolicy;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -26,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         DB::prohibitDestructiveCommands($this->app->isProduction());
+        RateLimiter::for('sensitive-password', fn (Request $request) => Limit::perMinute(5)->by($request->user()?->id.'|'.$request->ip().'|'.$request->path()));
+        RateLimiter::for('password-recovery', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
         Password::defaults(fn () => $this->app->isProduction()
             ? Password::min(12)->mixedCase()->numbers()
             : Password::min(8));

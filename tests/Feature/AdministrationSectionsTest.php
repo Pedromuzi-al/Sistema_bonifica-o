@@ -28,7 +28,7 @@ class AdministrationSectionsTest extends TestCase
 
     public function test_administration_links_to_separate_listings_without_embedding_creation_forms(): void
     {
-        $this->actingAs($this->admin)->get(route('admin.index'))->assertOk()->assertSee(route('admin.sectors.index'), false)->assertSee(route('admin.criteria.index'), false)->assertSee(route('admin.users.index'), false)->assertDontSee('action="'.route('criteria.store').'"', false);
+        $this->actingAs($this->admin)->get(route('admin.index'))->assertOk()->assertSee(route('admin.sectors.index'), false)->assertSee(route('financial.technical.index'), false)->assertDontSee(route('admin.criteria.index'), false)->assertSee(route('admin.users.index'), false)->assertDontSee('action="'.route('criteria.store').'"', false);
         $this->get(route('admin.users.index'))->assertOk()->assertSee('Controle de acesso das pessoas')->assertSeeText('Permissões efetivas');
         $this->get(route('admin.criteria.index'))->assertOk()->assertSeeText('Novo critério técnico')->assertDontSee('action="'.route('criteria.store').'"', false);
         $this->get(route('admin.criteria.create'))->assertOk()->assertSee('action="'.route('criteria.store').'"', false);

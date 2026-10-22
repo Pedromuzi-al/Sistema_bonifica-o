@@ -1,5 +1,5 @@
 <section class="apple-card overflow-hidden" aria-labelledby="cycle-ranking-title">
-    <div class="space-y-2 p-6">
+    <div class="stack-2 p-6">
         <h3 id="cycle-ranking-title" class="text-xl font-bold">Classificação das ideias</h3>
         <p class="text-sm text-slate-600">A pontuação vai de 0 a 100. Classificação, decisão da gestão e bonificação são etapas distintas.</p>
         @if($cycle->isSelection())<p class="text-sm">{{ $cycleReport['pending_decisions'] }} ideia(s) aguardando decisão da gestão.</p>@endif
