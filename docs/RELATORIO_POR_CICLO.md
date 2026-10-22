@@ -1,5 +1,8 @@
 # Relatórios e resultados por ciclo
 
+Atualização de navegação em 22/10/2026: o menu **Relatórios** abre com seta e novo ícone de documento/gráfico. Os submenus são **Visão geral** (indicadores consolidados), **Relatório por ciclo** e **Relatório de bonificações**. Visão geral foi retirada do submenu Regras financeiras. Os endereços, filtros, cálculos e restrições de acesso anteriores permanecem válidos.
+
+
 A alternativa 1 organiza a rodada em três partes: classificação pela pontuação, decisão humana e aprovação/divulgação da bonificação. Uma posição alta não significa seleção ou direito automático ao prêmio.
 
 ## Onde consultar

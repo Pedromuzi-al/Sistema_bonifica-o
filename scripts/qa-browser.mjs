@@ -287,6 +287,56 @@ try {
     }
     await page.setViewportSize({width:1440,height:1000});
     outcomes.push('Regras financeiras: menu com seta, modelo de perguntas/pesos, regra de bonificação, edição, seletores e prévia nos dois temas e celular');
+    for(const dark of [false,true]) {
+        await page.evaluate(dark=>localStorage.setItem('conted-theme',dark?'dark':'light'),dark);
+        await page.goto(`${base}/financial-rules/technical`);
+        assert.equal(await page.locator('#financial-links').getByRole('link',{name:'Visão geral',exact:true}).count(),0);
+        const reportToggle=page.getByRole('button',{name:'Relatórios',exact:true});
+        const reportLinks=page.locator('#report-links');
+        assert.equal(await reportToggle.getAttribute('aria-expanded'),'false');
+        assert.ok(await reportLinks.evaluate(element=>element.inert));
+        const reportIcon=await reportToggle.locator('svg path').first().getAttribute('d');
+        const financialIcon=await page.getByRole('button',{name:'Regras financeiras',exact:true}).locator('svg path').first().getAttribute('d');
+        assert.notEqual(reportIcon,financialIcon);
+        await reportToggle.focus();
+        await page.keyboard.press('Space');
+        assert.equal(await reportToggle.getAttribute('aria-expanded'),'true');
+        await reportLinks.getByRole('link',{name:'Visão geral',exact:true}).click();
+        assert.equal(new URL(page.url()).searchParams.get('view'),'general');
+        await page.getByRole('heading',{name:'Visão geral',exact:true}).waitFor();
+        assert.equal(await reportLinks.locator('[aria-current=page]').count(),1);
+        assert.equal(await reportLinks.locator('[aria-current=page]').innerText(),'Visão geral');
+        await reportLinks.getByRole('link',{name:'Relatório por ciclo',exact:true}).click();
+        await page.getByRole('heading',{name:'Relatório por ciclo',exact:true}).waitFor();
+        assert.equal(await reportLinks.locator('[aria-current=page]').count(),1);
+        assert.equal(await reportLinks.locator('[aria-current=page]').innerText(),'Relatório por ciclo');
+        await reportLinks.getByRole('link',{name:'Relatório de bonificações',exact:true}).click();
+        assert.equal(new URL(page.url()).pathname,'/reports/awards');
+        assert.equal(await reportLinks.locator('[aria-current=page]').count(),1);
+        assert.equal(await reportLinks.locator('[aria-current=page]').innerText(),'Relatório de bonificações');
+        await page.emulateMedia({reducedMotion:'reduce'});
+        await reportToggle.click();
+        assert.ok(await reportLinks.evaluate(element=>getComputedStyle(element).transitionDuration.split(',').every(value=>parseFloat(value)<=0.001)));
+        await page.keyboard.press('Tab');
+        assert.equal(await page.evaluate(()=>document.activeElement.textContent.trim()),'Meu perfil');
+        await reportToggle.click();
+        await page.screenshot({path:join(reports,`menu-relatorios-${dark?'escuro':'claro'}.png`),fullPage:true});
+        await page.emulateMedia({reducedMotion:'no-preference'});
+        for(const width of [320,390]) {
+            await page.setViewportSize({width,height:844});
+            await page.getByRole('button',{name:'Abrir menu',exact:true}).click();
+            await reportLinks.getByRole('link',{name:'Visão geral',exact:true}).click();
+            await page.getByRole('button',{name:'Abrir menu',exact:true}).click();
+            assert.equal(await reportToggle.getAttribute('aria-expanded'),'true');
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+            await page.waitForFunction(()=>Math.abs(document.getElementById('mobile-navigation').getBoundingClientRect().left)<0.5);
+            await page.screenshot({path:join(reports,`menu-relatorios-${dark?'escuro':'claro'}-${width}.png`),fullPage:true});
+            await page.keyboard.press('Escape');
+        }
+        await page.setViewportSize({width:1440,height:1000});
+    }
+    outcomes.push('Relatórios: novo ícone, submenus Visão geral/ciclo/bonificações, destaque correto por consulta, teclado, movimento reduzido e celular; visão geral removida de Regras financeiras');
+
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${base}/dashboard`);

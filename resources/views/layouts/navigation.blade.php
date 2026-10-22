@@ -7,7 +7,7 @@
         ['route'=>'evaluation.index','match'=>'evaluation.*','label'=>'Revisão de ideias','icon'=>'check','visible'=>auth()->user()->can('evaluate', new App\Models\Idea)],
         ['route'=>'admin.index','match'=>'admin.*','label'=>'Administração','icon'=>'settings','visible'=>auth()->user()->can('manage-admin')],
         ['route'=>'financial.index','match'=>'financial.*','label'=>'Regras financeiras','icon'=>'chart','visible'=>auth()->user()->can('manage-admin')],
-        ['route'=>'reports.index','match'=>'reports.*','label'=>'Relatórios','icon'=>'chart','visible'=>auth()->user()->can('manage-admin')],
+        ['route'=>'reports.index','match'=>'reports.*','label'=>'Relatórios','icon'=>'report','visible'=>auth()->user()->can('manage-admin')],
     ];
 @endphp
 <button x-cloak x-show="mobile && sidebarOpen" @click="closeMenu()" type="button" class="sidebar-overlay" tabindex="-1" aria-label="Fechar menu lateral"></button>
@@ -20,21 +20,36 @@
         <p class="px-3 pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Plataforma de ideias</p>
         @foreach($items as $item)
             @if($item['visible'])
-                @if(in_array($item['route'], ['admin.index', 'financial.index']))
+                @if(in_array($item['route'], ['admin.index', 'financial.index', 'reports.index']))
                     @php
-                        $financial = $item['route'] === 'financial.index';
-                        $groupCurrent = $financial ? request()->routeIs('financial.*', 'admin.criteria.*') : (request()->routeIs('admin.*') && !request()->routeIs('admin.criteria.*'));
-                        $groupId = $financial ? 'financial-links' : 'administration-links';
-                        $sections = $financial ? [
-                            ['route'=>'financial.index','match'=>'financial.index','label'=>'Visão geral'],
-                            ['route'=>'financial.technical.index','match'=>'financial.technical.*','label'=>'Critérios técnicos'],
-                            ['route'=>'financial.policies.index','match'=>'financial.policies.*','label'=>'Regras de bonificação'],
-                        ] : [
-                            ['route'=>'admin.index','match'=>'admin.index','label'=>'Visão geral'],
-                            ['route'=>'admin.sectors.index','match'=>'admin.sectors.*','label'=>'Setores'],
-                            ['route'=>'admin.users.index','match'=>'admin.users.*','label'=>'Pessoas e acessos'],
-                            ['route'=>'admin.organization','match'=>'admin.teams.*','label'=>'Equipes'],
-                        ];
+                        $group = $item['route'];
+                        $groupCurrent = match ($group) {
+                            'financial.index' => request()->routeIs('financial.*', 'admin.criteria.*'),
+                            'reports.index' => request()->routeIs('reports.*'),
+                            default => request()->routeIs('admin.*') && !request()->routeIs('admin.criteria.*'),
+                        };
+                        $groupId = match ($group) {
+                            'financial.index' => 'financial-links',
+                            'reports.index' => 'report-links',
+                            default => 'administration-links',
+                        };
+                        $sections = match ($group) {
+                            'financial.index' => [
+                                ['route'=>'financial.technical.index','match'=>'financial.technical.*','label'=>'Critérios técnicos'],
+                                ['route'=>'financial.policies.index','match'=>'financial.policies.*','label'=>'Regras de bonificação'],
+                            ],
+                            'reports.index' => [
+                                ['route'=>'reports.index','parameters'=>['view'=>'general'],'current'=>request()->routeIs('reports.index') && request('view') === 'general','label'=>'Visão geral'],
+                                ['route'=>'reports.index','current'=>request()->routeIs('reports.index') && request('view') !== 'general','label'=>'Relatório por ciclo'],
+                                ['route'=>'reports.awards','match'=>'reports.awards','label'=>'Relatório de bonificações'],
+                            ],
+                            default => [
+                                ['route'=>'admin.index','match'=>'admin.index','label'=>'Visão geral'],
+                                ['route'=>'admin.sectors.index','match'=>'admin.sectors.*','label'=>'Setores'],
+                                ['route'=>'admin.users.index','match'=>'admin.users.*','label'=>'Pessoas e acessos'],
+                                ['route'=>'admin.organization','match'=>'admin.teams.*','label'=>'Equipes'],
+                            ],
+                        };
                     @endphp
                     <div class="sidebar-group" x-data="{ expanded: @js($groupCurrent) }">
                         <button type="button" class="app-nav-link sidebar-link sidebar-group-toggle {{ $groupCurrent ? 'sidebar-group-current' : '' }}"
@@ -50,7 +65,7 @@
                             <div class="sidebar-submenu-clip">
                                 <div class="sidebar-submenu-links">
                                     @foreach($sections as $section)
-                                        <a href="{{ route($section['route']) }}" class="app-nav-link sidebar-link sidebar-submenu-link" @if(request()->routeIs($section['match']) || ($section['route']==='financial.technical.index' && request()->routeIs('admin.criteria.*')) || ($section['route']==='admin.organization' && request()->routeIs('admin.organization'))) aria-current="page" @endif>{{ $section['label'] }}</a>
+                                        <a href="{{ route($section['route'], $section['parameters'] ?? []) }}" class="app-nav-link sidebar-link sidebar-submenu-link" @if(($section['current'] ?? request()->routeIs($section['match'] ?? '')) || ($section['route']==='financial.technical.index' && request()->routeIs('admin.criteria.*')) || ($section['route']==='admin.organization' && request()->routeIs('admin.organization'))) aria-current="page" @endif>{{ $section['label'] }}</a>
                                     @endforeach
                                 </div>
                             </div>

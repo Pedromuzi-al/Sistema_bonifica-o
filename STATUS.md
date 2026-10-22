@@ -2,6 +2,15 @@
 
 Atualização: 22/10/2026 (Brasília). Prazo informado: novembro de 2026, ainda sem dia definido. Regras financeiras e seleção de modelos implementadas; Tailwind 4 migrado e auditoria npm sem alertas. Homologação externa e decisões operacionais permanecem pendentes. As datas e decisões anteriores abaixo são histórico.
 
+## 22/10/2026 — navegação de relatórios
+
+- Relatórios passou a ser um grupo expansível com seta e animação, usando novo ícone de documento com gráfico. Reutiliza as regras de teclado, links ocultos indisponíveis ao foco e movimento reduzido dos demais grupos.
+- Submenus: **Visão geral**, **Relatório por ciclo** e **Relatório de bonificações**. A visão geral abre os indicadores consolidados existentes, e foi retirada do submenu Regras financeiras. A página de entrada de configurações financeiras continua disponível por seus links de retorno.
+- O destaque do item atual distingue a consulta `view=general` do relatório por ciclo na mesma rota; somente um submenu fica marcado. Acesso continua restrito à administração; cálculos, exportações e permissões não foram alterados.
+- Análise de relatório adicional: **Pendências e prazos**, reunindo decisões de seleção pendentes, planos em aberto com prazo vencido e resultados aguardando validação. Recomendado como próximo relatório de acompanhamento; não foi implementado nesta alteração de navegação.
+- Validação: **22 testes relacionados / 199 verificações** aprovados, build e `git diff --check` aprovados. Chrome percorreu os três submenus, conferiu novo ícone, destaque único por consulta, fechamento sem foco em links ocultos, movimento reduzido e temas claro/escuro em 320/390 px. Evidências finais: `storage/app/qa-reports/2026-10-22T13-53-30.500Z/resultado.json` e capturas `menu-relatorios-*`.
+- Sem mudança de banco, migrations, credenciais, dependências ou regras de cálculo nesta etapa.
+
 ## 22/10/2026 — Regras financeiras e modelos de avaliação por ciclo
 
 O usuário pediu substituir o bloco “Reconhecimento pela ideia e regras adicionais” por dois seletores e retirar critérios do menu Administração. Após a explicação, escolheu explicitamente um modelo com várias perguntas e pesos.
